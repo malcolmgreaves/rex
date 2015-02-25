@@ -19,4 +19,4 @@ These are the sbt commands used in this project:
 
 LICENSE
 =======
-Use of this code is allowed under the Apache 2.0 license (see LICENSE file for legal details). Everything within this repository is copyright (b2015) by Malcolm Greaves.
+Everything within this repository is copyright (b2015) by Malcolm Greaves.
