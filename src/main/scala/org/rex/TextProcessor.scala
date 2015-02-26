@@ -9,7 +9,7 @@ object TextProcessor {
 
       override def processSentence(text: String): Sentence = ???
 
-      override def sentencesOf(text: String): IndexedSeq[String] = ???
+      override def sentencesOf(text: String): Seq[String] = ???
     }
 
 }
@@ -26,18 +26,26 @@ trait TextProcessor {
     Document(docId, processedSentences)
   }
 
-  def sentencesOf(text: String): IndexedSeq[String]
+  def sentencesOf(text: String): Seq[String]
 
   def processSentence(text: String): Sentence
 
 }
 
-case class Document(id: String, sentences: IndexedSeq[Sentence])
 
-case class Sentence(words: IndexedSeq[Word])
+trait Document {
+  def id:String
+  def sentences:Seq[Sentence]
+}
 
-case class Word(text: String, posTag: String, nerTag: String) {
 
-  override def toString(): String =
-    s"$text/$posTag/$nerTag"
+trait Sentence {
+  def words:Seq[String]
+}
+
+
+trait Word {
+  def text:String
+  def posTag:String
+  def nerTag:String
 }

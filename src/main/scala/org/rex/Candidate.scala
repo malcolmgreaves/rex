@@ -42,12 +42,11 @@ sealed trait CandidateDocument extends Candidate {
 
 case class WordTarget(sentNum: Int, wordIndex: Int)
 
-case class CandidateCorefQuery(
-    doc: Document,
-    query: WordTarget,
-    sharedSentNum: Int,
-    queryCorefWordIndex: Int,
-    answerWordIndex: Int) extends CandidateDocument {
+case class CandidateCorefQuery(doc: Document,
+                               query: WordTarget,
+                               sharedSentNum: Int,
+                               queryCorefWordIndex: Int,
+                               answerWordIndex: Int) extends CandidateDocument {
 
   override lazy val inner =
     if (queryCorefWordIndex < answerWordIndex)
@@ -62,12 +61,11 @@ case class CandidateCorefQuery(
     word_h(sharedSentNum, answerWordIndex)
 }
 
-case class CandidateCorefAnswer(
-    doc: Document,
-    queryWordIndex: Int,
-    sharedSentNum: Int,
-    answerCorefWordIndex: Int,
-    answer: WordTarget) extends CandidateDocument {
+case class CandidateCorefAnswer(doc: Document,
+                                queryWordIndex: Int,
+                                sharedSentNum: Int,
+                                answerCorefWordIndex: Int,
+                                answer: WordTarget) extends CandidateDocument {
 
   override lazy val inner =
     if (queryWordIndex < answerCorefWordIndex)
@@ -82,13 +80,12 @@ case class CandidateCorefAnswer(
     word_h(answer)
 }
 
-case class CandidateCorefBoth(
-    doc: Document,
-    query: WordTarget,
-    queryCorefWordIndex: Int,
-    sharedSentNum: Int,
-    answerCorefWordIndex: Int,
-    answer: WordTarget) extends CandidateDocument {
+case class CandidateCorefBoth(doc: Document,
+                              query: WordTarget,
+                              queryCorefWordIndex: Int,
+                              sharedSentNum: Int,
+                              answerCorefWordIndex: Int,
+                              answer: WordTarget) extends CandidateDocument {
 
   override lazy val inner =
     if (queryCorefWordIndex < answerCorefWordIndex)

@@ -30,8 +30,9 @@ object TextFeatuerizer {
                     (left(viewableWords, queryIndex) _, right(viewableWords, answerIndex) _)
                   else
                     (left(viewableWords, answerIndex) _, right(viewableWords, queryIndex) _)
-                (ngramSize: Int) =>
-                  Seq(l(ngramSize), r(ngramSize))
+                (ngramSize: Int) => Seq(
+                  l(ngramSize), r(ngramSize)
+                )
 
                 case CandidateCorefQuery(doc, query, _, _, _) =>
                   val viewableQWords = doc.sentences(query.sentNum).words.map(wordView)
@@ -43,8 +44,8 @@ object TextFeatuerizer {
                 case CandidateCorefAnswer(doc, _, _, _, answer) =>
                   val viewableAWords = doc.sentences(answer.sentNum).words.map(wordView)
                   (ngramSize: Int) => Seq(
-                   left(viewableAWords, answer.wordIndex)(ngramSize),
-                   right(viewableAWords, answer.wordIndex)(ngramSize)
+                    left(viewableAWords, answer.wordIndex)(ngramSize),
+                    right(viewableAWords, answer.wordIndex)(ngramSize)
                   )
 
                 case CandidateCorefBoth(doc, query, qCorefIndex, sharedSentNum, aCorefIndex, answer) =>
