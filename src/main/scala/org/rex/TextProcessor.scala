@@ -36,8 +36,8 @@ case class Document(id: String, sentences: IndexedSeq[Sentence])
 
 case class Sentence(words: IndexedSeq[Word])
 
-case class Word(text: String, posTag: String, nerTag: String) {
+case class Word(text: String, posTag: String="", nerTag: String="") {
 
-  override def toString(): String =
+  override def toString: String =
     s"$text/$posTag/$nerTag"
 }
