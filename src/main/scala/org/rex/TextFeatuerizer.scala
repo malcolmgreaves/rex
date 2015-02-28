@@ -153,28 +153,33 @@ case class InsideFeatures(ngramWidth: Int, skipSize: Int)
 
 object WordFilter {
 
-  implicit def fn2wordFilter(fn: Word => Boolean): WordFilter =
+  implicit def fn2wordFilter(fn: Sentence => Int => Boolean): WordFilter =
     new WordFilter {
-      def apply(w: Word): Boolean = fn(w)
+      override def apply(s:Sentence)(i:Int): Boolean = fn(s)(i)
     }
 
-  lazy val default: WordFilter = (x: Word) => x.text != x.posTag
+  lazy val default: WordFilter =
+    (s: Sentence) => s.tags match {
+      case Some(tags) => (i:Int) => tags(i) != s.tokens(i)
+      case None => (ignore:Int) => true
+    }
 }
 
-trait WordFilter extends (Word => Boolean) {
-  def apply(w: Word): Boolean
+trait WordFilter {
+  def apply(s: Sentence)(i:Int): Boolean
 }
 
 object WordView {
 
-  implicit def fn2wordView(fn: Word => String): WordView =
+  implicit def fn2wordView(fn: Sentence => Int => String): WordView =
     new WordView {
-      def apply(w: Word): String = fn(w)
+      override def apply(s:Sentence)(i:Int): String = fn(s)(i)
     }
 
-  lazy val default: WordView = (w: Word) => w.text.toLowerCase
+  lazy val default: WordView =
+    (s:Sentence) => (i:Int) => s.tokens(i)
 }
 
-trait WordView extends (Word => String) {
-  def apply(w: Word): String
+trait WordView {
+  def apply(s:Sentence)(i:Int): String
 }
