@@ -140,12 +140,12 @@ object InsideFeatures {
     else
       Seq(first) ++
         (0 until Math.min(k + 1, s.size)).flatMap(j => {
-        val rest = s.slice(j + 1, s.size)
-        if (rest.size > 0)
-          selectKSkipGram(rest, n - 1, k - j).map(gram => s"$first,$gram")
-        else
-          Seq.empty[String]
-      })
+          val rest = s.slice(j + 1, s.size)
+          if (rest.size > 0)
+            selectKSkipGram(rest, n - 1, k - j).map(gram => s"$first,$gram")
+          else
+            Seq.empty[String]
+        })
   }
 }
 
@@ -155,31 +155,31 @@ object WordFilter {
 
   implicit def fn2wordFilter(fn: Sentence => Int => Boolean): WordFilter =
     new WordFilter {
-      override def apply(s:Sentence)(i:Int): Boolean = fn(s)(i)
+      override def apply(s: Sentence)(i: Int): Boolean = fn(s)(i)
     }
 
   lazy val default: WordFilter =
     (s: Sentence) => s.tags match {
-      case Some(tags) => (i:Int) => tags(i) != s.tokens(i)
-      case None => (ignore:Int) => true
+      case Some(tags) => (i: Int) => tags(i) != s.tokens(i)
+      case None => (ignore: Int) => true
     }
 }
 
 trait WordFilter {
-  def apply(s: Sentence)(i:Int): Boolean
+  def apply(s: Sentence)(i: Int): Boolean
 }
 
 object WordView {
 
   implicit def fn2wordView(fn: Sentence => Int => String): WordView =
     new WordView {
-      override def apply(s:Sentence)(i:Int): String = fn(s)(i)
+      override def apply(s: Sentence)(i: Int): String = fn(s)(i)
     }
 
   lazy val default: WordView =
-    (s:Sentence) => (i:Int) => s.tokens(i)
+    (s: Sentence) => (i: Int) => s.tokens(i)
 }
 
 trait WordView {
-  def apply(s:Sentence)(i:Int): String
+  def apply(s: Sentence)(i: Int): String
 }
