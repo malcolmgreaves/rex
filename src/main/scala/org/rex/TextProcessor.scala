@@ -38,9 +38,28 @@ trait Document {
   def sentences:Seq[Sentence]
 }
 
+object Document {
+
+  def apply(docId: String, docSentences: Seq[Sentence]): Document =
+    new Document {
+      override val id = docId
+      override val sentences = docSentences
+    }
+
+}
+
 
 trait Sentence {
-  def words:Seq[String]
+  def words:Seq[Word]
+}
+
+object Sentence {
+
+  def apply(sentWords:Seq[Word]):Sentence =
+    new Sentence {
+      val words = sentWords
+    }
+
 }
 
 
@@ -48,4 +67,15 @@ trait Word {
   def text:String
   def posTag:String
   def nerTag:String
+}
+
+object Word {
+
+  def apply(wText:String,wPosTag:String="", wNerTag:String=""):Word =
+    new Word {
+      override val text = wText
+      override val posTag = wPosTag
+      override val nerTag = wNerTag
+    }
+
 }
