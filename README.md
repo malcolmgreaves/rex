@@ -17,6 +17,10 @@ These are the sbt commands used in this project:
 *  **gen-idea** => makes project files for Intellij IDEA 
 *  **eclipse** => makes project files for Eclipse
 
+We recommend using the following configuration for sbt:
+
+    export SBT_OPTS="-Xmx2G -XX:MaxPermSize=724M  -XX:+UseConcMarkSweepGC  -XX:+CMSClassUnloadingEnabled"
+
 
 LICENSE
 =======

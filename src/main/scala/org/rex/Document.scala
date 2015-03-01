@@ -1,5 +1,7 @@
 package org.rex
 
+import edu.arizona.sista.processors.CorefMention
+
 
 /** Represents a uniquely identifiable ordered sequence of sentences. */
 trait Document {
@@ -7,15 +9,34 @@ trait Document {
   def id: String
   /** The document's sentences in-order */
   def sentences: Seq[Sentence]
+  /** Pairs of co-referent entities across the sentences in this document. */
+  def corefMentions:Option[Seq[Coref]]
 }
 
 object Document {
+
   /** Creates a document using an annonymous class */
-  def apply(docId: String, docSentences: Seq[Sentence]): Document =
+  def apply(docId: String, docSentences: Seq[Sentence], corefMentionz:Option[Seq[Coref]]=None): Document =
     new Document {
       override val id = docId
       override val sentences = docSentences
+      override val corefMentions = corefMentionz
     }
+
+
+  import edu.arizona.sista.processors.{Document=>SistaDocument}
+
+  /** Converts a edu.arizaona.sista.processors.Document into a org.rex.Document in a straightforward manner. */
+  implicit def sistaDoc2Doc(idAndDoc:(String, SistaDocument)):Document =
+    apply(
+      idAndDoc._1,
+      idAndDoc._2.sentences.map(Sentence.sistaSentence2Sentence).toSeq,
+      idAndDoc._2.coreferenceChains.map(chains =>
+        chains.getChains.map(chain =>
+          Coref(chain.map(Mention.sistaCorefMention2Mention).toSeq)
+        ).toSeq
+      )
+    )
 
 }
 
@@ -67,5 +88,47 @@ object Sentence {
               Seq(token))
       })._1
     )
+
+  import edu.arizona.sista.processors.{Sentence=>SistaSentence}
+
+  /** Converts a edu.arizaona.sista.processors.Sentence into a org.rex.Sentence in a straightforward manner. */
+  implicit def sistaSentence2Sentence(s:SistaSentence):Sentence =
+    apply(s.words, s.tags.map(_.toSeq), s.entities.map(_.toSeq))
+
+}
+
+
+trait Coref {
+  /** A chain of mentions, all of which have been determined to be coreferent. */
+  def mentions:Seq[Mention]
+}
+
+object Coref {
+  def apply(corefMentions:Seq[Mention]):Coref =
+    new Coref{
+      override val mentions = corefMentions
+    }
+}
+
+trait Mention {
+  /** The number, or index, for the sentence in an associated Document. */
+  def sentenceNum:Int
+  /** The index that the mention starts on. */
+  def from:Int
+  /** The index immediately after the end of the mention. */
+  def until:Int
+}
+
+object Mention {
+
+  def apply(sentNum:Int, fromIndex:Int, untilIndexP1:Int):Mention =
+    new Mention {
+      override val sentenceNum = sentNum
+      override val from = fromIndex
+      override val until = untilIndexP1
+    }
+
+  implicit def sistaCorefMention2Mention(cm:CorefMention):Mention =
+    apply(cm.sentenceIndex, cm.headIndex, cm.endOffset)
 
 }
