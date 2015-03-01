@@ -46,5 +46,5 @@ CoverallsPlugin.coverallsSettings
 
 packAutoSettings
 
-fork := true
+fork := false
 
