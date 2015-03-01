@@ -1,17 +1,14 @@
 package org.rex.sista
 
-import edu.arizona.sista.processors._
-import corenlp.CoreNLPProcessor
+import edu.arizona.sista.processors.{Document, DocumentSerializer}
 import edu.arizona.sista.struct.DirectedGraphEdgeIterator
-import org.scalatest.FunSuite
+import edu.arizona.sista.processors._
+import edu.arizona.sista.processors.fastnlp.FastNLPProcessor
 
+object SistaIntegration {
 
-class SistaIntegrationTest extends FunSuite {
-
- ignore(" def main(args:Array[String]) {") {
-    // create the processor
-    val proc:Processor = new CoreNLPProcessor(withDiscourse = true)
-    //val proc:Processor = new FastNLPProcessor()
+  def main(args:Array[String]) = {
+    val proc:Processor = new FastNLPProcessor()
 
     // for much faster processing, use FastNLPProcessor
     // this processor does not support constituent parsing and coreference resolution, and
@@ -86,4 +83,5 @@ class SistaIntegrationTest extends FunSuite {
       println(dt.toString())
     })
   }
+
 }

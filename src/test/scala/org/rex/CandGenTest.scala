@@ -7,7 +7,6 @@ class CandGenTest extends FunSuite {
 
   import CandGenTest._
 
-
   test("Simple Sentence Candidate Generation") {
 
     val createdCandidates = SentenceCandGen(passthruWordFilter).candidates(insurgentsDoc).toSet

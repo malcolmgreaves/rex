@@ -19,8 +19,7 @@ These are the sbt commands used in this project:
 
 We recommend using the following configuration for sbt:
 
-    export SBT_OPTS="-Xmx2G -XX:MaxPermSize=724M  -XX:+UseConcMarkSweepGC  -XX:+CMSClassUnloadingEnabled"
-
+    sbt -J-Xmx8g -J-XX:+UseConcMarkSweepGC
 
 LICENSE
 =======

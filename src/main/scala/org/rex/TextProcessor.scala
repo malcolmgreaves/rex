@@ -1,8 +1,6 @@
 package org.rex
 
 import edu.arizona.sista.processors._
-import corenlp.CoreNLPProcessor
-import edu.arizona.sista.struct.DirectedGraphEdgeIterator
 
 /** Adds structure to text.
   *
@@ -54,6 +52,15 @@ trait ProcessingConf {
 
   /** Information about the part-of-speech tags that the associated processor uses, if applicable. */
   def tagSet: Option[PosTagSet]
+}
+
+object ProcessingConf {
+
+  def apply(entities:Option[NamedEntitySet],tags:Option[PosTagSet]):ProcessingConf =
+    new ProcessingConf {
+      override val entSet = entities
+      override val tagSet = tags
+    }
 }
 
 trait NamedEntitySet {
