@@ -10,10 +10,7 @@ class CandGenTest extends FunSuite {
 
   test("Simple Sentence Candidate Generation") {
 
-    val createdCandidates = {
-      import WordFilter._
-      SentenceCandGen((w:Word) => true).candidates(insurgentsDoc)
-    }.toSet
+    val createdCandidates = SentenceCandGen(passthruWordFilter).candidates(insurgentsDoc).toSet
 
     val diff = insurgentsCandidatesSentence.diff(createdCandidates)
     val intersection = insurgentsCandidatesSentence.intersect(createdCandidates)
@@ -29,9 +26,13 @@ class CandGenTest extends FunSuite {
 
 object CandGenTest {
 
+  val passthruWordFilter = new WordFilter {
+    override def apply(s:Sentence)(i:Int):Boolean = true
+  }
+
   import TextFeatuerizerTest._
 
-  val insurgentsSentence = Sentence(insurgentsSeq.map(s => Word(s)).toIndexedSeq)
+  val insurgentsSentence = Sentence(insurgentsSeq)
 
   val insurgentsDoc = Document("insurgents", IndexedSeq(insurgentsSentence))
 

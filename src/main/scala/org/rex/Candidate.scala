@@ -2,26 +2,39 @@ package org.rex
 
 sealed trait Candidate {
 
-  def inner: Seq[Word]
+  def innerFromSentence:Sentence
 
-  def queryW: Word
+  def startInnerIndex:Int
 
-  def answerW: Word
+  def endInnerIndex:Int
+
+  def inner: Seq[String] =
+    innerFromSentence.tokens.slice(startInnerIndex, endInnerIndex)
+
+  def queryW: String
+
+  def answerW: String
 }
 
 case class CandidateSentence(s: Sentence, queryIndex: Int, answerIndex: Int) extends Candidate {
 
-  override lazy val inner =
+  override lazy val innerFromSentence =
+    s
+
+  private val (start, end) =
     if (queryIndex < answerIndex)
-      s.words.slice(queryIndex, answerIndex)
+      (queryIndex, answerIndex)
     else
-      s.words.slice(answerIndex, queryIndex)
+      (answerIndex, queryIndex)
+
+  override val startInnerIndex = start
+  override val endInnerIndex = end
 
   override lazy val queryW =
-    s.words(queryIndex)
+    s.tokens(queryIndex)
 
   override lazy val answerW =
-    s.words(answerIndex)
+    s.tokens(answerIndex)
 }
 
 sealed trait CandidateDocument extends Candidate {
@@ -30,14 +43,17 @@ sealed trait CandidateDocument extends Candidate {
 
   def sharedSentNum: Int
 
-  @inline protected def inner_h(start: Int, finish: Int): Seq[Word] =
-    doc.sentences(sharedSentNum).words.slice(start, finish)
+  override final lazy val innerFromSentence =
+    doc.sentences(sharedSentNum)
 
-  @inline protected def word_h(sentNum: Int, index: Int): Word =
-    doc.sentences(sentNum).words(index)
+  @inline protected def inner_h(start: Int, finish: Int): Seq[String] =
+    doc.sentences(sharedSentNum).tokens.slice(start, finish)
 
-  @inline protected def word_h(t: WordTarget): Word =
-    doc.sentences(t.sentNum).words(t.wordIndex)
+  @inline protected def word_h(sentNum: Int, index: Int): String =
+    doc.sentences(sentNum).tokens(index)
+
+  @inline protected def word_h(t: WordTarget): String =
+    doc.sentences(t.sentNum).tokens(t.wordIndex)
 }
 
 case class WordTarget(sentNum: Int, wordIndex: Int)
@@ -48,11 +64,14 @@ case class CandidateCorefQuery(doc: Document,
                                queryCorefWordIndex: Int,
                                answerWordIndex: Int) extends CandidateDocument {
 
-  override lazy val inner =
+  private val (start, end) =
     if (queryCorefWordIndex < answerWordIndex)
-      inner_h(queryCorefWordIndex, answerWordIndex)
+      (queryCorefWordIndex, answerWordIndex)
     else
-      inner_h(answerWordIndex, queryCorefWordIndex)
+      (answerWordIndex, queryCorefWordIndex)
+
+  override val startInnerIndex = start
+  override val endInnerIndex = end
 
   override lazy val queryW =
     word_h(query)
@@ -67,11 +86,14 @@ case class CandidateCorefAnswer(doc: Document,
                                 answerCorefWordIndex: Int,
                                 answer: WordTarget) extends CandidateDocument {
 
-  override lazy val inner =
+  private val (start, end) =
     if (queryWordIndex < answerCorefWordIndex)
-      inner_h(queryWordIndex, answerCorefWordIndex)
+      (queryWordIndex, answerCorefWordIndex)
     else
-      inner_h(answerCorefWordIndex, queryWordIndex)
+      (answerCorefWordIndex, queryWordIndex)
+
+  override val startInnerIndex = start
+  override val endInnerIndex = end
 
   override lazy val queryW =
     word_h(sharedSentNum, queryWordIndex)
@@ -87,11 +109,14 @@ case class CandidateCorefBoth(doc: Document,
                               answerCorefWordIndex: Int,
                               answer: WordTarget) extends CandidateDocument {
 
-  override lazy val inner =
+  private val (start, end) =
     if (queryCorefWordIndex < answerCorefWordIndex)
-      inner_h(queryCorefWordIndex, answerCorefWordIndex)
+      (queryCorefWordIndex, answerCorefWordIndex)
     else
-      inner_h(answerCorefWordIndex, queryCorefWordIndex)
+      (answerCorefWordIndex, queryCorefWordIndex)
+
+  override val startInnerIndex = start
+  override val endInnerIndex = end
 
   override lazy val queryW =
     word_h(sharedSentNum, queryCorefWordIndex)

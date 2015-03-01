@@ -1,13 +1,14 @@
-package org.rex
+package org.rex.sista
 
 import edu.arizona.sista.processors._
 import corenlp.CoreNLPProcessor
 import edu.arizona.sista.struct.DirectedGraphEdgeIterator
+import org.scalatest.FunSuite
 
-object SistaIntegrationTest {
 
+class SistaIntegrationTest extends FunSuite {
 
-  def main(args:Array[String]) {
+ test(" def main(args:Array[String]) {") {
     // create the processor
     val proc:Processor = new CoreNLPProcessor(withDiscourse = true)
     //val proc:Processor = new FastNLPProcessor()
@@ -54,7 +55,7 @@ object SistaIntegrationTest {
         }
       })
       sentence.syntacticTree.foreach(tree => {
-        println("Constituent tree: " + tree.toStringDepth(showHead = false))
+        println("Constituent tree: " + tree.toStringDepth(20))
         // see the edu.arizona.sista.struct.Tree class for more information
         // on syntactic trees, including access to head phrases/words
       })

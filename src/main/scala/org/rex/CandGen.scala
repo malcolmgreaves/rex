@@ -4,15 +4,24 @@ trait CandGen {
   def candidates(doc: Document): Seq[Candidate]
 }
 
-case class SentenceCandGen(wf: WordFilter) extends CandGen {
+case class SentenceCandGen(wordFilter: WordFilter) extends CandGen {
 
   override def candidates(doc: Document): Seq[CandidateSentence] =
     doc.sentences.flatMap(s => {
 
-      val filtWordIndices = s.words.zipWithIndex.filter({ case (word, _) => wf(word) })
+      val wf = wordFilter(s) _
 
-      (0 until filtWordIndices.size).flatMap(queryIndex =>
-        (0 until filtWordIndices.size).flatMap(answerIndex =>
+      val filtWordIndices = s.tokens.zipWithIndex
+        .flatMap({
+          case (word, index) =>
+            if(wf(index))
+              Some(index)
+            else
+              None
+        })
+
+      filtWordIndices.flatMap(queryIndex =>
+        filtWordIndices.flatMap(answerIndex =>
           if (queryIndex != answerIndex)
             Some(CandidateSentence(s, queryIndex, answerIndex))
           else
