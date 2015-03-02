@@ -21,11 +21,9 @@ class CandGenTest extends FunSuite {
     )
   }
 
-  ignore("Coreference-based Candidate Generation") {
+  test("Coreference-based Candidate Generation") {
 
-    val doc = TextProcessingTest.makeTextProcessor().process("", TextProcessingTest.johnSmithText)
-    import NamedEntitySet.Default4Class.entSet
-
+    val doc = TextProcessorTest.makeTextProcessor().process("", TextProcessorTest.johnSmithText)
 
     val mentions = doc.corefMentions.getOrElse(Seq.empty[Coref])
     mentions.map(
@@ -34,7 +32,10 @@ class CandGenTest extends FunSuite {
         .mkString(" ; ")
     ).foreach(println)
 
-    val candidates = CorefCandGen(WordFilter.default).candidates(doc)
+    val candidates = {
+      import NamedEntitySet.Default4Class.entSet
+      CorefCandGen(WordFilter.default).candidates(doc)
+    }
     println(s"${candidates.size} candidates")
     candidates.foreach(cd =>
       println(s"Query: ${cd.queryW} , Answer: ${cd.answerW} :: inside: ${cd.inner}")

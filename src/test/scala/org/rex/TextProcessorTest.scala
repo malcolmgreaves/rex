@@ -3,9 +3,9 @@ package org.rex
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
 import edu.arizona.sista.processors.corenlp.CoreNLPProcessor
 
-class TextProcessingTest extends FunSuite with BeforeAndAfterAll {
+class TextProcessorTest extends FunSuite with BeforeAndAfterAll {
 
-  import TextProcessingTest._
+  import TextProcessorTest._
 
   private var textProcessor: TextProcessor = null
 
@@ -19,7 +19,7 @@ class TextProcessingTest extends FunSuite with BeforeAndAfterAll {
     System.gc()
   }
 
-  ignore("text processing insurgents sentence") {
+  test("text processing insurgents sentence") {
     val insurgentsDoc = textProcessor.process("", insurgentsText)
     assert(insurgentsDoc.sentences.size == 1, "expecting 1 sentence")
     assert(insurgentsTokens == insurgentsDoc.sentences(0).tokens, "Tokenization doesn't match expected")
@@ -27,7 +27,7 @@ class TextProcessingTest extends FunSuite with BeforeAndAfterAll {
     assert(insurgentsTags == insurgentsDoc.sentences(0).tags.get, "POS tags don't match")
   }
 
-  ignore("john smith sentences") {
+  test("john smith sentences") {
     val johnSmithDoc = textProcessor.process("", johnSmithText)
     assert(johnSmithDoc.sentences.size == johnSmithTokens.size, "expecting 2 for John Smith.")
     johnSmithTokens.zipWithIndex.foreach({
@@ -70,7 +70,7 @@ class TextProcessingTest extends FunSuite with BeforeAndAfterAll {
 
 }
 
-object TextProcessingTest {
+object TextProcessorTest {
 
   type Error = String
 
