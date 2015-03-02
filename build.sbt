@@ -36,8 +36,6 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "2.2.1" % "test"
 )
 
-javaOptions += "-Xmx10G -XX:MaxPermSize=724M -XX:+UseConcMarkSweepGC -XX:+CMSClassUnloadingEnabled"
-
 testOptions += Tests.Argument(TestFrameworks.JUnit, "-v")
 
 testOptions in Test += Tests.Argument("-oF")
