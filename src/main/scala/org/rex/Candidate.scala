@@ -101,27 +101,3 @@ case class CandidateCorefAnswer(doc: Document,
   override lazy val answerW =
     word_h(answer)
 }
-
-case class CandidateCorefBoth(doc: Document,
-                              query: WordTarget,
-                              queryCorefWordIndex: Int,
-                              sharedSentNum: Int,
-                              answerCorefWordIndex: Int,
-                              answer: WordTarget) extends CandidateDocument {
-
-  private val (start, end) =
-    if (queryCorefWordIndex < answerCorefWordIndex)
-      (queryCorefWordIndex, answerCorefWordIndex)
-    else
-      (answerCorefWordIndex, queryCorefWordIndex)
-
-  override val startInnerIndex = start
-  override val endInnerIndex = end
-
-  override lazy val queryW =
-    word_h(sharedSentNum, queryCorefWordIndex)
-
-  override lazy val answerW =
-    word_h(sharedSentNum, answerCorefWordIndex)
-
-}

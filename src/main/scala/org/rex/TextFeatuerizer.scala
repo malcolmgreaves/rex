@@ -60,25 +60,6 @@ object TextFeatuerizer {
                   left(viewableAWords, answer.wordIndex)(ngramSize),
                   right(viewableAWords, answer.wordIndex)(ngramSize)
                 )
-
-              case CandidateCorefBoth(doc, query, qCorefIndex, sharedSentNum, aCorefIndex, answer) =>
-                val viewableQWords = viewableWords(doc.sentences(query.sentNum))
-                val viewableAWords = viewableWords(doc.sentences(query.sentNum))
-                val (l, r) = {
-                  val viewableSharedWords = viewableWords(doc.sentences(sharedSentNum))
-                  if (qCorefIndex < aCorefIndex)
-                    (left(viewableSharedWords, qCorefIndex) _, right(viewableSharedWords, aCorefIndex) _)
-                  else
-                    (left(viewableSharedWords, aCorefIndex) _, right(viewableSharedWords, qCorefIndex) _)
-                }
-                (ngramSize: Int) => Seq(
-                  left(viewableQWords, query.wordIndex)(ngramSize),
-                  right(viewableQWords, query.wordIndex)(ngramSize),
-                  left(viewableAWords, answer.wordIndex)(ngramSize),
-                  right(viewableAWords, answer.wordIndex)(ngramSize),
-                  l(ngramSize),
-                  r(ngramSize)
-                )
             }
 
             (1 until width + 1).flatMap(adjFeatFn).flatten

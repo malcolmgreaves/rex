@@ -21,12 +21,32 @@ class CandGenTest extends FunSuite {
     )
   }
 
+  ignore("Coreference-based Candidate Generation") {
+
+    val doc = TextProcessingTest.makeTextProcessor().process("", TextProcessingTest.johnSmithText)
+    import NamedEntitySet.Default4Class.entSet
+
+
+    val mentions = doc.corefMentions.getOrElse(Seq.empty[Coref])
+    mentions.map(
+      _.mentions
+        .map(mention => s"${mention.sentenceNum} [${mention.from}:${mention.until}] :: ${doc.sentences(mention.sentenceNum).tokens.slice(mention.from, mention.until)}")
+        .mkString(" ; ")
+    ).foreach(println)
+
+    val candidates = CorefCandGen(WordFilter.default).candidates(doc)
+    println(s"${candidates.size} candidates")
+    candidates.foreach(cd =>
+      println(s"Query: ${cd.queryW} , Answer: ${cd.answerW} :: inside: ${cd.inner}")
+    )
+  }
+
 }
 
 object CandGenTest {
 
   val passthruWordFilter = new WordFilter {
-    override def apply(s:Sentence)(i:Int):Boolean = true
+    override def apply(s: Sentence)(i: Int): Boolean = true
   }
 
   import TextFeatuerizerTest._

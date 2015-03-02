@@ -72,7 +72,7 @@ object Sentence {
     * */
   def chunkTokens(s: Sentence)(implicit entSet: NamedEntitySet): Option[Seq[String]] =
     s.entities.map(ents => {
-      val (allChunked, lastEnt, lastWorkingSeq) =
+      val (allChunked, _, lastWorkingSeq) =
         ents.zip(s.tokens).foldLeft((Seq.empty[String], entSet.nonEntityTag, Seq.empty[String]))({
           case ((chunked, previousEnt, workingSeq), (entity, token)) =>
 
