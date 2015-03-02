@@ -18,6 +18,9 @@ trait TextProcessor {
 
 object TextProcessor {
 
+  // implicit conversion from a Sista project Document type to a REx project Document
+  import Document.sistaDoc2Doc
+
   /** Uses the Processor to convert a block of text into a document.
     *
     * Conversion is based upon Sista + CoreNLP libraries. Uses the interfaces
@@ -29,19 +32,8 @@ object TextProcessor {
   def apply(pConf: ProcessingConf, corenlpProcessor: Processor): TextProcessor =
     new TextProcessor {
       override val conf = pConf
-
-      override def process(id: String, text: String): Document = {
-        val processedDoc = corenlpProcessor.annotate(text)
-        Document(id,
-          processedDoc.sentences.map(s =>
-            Sentence(
-              s.words.toSeq,
-              s.tags.map(_.toSeq),
-              s.entities.map(_.toSeq)
-            )
-          )
-        )
-      }
+      override def process(id: String, text: String): Document =
+        (id, corenlpProcessor.annotate(text))
     }
 
 }
