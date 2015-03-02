@@ -71,42 +71,53 @@ object Sentence {
     * Space (" ") is inserted between each combined token.
     * */
   def chunkTokens(s: Sentence)(implicit entSet: NamedEntitySet): Option[Seq[String]] =
-    s.entities.map(ents => {
-      val (allChunked, _, lastWorkingSeq) =
-        ents.zip(s.tokens).foldLeft((Seq.empty[String], entSet.nonEntityTag, Seq.empty[String]))({
-          case ((chunked, previousEnt, workingSeq), (entity, token)) =>
+    s.entities.map(ents =>
 
-            val isNonEnt = entity == entSet.nonEntityTag
+      if(ents.size <= 1){
+        ents
 
-            val continueToChunk = !isNonEnt && entity == previousEnt
+      } else {
+        val (allChunked, _, lastWorkingSeq) =
+          ents.slice(1, ents.size).zip(s.tokens.slice(1, s.tokens.size))
+            .foldLeft((Seq.empty[String], ents(0), Seq(s.tokens(0))))({
 
-            val updatedWorkingSeq =
-              if (continueToChunk)
-                workingSeq :+ token
-              else
-                Seq.empty[String]
+            case ((chunked, previousEnt, workingSeq), (entity, token)) =>
 
-            val updatedChunk = {
-              val c =
-                if (!continueToChunk)
-                  if (workingSeq.size > 0)
-                    chunked :+ workingSeq.mkString(" ")
+              val isNonEnt = entity == entSet.nonEntityTag
+
+              val continueToChunk = !isNonEnt && previousEnt == entity
+
+              val updatedWorkingSeq =
+                if (continueToChunk)
+                  workingSeq :+ token
+                else
+                  Seq(token)
+
+              val updatedChunk = {
+                val c =
+                  if (!continueToChunk)
+                    if (workingSeq.size > 0)
+                      chunked :+ workingSeq.mkString(" ")
+                    else
+                      chunked
                   else
                     chunked
-                else
-                  chunked
 
-              if (isNonEnt) c :+ token else c
-            }
+                c
+//                if (isNonEnt) c :+ token else c
+              }
 
-            (updatedChunk, entity, updatedWorkingSeq)
-        })
+              (updatedChunk, entity, updatedWorkingSeq)
+          })
 
-      if(lastWorkingSeq.isEmpty)
-        allChunked
-      else
-        allChunked :+ lastWorkingSeq.mkString(" ")
-    })
+        if(lastWorkingSeq.isEmpty)
+          allChunked
+        else
+          allChunked :+ lastWorkingSeq.mkString(" ")
+      }
+    )
+
+
 
   import edu.arizona.sista.processors.{Sentence => SistaSentence}
 

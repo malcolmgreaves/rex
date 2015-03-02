@@ -46,27 +46,9 @@ class TextProcessorTest extends FunSuite with BeforeAndAfterAll {
           s"[John Smith sentence $index] expecting part-of-speech tags to match up")
     })
 
-
     import NamedEntitySet.Default4Class._
-    val errors = testChunk(johnSmithDoc.sentences.zipWithIndex.map(x => (x._1, Some(johnSmithChunked(x._2)))))
-    if (errors.size > 0)
-      fail(errors.mkString("\n"))
+    NPChunking.testChunk(johnSmithDoc.sentences.zipWithIndex.map(x => (x._1, Some(johnSmithChunked(x._2)))))
   }
-
-  test("NP chunking"){
-    import NamedEntitySet.Default4Class._
-    testChunk(johnSmithSentences.zipWithIndex.map(x => (x._1, Some(johnSmithChunked(x._2)))))
-  }
-
-  def testChunk(testPairs: Seq[(Sentence, Option[Seq[String]])])(implicit entSet: NamedEntitySet): List[Error] =
-    testPairs.foldLeft(List.empty[String])({
-      case (agg, (sentence, correctResponse)) =>
-        val result = Sentence.chunkTokens(sentence)
-        if (result != correctResponse)
-          agg :+ s"""Sentence failed, (Chunked: ${result.mkString(" ")}) (Actual: ${correctResponse.mkString(" ")})"""
-        else
-          agg
-    })
 
 }
 
@@ -96,13 +78,13 @@ object TextProcessorTest {
   )
   val johnSmithChunked = Seq(
     Seq("John Smith", "went", "to", "China", "."),
-    Seq("He", "visited", "Beijing", ",", "on", "January 10th, 2013", ".")
+    Seq("He", "visited", "Beijing", ",", "on", "January 10th , 2013", ".")
   )
   val johnSmithTags = Seq(
     Seq("NNP", "NNP", "VBD", "TO", "NNP", "."),
     Seq("PRP", "VBD", "NNP", ",", "IN", "NNP", "JJ", ",", "CD", ".")
   )
   val johnSmithSentences = (0 until johnSmithTokens.size).map(index =>
-      Sentence(johnSmithTokens(index), Some(johnSmithEntites(index)), Some(johnSmithTags(index)))
+      Sentence(johnSmithTokens(index), Some(johnSmithTags(index)), Some(johnSmithEntites(index)))
   )
 }
