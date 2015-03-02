@@ -74,11 +74,11 @@ trait NamedEntitySet {
 object NamedEntitySet {
 
   /** Contains implicit NamedEntitySet with PERSON, LOCATION, and ORGANIZATION tags and "" non-entity tag */
-  object Default3Class {
+  object Default4Class {
     implicit val entSet =
       new NamedEntitySet {
-        override val tags = Set("PERSON", "LOCATION", "ORGANIZATION")
-        override val nonEntityTag: String = ""
+        override val tags = Set("PERSON", "LOCATION", "ORGANIZATION", "DATE")
+        override val nonEntityTag: String = "O"
       }
   }
 
