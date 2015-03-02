@@ -5,7 +5,6 @@ REx: Relation Extraction. Modernized re-write of the code in the master's thesis
 ==========================================================================================
 Using sbt for building, tests, running programs, packaging, managing dependencies etc.
 ==========================================================================================
-We include a sbt script in the project. This script will download and install the appropriate version of sbt and then start it. The script behaves nearly identicly to an installed sbt. So use ./sbt or sbt as you desire!
 
 These are the sbt commands used in this project:
 *  **test** => runs unittests in src/test
