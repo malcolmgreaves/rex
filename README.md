@@ -18,7 +18,7 @@ These are the sbt commands used in this project:
 
 We recommend using the following configuration for sbt:
 
-    sbt -J-Xmx2g -J-XX:+UseConcMarkSweepGC
+    sbt -J-Xmx2g -J-XX:+UseConcMarkSweepGC -J-XX:+CMSClassUnloadingEnabled
 
 LICENSE
 =======
