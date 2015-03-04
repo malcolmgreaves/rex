@@ -1,4 +1,5 @@
 language: scala
 scala:
   - 2.10.4
-script: "sbt -J-Xmx4g -J-XX:+UseConcMarkSweepGC coveralls"
+script: "sbt -J-Xmx4g -J-XX:+UseConcMarkSweepGC clean coverage test"
+after_success: "sbt coveralls"
