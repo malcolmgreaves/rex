@@ -64,5 +64,7 @@ packAutoSettings
 
 defaultScalariformSettings
 
-fork := true
+fork := false
+
+parallelExecution in Test := false
 
