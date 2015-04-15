@@ -1,5 +1,5 @@
 language: scala
 scala:
   - 2.10.5
-script: "sbt -J-Xmx4g -J-XX:+UseConcMarkSweepGC test"
-after_success: "sbt -J-Xmx4g -J-XX:+UseConcMarkSweepGC coveralls"
+script: "sbt -J-Xmx2700m -J-XX:+UseConcMarkSweepGC test"
+after_success: "sbt -J-Xmx2700m -J-XX:+UseConcMarkSweepGC coveralls"
