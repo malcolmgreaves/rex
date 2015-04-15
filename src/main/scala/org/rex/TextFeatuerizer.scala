@@ -1,15 +1,15 @@
 package org.rex
 
-import nak.data.{FeatureObservation, Featurizer}
+import nak.data.{ FeatureObservation, Featurizer }
 
 object TextFeatuerizer {
 
   private val nothing = IndexedSeq.empty[String]
 
   def apply(
-             adjacentConf: Option[AdjacentFeatures] = Some(AdjacentFeatures(2)),
-             insideConf: Option[(InsideFeatures, WordFilter)] = Some(InsideFeatures(2, 4), WordFilter.default),
-             wordView: WordView = WordView.default): Featurizer[Candidate, String] =
+    adjacentConf: Option[AdjacentFeatures] = Some(AdjacentFeatures(2)),
+    insideConf: Option[(InsideFeatures, WordFilter)] = Some((InsideFeatures(2, 4), WordFilter.default)),
+    wordView: WordView = WordView.default): Featurizer[Candidate, String] =
 
     new Featurizer[Candidate, String] {
 
@@ -23,15 +23,15 @@ object TextFeatuerizer {
                 fmap + (feature -> 1.0)
             }
           ).map({
-          case (feature, value) =>
-            FeatureObservation[String](feature, value)
-        }).toSeq
+              case (feature, value) =>
+                FeatureObservation[String](feature, value)
+            }).toSeq
 
       private val makeAdjacentFeatures = adjacentConf match {
 
         case Some(AdjacentFeatures(width)) =>
 
-          import AdjacentFeatures.{left, right}
+          import AdjacentFeatures.{ left, right }
 
           @inline def candgen(cand: Candidate): Seq[String] = {
 
@@ -47,14 +47,14 @@ object TextFeatuerizer {
                 (ngramSize: Int) =>
                   Seq(l(ngramSize), r(ngramSize))
 
-              case CandidateCorefQuery(doc, query, _, _, _) =>
+                  case CandidateCorefQuery(doc, query, _, _, _) =>
                 val viewableQWords = viewableWords(doc.sentences(query.sentNum))
                 (ngramSize: Int) => Seq(
                   left(viewableQWords, query.wordIndex)(ngramSize),
                   right(viewableQWords, query.wordIndex)(ngramSize)
                 )
 
-              case CandidateCorefAnswer(doc, _, _, _, answer) =>
+                case CandidateCorefAnswer(doc, _, _, _, answer) =>
                 val viewableAWords = viewableWords(doc.sentences(answer.sentNum))
                 (ngramSize: Int) => Seq(
                   left(viewableAWords, answer.wordIndex)(ngramSize),
@@ -83,19 +83,19 @@ object TextFeatuerizer {
             val innerFiltered =
               (cand.startInnerIndex until cand.endInnerIndex)
                 .flatMap(i =>
-                  if(wf(i))
+                  if (wf(i))
                     Some(cand.innerFromSentence.tokens(i))
                   else
                     None
                 )
 
-            if(innerFiltered.size > 0)
+            if (innerFiltered.size > 0)
               InsideFeatures(inside)(innerFiltered)
             else
               nothing
           }
 
-        case None =>
+          case None =>
           (ignore: Candidate) => nothing
       }
 

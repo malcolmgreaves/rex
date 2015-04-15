@@ -2,11 +2,11 @@ package org.rex
 
 sealed trait Candidate {
 
-  def innerFromSentence:Sentence
+  def innerFromSentence: Sentence
 
-  def startInnerIndex:Int
+  def startInnerIndex: Int
 
-  def endInnerIndex:Int
+  def endInnerIndex: Int
 
   def inner: Seq[String] =
     innerFromSentence.tokens.slice(startInnerIndex, endInnerIndex)
@@ -46,23 +46,23 @@ sealed trait CandidateDocument extends Candidate {
   override final lazy val innerFromSentence =
     doc.sentences(sharedSentNum)
 
-  @inline protected def inner_h(start: Int, finish: Int): Seq[String] =
+  protected def inner_h(start: Int, finish: Int): Seq[String] =
     doc.sentences(sharedSentNum).tokens.slice(start, finish)
 
-  @inline protected def word_h(sentNum: Int, index: Int): String =
+  protected def word_h(sentNum: Int, index: Int): String =
     doc.sentences(sentNum).tokens(index)
 
-  @inline protected def word_h(t: WordTarget): String =
+  protected def word_h(t: WordTarget): String =
     doc.sentences(t.sentNum).tokens(t.wordIndex)
 }
 
 case class WordTarget(sentNum: Int, wordIndex: Int)
 
 case class CandidateCorefQuery(doc: Document,
-                               query: WordTarget,
-                               sharedSentNum: Int,
-                               queryCorefWordIndex: Int,
-                               answerWordIndex: Int) extends CandidateDocument {
+    query: WordTarget,
+    sharedSentNum: Int,
+    queryCorefWordIndex: Int,
+    answerWordIndex: Int) extends CandidateDocument {
 
   private val (start, end) =
     if (queryCorefWordIndex < answerWordIndex)
@@ -81,10 +81,10 @@ case class CandidateCorefQuery(doc: Document,
 }
 
 case class CandidateCorefAnswer(doc: Document,
-                                queryWordIndex: Int,
-                                sharedSentNum: Int,
-                                answerCorefWordIndex: Int,
-                                answer: WordTarget) extends CandidateDocument {
+    queryWordIndex: Int,
+    sharedSentNum: Int,
+    answerCorefWordIndex: Int,
+    answer: WordTarget) extends CandidateDocument {
 
   private val (start, end) =
     if (queryWordIndex < answerCorefWordIndex)

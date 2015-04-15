@@ -1,6 +1,5 @@
 package org.rex
 
-
 import org.scalatest.FunSuite
 
 class CandGenTest extends FunSuite {
@@ -23,7 +22,7 @@ class CandGenTest extends FunSuite {
 
   test("Coreference-based Candidate Generation") {
 
-    val doc = TextProcessorTest.makeTextProcessor().process("", TextProcessorTest.johnSmithText)
+    val doc = TextProcessingUtil.make().process("", TextProcessorTest.johnSmithText)
 
     val mentions = doc.corefMentions.getOrElse(Seq.empty[Coref])
     mentions.map(

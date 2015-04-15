@@ -1,6 +1,6 @@
 package org.rex
 
-import org.scalatest.{BeforeAndAfterAll, FunSuite}
+import org.scalatest.{ BeforeAndAfterAll, FunSuite }
 import edu.arizona.sista.processors.corenlp.CoreNLPProcessor
 
 class TextProcessorTest extends FunSuite with BeforeAndAfterAll {
@@ -11,7 +11,7 @@ class TextProcessorTest extends FunSuite with BeforeAndAfterAll {
 
   override protected def beforeAll() = {
     System.gc()
-    textProcessor = makeTextProcessor()
+    textProcessor = TextProcessingUtil.make()
   }
 
   override protected def afterAll() = {
@@ -48,19 +48,66 @@ class TextProcessorTest extends FunSuite with BeforeAndAfterAll {
 
     import NamedEntitySet.Default4Class._
     NPChunking.testChunk(johnSmithDoc.sentences.zipWithIndex.map(x => (x._1, Some(johnSmithChunked(x._2)))))
+    ()
   }
 
 }
 
 object TextProcessorTest {
 
-  type Error = String
+  /**
+   * Relies upon testing assertions.
+   * If it successeds, then it return Unit.
+   * Otherwise it will fail the test
+   */
+  def testDocument(expectedDoc: Document, processedDoc: Document): Unit = {
 
-  def makeTextProcessor(): TextProcessor =
-    TextProcessor(
-      ProcessingConf(Some(NamedEntitySet.Default4Class.entSet), None),
-      new CoreNLPProcessor(withDiscourse = false)
+    assert(
+      expectedDoc.sentences.size == processedDoc.sentences.size,
+      "sentence count mismatch"
     )
+
+    val sentenceErrors =
+      expectedDoc.sentences.zip(processedDoc.sentences)
+        .zipWithIndex
+        .foldLeft(List.empty[String])({
+
+          case (errors, ((sExpected, sProcessed), index)) =>
+
+            val newErrors = List(
+              // tokens
+              if (sExpected.tokens != sProcessed.tokens)
+                Some(s"expecting sentences to match up on # $index")
+              else
+                None,
+              // NE tags
+              if (sExpected.entities.isDefined && sProcessed.entities.isDefined)
+                if (sExpected.entities.get != sProcessed.entities.get)
+                Some(s"expecting entities to match up on # $index")
+              else
+                None
+              else
+                Some(s"expecting entities to both be defined or undefined for sentence # $index"),
+              // POS tags
+              if (sExpected.tags.isDefined && sProcessed.tags.isDefined)
+                if (sExpected.tags.get != sProcessed.tags.get)
+                Some(s"expecting tags to match up on # $index")
+              else
+                None
+              else
+                Some(s"expecting tags to both be defined or undefined for sentence # $index")
+            )
+
+            errors ++ newErrors.flatten
+        })
+
+    assert(
+      sentenceErrors.isEmpty,
+      s"""expecting no errors in sentence tokens/entities/tags, actually found these ${sentenceErrors.size}: ${sentenceErrors.mkString(" ; ")}"""
+    )
+  }
+
+  type Error = String
 
   val insurgentsText = TextFeatuerizerTest.insurgentsText
   val insurgentsTokens = Seq("Insurgents", "killed", "in", "ongoing", "fighting", ".")
@@ -85,6 +132,39 @@ object TextProcessorTest {
     Seq("PRP", "VBD", "NNP", ",", "IN", "NNP", "JJ", ",", "CD", ".")
   )
   val johnSmithSentences = (0 until johnSmithTokens.size).map(index =>
-      Sentence(johnSmithTokens(index), Some(johnSmithTags(index)), Some(johnSmithEntites(index)))
+    Sentence(johnSmithTokens(index), Some(johnSmithTags(index)), Some(johnSmithEntites(index)))
   )
+  val johnSmithDoc = Document("john smith sentences", johnSmithSentences)
+}
+
+object TextProcessingTest extends org.scalatest.Tag("com.rex.TextProcessingTest")
+
+trait TextProcessingTestSuite extends Serializable {
+
+  var tp: TextProcessor = _
+
+  def textProcessingTest(body: => Any): Unit = {
+    tp = TextProcessingUtil.make()
+
+    try {
+      body
+
+    } finally {
+      tp = null
+      System.gc()
+    }
+
+    ()
+  }
+
+}
+
+object TextProcessingUtil {
+
+  def make(entSet: NamedEntitySet = NamedEntitySet.Default4Class.entSet): TextProcessor =
+    TextProcessor(
+      ProcessingConf(Some(entSet), None),
+      new CoreNLPProcessor(withDiscourse = false)
+    )
+
 }

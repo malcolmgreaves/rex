@@ -1,14 +1,14 @@
 package org.rex.sista
 
-import edu.arizona.sista.processors.{Document, DocumentSerializer}
+import edu.arizona.sista.processors.{ Document, DocumentSerializer }
 import edu.arizona.sista.struct.DirectedGraphEdgeIterator
 import edu.arizona.sista.processors._
 import edu.arizona.sista.processors.fastnlp.FastNLPProcessor
 
 object SistaIntegration {
 
-  def main(args:Array[String]) = {
-    val proc:Processor = new FastNLPProcessor()
+  def main(args: Array[String]) = {
+    val proc: Processor = new FastNLPProcessor()
 
     // for much faster processing, use FastNLPProcessor
     // this processor does not support constituent parsing and coreference resolution, and
@@ -28,7 +28,7 @@ object SistaIntegration {
     println("SERIALIZED DOC:\n" + out)
   }
 
-  def printDoc(doc:Document) {
+  def printDoc(doc: Document) = {
     // let's print the sentence-level annotations
     var sentenceCount = 0
     for (sentence <- doc.sentences) {
@@ -42,11 +42,11 @@ object SistaIntegration {
       sentence.tags.foreach(tags => println("POS tags: " + tags.mkString(" ")))
       sentence.entities.foreach(entities => println("Named entities: " + entities.mkString(" ")))
       sentence.norms.foreach(norms => println("Normalized entities: " + norms.mkString(" ")))
-      sentence.chunks.foreach(chunks => println("Semantic Chunks: "+chunks.mkString(" ")))
+      sentence.chunks.foreach(chunks => println("Semantic Chunks: " + chunks.mkString(" ")))
       sentence.dependencies.foreach(dependencies => {
         println("Syntactic dependencies:")
         val iterator = new DirectedGraphEdgeIterator[String](dependencies)
-        while(iterator.hasNext) {
+        while (iterator.hasNext) {
           val dep = iterator.next
           // note that we use offsets starting at 0 (unlike CoreNLP, which uses offsets starting at 1)
           println(" head:" + dep._1 + " modifier:" + dep._2 + " label:" + dep._3)

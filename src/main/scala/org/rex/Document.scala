@@ -1,36 +1,25 @@
 package org.rex
 
+import language.implicitConversions
+
 import edu.arizona.sista.processors.CorefMention
 
-
-/** Represents a uniquely identifiable ordered sequence of sentences. */
-trait Document {
-  /** Unique identifier for the document. */
-  def id: String
-
-  /** The document's sentences in-order */
-  def sentences: Seq[Sentence]
-
-  /** Pairs of co-referent entities across the sentences in this document. */
-  def corefMentions: Option[Seq[Coref]]
-}
+/**
+ * Represents a uniquely identifiable ordered sequence of sentences.
+ *
+ * @param corefMentions Pairs of co-referent entities across the sentences in this document.
+ */
+case class Document(id: String,
+  sentences: Seq[Sentence],
+  corefMentions: Option[Seq[Coref]] = None)
 
 object Document {
 
-  /** Creates a document using an annonymous class */
-  def apply(docId: String, docSentences: Seq[Sentence], corefMentionz: Option[Seq[Coref]] = None): Document =
-    new Document {
-      override val id = docId
-      override val sentences = docSentences
-      override val corefMentions = corefMentionz
-    }
-
-
-  import edu.arizona.sista.processors.{Document => SistaDocument}
+  import edu.arizona.sista.processors.{ Document => SistaDocument }
 
   /** Converts a edu.arizaona.sista.processors.Document into a org.rex.Document in a straightforward manner. */
   implicit def sistaDoc2Doc(idAndDoc: (String, SistaDocument)): Document =
-    apply(
+    Document(
       idAndDoc._1,
       idAndDoc._2.sentences.map(Sentence.sistaSentence2Sentence).toSeq,
       idAndDoc._2.coreferenceChains.map(chains =>
@@ -42,93 +31,81 @@ object Document {
 
 }
 
-trait Sentence {
-  /** Every token in the sentence, in-order */
-  def tokens: Seq[String]
-
-  /** If present, has the part-of-speech tag information for each token. */
-  def tags: Option[Seq[String]]
-
-  /** If present, has the named entity information for each token. */
-  def entities: Option[Seq[String]]
-}
+/**
+ * Represents a sentence of words, each with possible tags.
+ *
+ * @param tokens Every token in the sentence, in-order.
+ * @param tags If present, has the part-of-speech tag information for each token.
+ * @param entities If present, has the named entity information for each token.
+ */
+case class Sentence(tokens: Seq[String],
+  tags: Option[Seq[String]] = None,
+  entities: Option[Seq[String]] = None)
 
 object Sentence {
 
-  /** Creates a sentence using an anoymous class. */
-  def apply(sTokens: Seq[String],
-            sTags: Option[Seq[String]] = None,
-            sEntites: Option[Seq[String]] = None): Sentence =
-    new Sentence {
-      override val tokens = sTokens
-      override val tags = sTags
-      override val entities = sEntites
-    }
-
-  /** If present, is the sentence tokens combined based upon the entity information.
-    *
-    * Successive tokens with the samed named entity label are combined into a single token.
-    * Space (" ") is inserted between each combined token.
-    * */
+  /**
+   * If present, is the sentence tokens combined based upon the entity information.
+   *
+   * Successive tokens with the samed named entity label are combined into a single token.
+   * Space (" ") is inserted between each combined token.
+   */
   def chunkTokens(s: Sentence)(implicit entSet: NamedEntitySet): Option[Seq[String]] =
     s.entities.map(ents =>
 
-      if(ents.size <= 1){
+      if (ents.size <= 1) {
         ents
 
       } else {
         val (allChunked, _, lastWorkingSeq) =
           ents.slice(1, ents.size).zip(s.tokens.slice(1, s.tokens.size))
-            .foldLeft((Seq.empty[String], ents(0), Seq(s.tokens(0))))({
+            .foldLeft((Seq.empty[String], ents.head, Seq(s.tokens.head)))({
 
-            case ((chunked, previousEnt, workingSeq), (entity, token)) =>
+              case ((chunked, previousEnt, workingSeq), (entity, token)) =>
 
-              val isNonEnt = entity == entSet.nonEntityTag
+                val isNonEnt = entity == entSet.nonEntityTag
 
-              val continueToChunk = !isNonEnt && previousEnt == entity
+                val continueToChunk = !isNonEnt && previousEnt == entity
 
-              val updatedWorkingSeq =
-                if (continueToChunk)
-                  workingSeq :+ token
-                else
-                  Seq(token)
+                val updatedWorkingSeq =
+                  if (continueToChunk)
+                    workingSeq :+ token
+                  else
+                    Seq(token)
 
-              val updatedChunk = {
-                val c =
-                  if (!continueToChunk)
-                    if (workingSeq.size > 0)
-                      chunked :+ workingSeq.mkString(" ")
+                val updatedChunk = {
+                  val c =
+                    if (!continueToChunk)
+                      if (workingSeq.size > 0)
+                        chunked :+ workingSeq.mkString(" ")
+                      else
+                        chunked
                     else
                       chunked
-                  else
-                    chunked
 
-                c
-//                if (isNonEnt) c :+ token else c
-              }
+                  c
+                  //                if (isNonEnt) c :+ token else c
+                }
 
-              (updatedChunk, entity, updatedWorkingSeq)
-          })
+                (updatedChunk, entity, updatedWorkingSeq)
+            })
 
-        if(lastWorkingSeq.isEmpty)
+        if (lastWorkingSeq.isEmpty)
           allChunked
         else
           allChunked :+ lastWorkingSeq.mkString(" ")
       }
     )
 
-
-
-  import edu.arizona.sista.processors.{Sentence => SistaSentence}
+  import edu.arizona.sista.processors.{ Sentence => SistaSentence }
 
   /** Converts a edu.arizaona.sista.processors.Sentence into a org.rex.Sentence in a straightforward manner. */
   implicit def sistaSentence2Sentence(s: SistaSentence): Sentence =
-    apply(s.words, s.tags.map(_.toSeq), s.entities.map(_.toSeq))
+    Sentence(s.words, s.tags.map(_.toSeq), s.entities.map(_.toSeq))
 
 }
 
-
-trait Coref {
+trait Coref extends Serializable {
   /** A chain of mentions, all of which have been determined to be coreferent. */
   def mentions: Seq[Mention]
 }
@@ -140,7 +117,7 @@ object Coref {
     }
 }
 
-trait Mention {
+trait Mention extends Serializable {
   /** The number, or index, for the sentence in an associated Document. */
   def sentenceNum: Int
 

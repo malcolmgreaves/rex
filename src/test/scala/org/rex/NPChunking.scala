@@ -4,12 +4,12 @@ import org.scalatest.FunSuite
 import org.rex.TextProcessorTest._
 import scala.Some
 
-class NPChunking extends FunSuite  {
+class NPChunking extends FunSuite {
 
   import NPChunking._
   import TextProcessorTest._
 
-  test("NP chunking from text"){
+  test("NP chunking from text") {
     import NamedEntitySet.Default4Class._
     val errors = testChunk(johnSmithSentences.zipWithIndex.map(x => (x._1, Some(johnSmithChunked(x._2)))))
     if (errors.size > 0)
@@ -31,5 +31,4 @@ object NPChunking {
     })
 
 }
-
 

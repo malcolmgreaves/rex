@@ -4,7 +4,9 @@ version := "0.1"
 
 organization := "mwg"
 
-scalaVersion := "2.10.4"
+scalaVersion := "2.10.5"
+
+val jvm = "1.7"
 
 resolvers ++= Seq(
   "Sonatype Releases" at "https://oss.sonatype.org/content/repositories/releases/",
@@ -15,12 +17,6 @@ resolvers ++= Seq(
 )
 
 libraryDependencies ++= Seq(
-  // JSON
-  "com.propensive" %% "rapture-core" % "1.0.0",
-  "com.propensive" %% "rapture-json-jackson" % "1.0.8",
-  "com.propensive" %% "rapture-uri" % "1.0.0",
-  "com.propensive" %% "rapture-codec" % "1.0.0",
-  "com.propensive" %% "rapture-net" % "0.10.0",
   // NLP
   "edu.arizona.sista" % "processors" % "3.3",
   "edu.arizona.sista" % "processors" % "3.3" classifier "models",
@@ -36,6 +32,26 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "2.2.1" % "test"
 )
 
+scalacOptions ++= Seq(
+  "-optimize",
+  s"-target:jvm-$jvm",
+  "-deprecation",
+  "-encoding", "UTF-8",
+  "-feature",
+  "-language:existentials",
+  "-language:higherKinds",
+  "-language:implicitConversions",
+  "-language:experimental.macros",
+  "-unchecked",
+  "-Xfatal-warnings",
+  "-Xlint",
+  "-Yno-adapted-args",
+  "-Ywarn-dead-code",
+  "-Ywarn-value-discard",
+  "-Xfuture",
+  "-Yinline-warnings"
+)
+
 testOptions += Tests.Argument(TestFrameworks.JUnit, "-v")
 
 testOptions in Test += Tests.Argument("-oF")
@@ -46,5 +62,7 @@ CoverallsPlugin.coverallsSettings
 
 packAutoSettings
 
-fork := false
+defaultScalariformSettings
+
+fork := true
 

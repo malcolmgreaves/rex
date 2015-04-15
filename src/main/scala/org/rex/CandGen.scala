@@ -13,12 +13,12 @@ case class SentenceCandGen(wordFilter: WordFilter) extends CandGen {
 
       val filtWordIndices = s.tokens.zipWithIndex
         .flatMap({
-        case (word, index) =>
-          if (wf(index))
-            Some(index)
-          else
-            None
-      })
+          case (word, index) =>
+            if (wf(index))
+              Some(index)
+            else
+              None
+        })
 
       filtWordIndices.flatMap(queryIndex =>
         filtWordIndices.flatMap(answerIndex =>
@@ -41,7 +41,7 @@ case class CorefCandGen(wf: WordFilter)(implicit entSet: NamedEntitySet) extends
         corefMentions
           .filter(_.mentions.size >= 2)
           .flatMap(coref =>
-            (0 until coref.mentions.size-1)
+            (0 until coref.mentions.size - 1)
               .map(i => (i, i + 1))
               .flatMap({
                 case (mi, mj) =>
@@ -56,29 +56,29 @@ case class CorefCandGen(wf: WordFilter)(implicit entSet: NamedEntitySet) extends
                         .flatMap(index =>
                           if (index < referent.from || index >= referent.until)
                             Seq(
-                              CandidateCorefQuery(
-                                doc,
-                                WordTarget(original.sentenceNum, original.from),
-                                referent.sentenceNum,
-                                referent.from,
-                                index
-                              ),
-                              CandidateCorefAnswer(
-                                doc,
-                                index,
-                                referent.sentenceNum,
-                                referent.from,
-                                WordTarget(original.sentenceNum, original.from)
-                              )
+                            CandidateCorefQuery(
+                              doc,
+                              WordTarget(original.sentenceNum, original.from),
+                              referent.sentenceNum,
+                              referent.from,
+                              index
+                            ),
+                            CandidateCorefAnswer(
+                              doc,
+                              index,
+                              referent.sentenceNum,
+                              referent.from,
+                              WordTarget(original.sentenceNum, original.from)
                             )
+                          )
                           else
                             Seq.empty[CandidateDocument]
                         )
                     )
                   else
                     None
-            })
-        ).flatten
+              })
+          ).flatten
 
       case None =>
         Seq.empty[CandidateDocument]

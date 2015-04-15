@@ -20,6 +20,12 @@ We recommend using the following configuration for sbt:
 
     sbt -J-XX:MaxPermSize=768m -J-Xmx2g -J-XX:+UseConcMarkSweepGC -J-XX:+CMSClassUnloadingEnabled
 
+Also export this enviornment variable before running tests:
+
+    export SPARK_CONF_DIR=/Users/mgreaves/rex/src/main/resources
+
+It will limit the logging output.
+
 LICENSE
 =======
 Everything within this repository is copyright (b2015) by Malcolm Greaves.
