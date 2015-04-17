@@ -7,9 +7,12 @@ import edu.arizona.sista.processors.CorefMention
 /**
  * Represents a uniquely identifiable ordered sequence of sentences.
  *
+ * @param id A unique identifier for this document.
+ * @param sentences The document's sentences, in-order.
  * @param corefMentions Pairs of co-referent entities across the sentences in this document.
  */
-case class Document(id: String,
+case class Document(
+  id: String,
   sentences: Seq[Sentence],
   corefMentions: Option[Seq[Coref]] = None)
 
@@ -28,7 +31,6 @@ object Document {
         ).toSeq
       )
     )
-
 }
 
 /**
@@ -38,7 +40,8 @@ object Document {
  * @param tags If present, has the part-of-speech tag information for each token.
  * @param entities If present, has the named entity information for each token.
  */
-case class Sentence(tokens: Seq[String],
+case class Sentence(
+  tokens: Seq[String],
   tags: Option[Seq[String]] = None,
   entities: Option[Seq[String]] = None)
 
@@ -50,52 +53,62 @@ object Sentence {
    * Successive tokens with the samed named entity label are combined into a single token.
    * Space (" ") is inserted between each combined token.
    */
-  def chunkTokens(s: Sentence)(implicit entSet: NamedEntitySet): Option[Seq[String]] =
+  def chunkTokens(s: Sentence)(implicit entSet: NamedEntitySet): Option[Seq[String]] = {
+
     s.entities.map(ents =>
 
       if (ents.size <= 1) {
-        ents
+        s.tokens
 
       } else {
-        val (allChunked, _, lastWorkingSeq) =
-          ents.slice(1, ents.size).zip(s.tokens.slice(1, s.tokens.size))
-            .foldLeft((Seq.empty[String], ents.head, Seq(s.tokens.head)))({
 
-              case ((chunked, previousEnt, workingSeq), (entity, token)) =>
+        val (chunkedIndices, _, lastWorkingIndices) =
+          ents.slice(1, ents.size).zip(s.tokens.slice(1, s.tokens.size))
+            .zipWithIndex
+            .map({ case ((e, t), indexMinus1) => (e, t, indexMinus1 + 1) })
+            .foldLeft((Seq.empty[Seq[Int]], ents.head, Seq(0)))({
+
+              case ((indicesChunked, previousEnt, workingIndices), (entity, token, index)) =>
 
                 val isNonEnt = entity == entSet.nonEntityTag
 
                 val continueToChunk = !isNonEnt && previousEnt == entity
 
-                val updatedWorkingSeq =
+                val updatedWorkingIndices =
                   if (continueToChunk)
-                    workingSeq :+ token
+                    workingIndices :+ index
                   else
-                    Seq(token)
+                    Seq(index)
 
-                val updatedChunk = {
-                  val c =
-                    if (!continueToChunk)
-                      if (workingSeq.size > 0)
-                        chunked :+ workingSeq.mkString(" ")
-                      else
-                        chunked
+                val updatedIndices =
+                  if (!continueToChunk)
+                    if (workingIndices.size > 0)
+                      indicesChunked :+ workingIndices
                     else
-                      chunked
+                      indicesChunked
+                  else
+                    indicesChunked
 
-                  c
-                  //                if (isNonEnt) c :+ token else c
-                }
-
-                (updatedChunk, entity, updatedWorkingSeq)
+                (updatedIndices, entity, updatedWorkingIndices)
             })
 
-        if (lastWorkingSeq.isEmpty)
-          allChunked
-        else
-          allChunked :+ lastWorkingSeq.mkString(" ")
+        val allChunkedIndices =
+          if (lastWorkingIndices.isEmpty)
+            chunkedIndices
+          else
+            chunkedIndices :+ lastWorkingIndices
+
+        allChunkedIndices
+          .foldLeft(Seq.empty[String])({
+
+            case (newChunkedTokens, indices) =>
+              newChunkedTokens :+ indices.map(index => s.tokens(index)).mkString(" ")
+          })
+
       }
     )
+
+  }
 
   import edu.arizona.sista.processors.{ Sentence => SistaSentence }
 
@@ -105,39 +118,24 @@ object Sentence {
 
 }
 
-trait Coref extends Serializable {
-  /** A chain of mentions, all of which have been determined to be coreferent. */
-  def mentions: Seq[Mention]
-}
+/**
+ * Encapsulates information about many related co-referent mentions.
+ *
+ * @param mentions A chain of mentions, all of which have been determined to be coreferent.
+ */
+case class Coref(mentions: Seq[Mention]) extends Serializable
 
-object Coref {
-  def apply(corefMentions: Seq[Mention]): Coref =
-    new Coref {
-      override val mentions = corefMentions
-    }
-}
-
-trait Mention extends Serializable {
-  /** The number, or index, for the sentence in an associated Document. */
-  def sentenceNum: Int
-
-  /** The index that the mention starts on. */
-  def from: Int
-
-  /** The index immediately after the end of the mention. */
-  def until: Int
-}
+/**
+ * Encapsulates the information of a co-reference mention.
+ *
+ * @param sentenceNum The number, or index, for the sentence in an associated Document.
+ * @param from The index that the mention starts on.
+ * @param until The index immediately after the end of the mention.
+ */
+case class Mention(sentenceNum: Int, from: Int, until: Int) extends Serializable
 
 object Mention {
 
-  def apply(sentNum: Int, fromIndex: Int, untilIndexP1: Int): Mention =
-    new Mention {
-      override val sentenceNum = sentNum
-      override val from = fromIndex
-      override val until = untilIndexP1
-    }
-
   implicit def sistaCorefMention2Mention(cm: CorefMention): Mention =
-    apply(cm.sentenceIndex, cm.headIndex, cm.endOffset)
-
+    Mention(cm.sentenceIndex, cm.headIndex, cm.endOffset)
 }

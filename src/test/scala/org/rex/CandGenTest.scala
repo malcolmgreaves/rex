@@ -8,10 +8,10 @@ class CandGenTest extends FunSuite {
 
   test("Simple Sentence Candidate Generation") {
 
-    val createdCandidates = SentenceCandGen(passthruWordFilter).candidates(insurgentsDoc).toSet
+    val createdCandidates = sentenceCandGenAllWord.candidates(insurgentsDoc).toSet
 
-    val diff = insurgentsCandidatesSentence.diff(createdCandidates)
-    val intersection = insurgentsCandidatesSentence.intersect(createdCandidates)
+    val diff = insurgentsCandidatesSentence.toSet.diff(createdCandidates)
+    val intersection = insurgentsCandidatesSentence.toSet.intersect(createdCandidates)
 
     val test = diff.size == 0 && intersection.size == insurgentsCandidatesSentence.size && intersection.size == createdCandidates.size
     assert(test,
@@ -20,9 +20,11 @@ class CandGenTest extends FunSuite {
     )
   }
 
-  test("Coreference-based Candidate Generation") {
+  ignore("Coreference-based Candidate Generation") {
 
-    val doc = TextProcessingUtil.make().process("", TextProcessorTest.johnSmithText)
+    // TODO CLEAN UP println STATEMENTS !!
+
+    val doc = TextProcessorTest.makeProcessor().process("", TextProcessorTest.johnSmithText)
 
     val mentions = doc.corefMentions.getOrElse(Seq.empty[Coref])
     mentions.map(
@@ -31,23 +33,22 @@ class CandGenTest extends FunSuite {
         .mkString(" ; ")
     ).foreach(println)
 
-    val candidates = {
-      import NamedEntitySet.Default4Class.entSet
-      CorefCandGen(WordFilter.default).candidates(doc)
-    }
-    println(s"${candidates.size} candidates")
-    candidates.foreach(cd =>
-      println(s"Query: ${cd.queryW} , Answer: ${cd.answerW} :: inside: ${cd.inner}")
-    )
+    //    val candidates = {
+    //      import NamedEntitySet.Default4Class.entSet
+    //      CorefCandGen(WordFilter.default).candidates(doc)
+    //    }
+    //    println(s"${candidates.size} candidates")
+    //    candidates.foreach(cd =>
+    //      println(s"Query: ${cd.queryW} , Answer: ${cd.answerW} :: inside: ${cd.inner}")
+    //    )
+    ???
   }
 
 }
 
 object CandGenTest {
 
-  val passthruWordFilter = new WordFilter {
-    override def apply(s: Sentence)(i: Int): Boolean = true
-  }
+  val sentenceCandGenAllWord = SentenceCandGen(WordFilter.permitAll)
 
   import TextFeatuerizerTest._
 
@@ -55,7 +56,7 @@ object CandGenTest {
 
   val insurgentsDoc = Document("insurgents", IndexedSeq(insurgentsSentence))
 
-  val insurgentsCandidatesSentence = Set(
+  val insurgentsCandidatesSentence = Seq(
     CandidateSentence(insurgentsSentence, 0, 1),
     CandidateSentence(insurgentsSentence, 0, 2),
     CandidateSentence(insurgentsSentence, 0, 3),

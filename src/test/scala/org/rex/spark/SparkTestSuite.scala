@@ -1,6 +1,9 @@
 package org.rex.spark
 
-import org.apache.log4j.{ Logger, Level }
+import java.io.File
+
+import org.apache.log4j.helpers.LogLog
+import org.apache.log4j.{ LogManager, Logger, Level }
 import org.apache.spark.{ SparkConf, SparkContext }
 import org.scalatest.FunSuite
 
@@ -23,7 +26,8 @@ trait SparkTestSuite extends FunSuite {
    */
   def sparkTest(name: String, silenceSpark: Boolean = true)(body: => Unit) =
     test(name, SparkTest) {
-      val origLogLevels = Option(if (silenceSpark) SparkUtil.silenceSpark() else null)
+
+      SparkUtil.silenceLogging()
 
       sc = new SparkContext(
         new SparkConf()
@@ -39,38 +43,28 @@ trait SparkTestSuite extends FunSuite {
       } finally {
         sc.stop()
         sc = null
-        // To avoid Akka rebinding to the same port, since it doesn't unbind immediately on shutdown
+        // To avoid Akka rebinding to the vim bu  ame port, since it doesn't unbind immediately on shutdown
         System.clearProperty("spark.master.port")
-        origLogLevels.foreach(SparkUtil.setLogLevels)
         System.gc()
       }
     }
 
-  def ignoreSparkTest(name: String, ignored: Boolean = true)(body: => Unit) =
-    ignore(name, SparkTest) {
-      try { body }
-    }
+  def ignoreSparkTest(name: String, logIgnored: Boolean = true)(bodyIgnored: => Unit) =
+    ignore(name, SparkTest) { /* test is ignored, so doesn't matter what we do! */ }
 
 }
 
 object SparkUtil {
 
-  def silenceSpark(): Map[String, Level] =
-    setLogLevels(Level.WARN, Seq("spark", "org.eclipse.jetty", "akka"))
+  lazy val logFileCompletePath =
+    Seq("src", "main", "resources", "log4j.properties")
+      .foldLeft(new File("."))({ case (fi, part) => new File(fi, part) })
+      .getCanonicalPath
 
-  def setLogLevels(level: org.apache.log4j.Level, loggers: TraversableOnce[String]): Map[String, Level] =
-    loggers.map {
-      loggerName =>
-        val logger = Logger.getLogger(loggerName)
-        println(s"logger for $loggerName: $logger")
-        val prevLevel = logger.getLevel
-        logger.setLevel(level)
-        loggerName -> prevLevel
-    }.toMap
-
-  def setLogLevels(loggerAndLevel: Map[String, Level]): Unit =
-    loggerAndLevel.foreach({
-      case (loggerName, level) => Logger.getLogger(loggerName).setLevel(level)
-    })
+  def silenceLogging(): Unit = {
+    org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME)
+      .asInstanceOf[ch.qos.logback.classic.Logger]
+      .setLevel(ch.qos.logback.classic.Level.WARN)
+  }
 
 }

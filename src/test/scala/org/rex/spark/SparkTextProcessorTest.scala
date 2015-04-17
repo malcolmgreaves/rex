@@ -1,6 +1,8 @@
 package org.rex.spark
 
-import org.rex.{ TextProcessingUtil, TextProcessorTest }
+import org.rex.TextProcessorTest
+
+import SparkModules._
 
 class SparkTextProcessorTest extends SparkTestSuite {
 
@@ -10,9 +12,7 @@ class SparkTextProcessorTest extends SparkTestSuite {
 
     val data = sc.parallelize(Seq(("JohnSmithSentence", johnSmithText)))
 
-    val sparkTextProcessor = SparkTextProcessor(KryoSerializationWrapper(TextProcessingUtil.make())) _
-
-    val processedRdd = data.map(sparkTextProcessor)
+    val processedRdd = SparkTextProcessor(KryoSerializationWrapper(makeProcessor()))(data)
 
     assert(processedRdd.count == data.count)
 

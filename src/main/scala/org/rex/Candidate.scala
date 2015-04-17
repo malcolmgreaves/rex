@@ -1,5 +1,9 @@
 package org.rex
 
+/**
+ * Type that representes a candidate answer to a given query.
+ * Contains linguistic information surrounding this (query,answer) pair.
+ */
 sealed trait Candidate {
 
   def innerFromSentence: Sentence
@@ -16,6 +20,9 @@ sealed trait Candidate {
   def answerW: String
 }
 
+/**
+ * A candidate where the query and answer are contained within the same sentence.
+ */
 case class CandidateSentence(s: Sentence, queryIndex: Int, answerIndex: Int) extends Candidate {
 
   override lazy val innerFromSentence =
@@ -27,7 +34,7 @@ case class CandidateSentence(s: Sentence, queryIndex: Int, answerIndex: Int) ext
     else
       (answerIndex, queryIndex)
 
-  override val startInnerIndex = start
+  override val startInnerIndex = start + 1
   override val endInnerIndex = end
 
   override lazy val queryW =
@@ -37,6 +44,10 @@ case class CandidateSentence(s: Sentence, queryIndex: Int, answerIndex: Int) ext
     s.tokens(answerIndex)
 }
 
+/**
+ * A candidate where the query and answer come from different sentences
+ * contained within the same document.
+ */
 sealed trait CandidateDocument extends Candidate {
 
   def doc: Document
@@ -58,7 +69,13 @@ sealed trait CandidateDocument extends Candidate {
 
 case class WordTarget(sentNum: Int, wordIndex: Int)
 
-case class CandidateCorefQuery(doc: Document,
+/**
+ * The Query is coreferent with a word Q. This word, Q, is in a sentence
+ * that contains the answer. To access Q, do:
+ *   doc.sentences(sharedSentNum).tokens(queryCorefWordIndex)
+ */
+case class CandidateCorefQuery(
+    doc: Document,
     query: WordTarget,
     sharedSentNum: Int,
     queryCorefWordIndex: Int,
@@ -70,7 +87,7 @@ case class CandidateCorefQuery(doc: Document,
     else
       (answerWordIndex, queryCorefWordIndex)
 
-  override val startInnerIndex = start
+  override val startInnerIndex = start + 1
   override val endInnerIndex = end
 
   override lazy val queryW =
@@ -80,6 +97,11 @@ case class CandidateCorefQuery(doc: Document,
     word_h(sharedSentNum, answerWordIndex)
 }
 
+/**
+ * The answer is coreferent with another word A. A is in a sentence that contains the query.
+ * To access the word A, do:
+ *   doc.sentences(sharedSentNum).tokens(answerCorefWordIndex)
+ */
 case class CandidateCorefAnswer(doc: Document,
     queryWordIndex: Int,
     sharedSentNum: Int,
@@ -92,7 +114,7 @@ case class CandidateCorefAnswer(doc: Document,
     else
       (answerCorefWordIndex, queryWordIndex)
 
-  override val startInnerIndex = start
+  override val startInnerIndex = start + 1
   override val endInnerIndex = end
 
   override lazy val queryW =

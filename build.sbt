@@ -17,13 +17,16 @@ resolvers ++= Seq(
 )
 
 libraryDependencies ++= Seq(
+  // visualization
+  "com.quantifind" %% "wisp" % "0.0.1",
   // NLP
   "edu.arizona.sista" % "processors" % "3.3",
   "edu.arizona.sista" % "processors" % "3.3" classifier "models",
   // "org.scalanlp" % "chalk" % "1.2.0",
   // Concurrent 
   "org.apache.spark" %% "spark-core" % "1.2.0",
-  // ML
+  // math
+  "org.spire-math" %% "spire" % "0.9.1",
   "org.apache.spark" %% "spark-mllib" % "1.2.0",
   "org.scalanlp" % "breeze-core_2.10" % "0.4",
   "org.scalanlp" % "breeze-math_2.10" % "0.4",
@@ -32,8 +35,7 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "2.2.1" % "test"
 )
 
-scalacOptions ++= Seq(
-  "-optimize",
+val customScalacOptions = Seq(
   s"-target:jvm-$jvm",
   "-deprecation",
   "-encoding", "UTF-8",
@@ -51,6 +53,8 @@ scalacOptions ++= Seq(
   "-Xfuture",
   "-Yinline-warnings"
 )
+
+scalacOptions ++= (customScalacOptions :+ "-optimize")
 
 testOptions += Tests.Argument(TestFrameworks.JUnit, "-v")
 

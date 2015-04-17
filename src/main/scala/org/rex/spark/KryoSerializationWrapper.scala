@@ -21,11 +21,8 @@ import org.apache.spark.{ SparkConf, SparkEnv }
  */
 object KryoSerializationWrapper {
 
-  def apply[T: ClassTag](value: T): KryoSerializationWrapper[T] = {
-    val wrapper = new KryoSerializationWrapper[T]
-    wrapper.setValue(value)
-    wrapper
-  }
+  def apply[T: ClassTag](value: T): KryoSerializationWrapper[T] =
+    new KryoSerializationWrapper[T](value) {}
 }
 
 /**
@@ -37,8 +34,21 @@ object KryoSerializationWrapper {
  * Note that the value contained in the wrapper is mutable. It must be
  * initialized using Java Serialization (which calls a private readObject
  * method that does the byte-by-byte deserialization).
+ *
+ * Also note that this class is both abstract and sealed. The only valid place
+ * to create such a wrapper is the companion object's apply method.
  */
-final class KryoSerializationWrapper[T: ClassTag] extends Serializable {
+sealed abstract class KryoSerializationWrapper[T: ClassTag] extends Serializable {
+  // initialValue
+  // MUST BE TRANSIENT SO THAT IT IS NOT SERIALIZED
+
+  /**
+   * The only valid constructor. For safety, do not use the no-arg constructor.
+   */
+  def this(initialValue: T) = {
+    this()
+    value = initialValue
+  }
 
   // the wrapped value
   // MUST BE TRANSIENT SO THAT IT IS NOT SERIALIZED
@@ -86,7 +96,7 @@ final class KryoSerializationWrapper[T: ClassTag] extends Serializable {
     }
 
   // Used for Java serialization.
-  private def writeObject(out: java.io.ObjectOutputStream) {
+  private def writeObject(out: java.io.ObjectOutputStream): Unit = {
     if (!doneSerialization) {
       doSerializeValue()
     }
@@ -94,7 +104,7 @@ final class KryoSerializationWrapper[T: ClassTag] extends Serializable {
   }
 
   // Used for Java Deserialization
-  private def readObject(in: java.io.ObjectInputStream) {
+  private def readObject(in: java.io.ObjectInputStream): Unit = {
     in.defaultReadObject()
     doDeserializeValue()
   }

@@ -18,20 +18,6 @@ trait TextProcessor extends Serializable {
   def process(id: String, text: String): Document
 }
 
-class PrebuiltTextProcessor extends TextProcessor {
-
-  private val x = TextProcessor(
-    ProcessingConf(Some(NamedEntitySet.Default4Class.entSet), None),
-    new CoreNLPProcessor(withDiscourse = false)
-  )
-
-  /** Context for text processing. Can include information about NER and POS tags. */
-  def conf: ProcessingConf = x.conf
-
-  /** Converts a block of text into a Document with the input id. */
-  def process(id: String, text: String): Document = x.process(id, text)
-}
-
 object TextProcessor {
 
   // implicit conversion from a Sista project Document type to a REx project Document

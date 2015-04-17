@@ -1,25 +1,32 @@
 package org.rex.spark
 
 import nak.data.{ FeatureObservation, Featurizer }
+import org.apache.spark.rdd.RDD
 import org.rex.{ Candidate, CandGen, TextProcessor, Document }
 
-object SparkTextProcessor {
+object SparkModules {
 
-  type Id = String
-  type Text = String
+  object SparkTextProcessor {
 
-  def apply(serialized: KryoSerializationWrapper[TextProcessor])(input: (Id, Text)): Document =
-    serialized.getValue.process(input._1, input._2)
-}
+    type Id = String
+    type Text = String
 
-object SparkCandGen {
+    def apply(serialized: KryoSerializationWrapper[TextProcessor])(data: RDD[(Id, Text)]): RDD[Document] =
+      data
+        .mapPartitions(partition => {
+          val tp = serialized.getValue
+          partition.map({ case (id, text) => tp.process(id, text) })
+        })
+  }
 
-  def apply(serialized: KryoSerializationWrapper[CandGen])(input: Document): Seq[Candidate] =
-    serialized.getValue.candidates(input)
-}
+  object SparkCandGen {
 
-object SparkFeatuerizer {
+    def apply(serialized: KryoSerializationWrapper[CandGen])(data: RDD[Document]): RDD[Seq[Candidate]] =
+      data
+        .mapPartitions(partition => {
+          val candGen = serialized.getValue
+          partition.map(candGen.candidates)
+        })
+  }
 
-  def apply(serialized: KryoSerializationWrapper[Featurizer[Candidate, String]])(input: Candidate): Seq[FeatureObservation[String]] =
-    serialized.getValue.apply(input)
 }
