@@ -14,6 +14,7 @@ class SparkCandGenTest extends SparkTestSuite {
 
     val createdCandidatesRDD =
       SparkCandGen(KryoSerializationWrapper(SentenceCandGen(WordFilter.noKnownPunct)))(data)
+        .map(_._2)
         .filter(_.forall(_.isInstanceOf[CandidateSentence]))
         .map(_.map(_.asInstanceOf[CandidateSentence]))
 
@@ -24,7 +25,11 @@ class SparkCandGenTest extends SparkTestSuite {
     val diff = insurgentsCandidatesSentence.toSet.diff(createdCandidates)
     val intersection = insurgentsCandidatesSentence.toSet.intersect(createdCandidates)
 
-    val test = diff.size == 0 && intersection.size == insurgentsCandidatesSentence.size && intersection.size == createdCandidates.size
+    val test =
+      diff.size == 0 &&
+        intersection.size == insurgentsCandidatesSentence.size &&
+        intersection.size == createdCandidates.size
+
     assert(test,
       s"""Candidates did not match. Expecting ${insurgentsCandidatesSentence.size} actually have ${createdCandidates.size} candidates.\n""" +
         s"""Difference: "${diff.mkString(" : ")}"\nIntersection: "${intersection.mkString(" : ")}""""

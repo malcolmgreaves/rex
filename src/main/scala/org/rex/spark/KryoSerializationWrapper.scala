@@ -22,7 +22,7 @@ import org.apache.spark.{ SparkConf, SparkEnv }
 object KryoSerializationWrapper {
 
   def apply[T: ClassTag](value: T): KryoSerializationWrapper[T] =
-    new KryoSerializationWrapper[T](value) {}
+    new KryoSerializationWrapper[T](value, true) {}
 }
 
 /**
@@ -45,9 +45,9 @@ sealed abstract class KryoSerializationWrapper[T: ClassTag] extends Serializable
   /**
    * The only valid constructor. For safety, do not use the no-arg constructor.
    */
-  def this(initialValue: T) = {
+  def this(initialValue: T, serializeImmediately: Boolean = true) = {
     this()
-    value = initialValue
+    setValue(initialValue, serializeImmediately)
   }
 
   // the wrapped value

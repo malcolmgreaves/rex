@@ -5,7 +5,7 @@ import scala.language.implicitConversions
 /**
  * Evaluates to true iff the word at position i in sentence s should be accepted.
  */
-trait WordFilter {
+trait WordFilter extends Serializable {
   def apply(s: Sentence)(i: Int): Boolean
 }
 
