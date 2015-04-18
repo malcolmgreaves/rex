@@ -1,6 +1,6 @@
 package org.rex.spark
 
-import org.rex.{ TextProcessorTest, DataPipelineTest }
+import org.rex._
 
 class SparkDataPipelineTest extends SparkTestSuite {
 
@@ -10,11 +10,20 @@ class SparkDataPipelineTest extends SparkTestSuite {
 
   sparkTest("spark data pipeline test") {
 
-    val pipeline = SparkDataPipeline(makeProcessor())(sentCGNoKnownPunct)(featuerizer2skip2gram2gram)
+    val pipeline = SparkDataPipeline(makeProcessor())(IdentityDocChunker)(sentCGNoKnownPunct)(featuerizer2skip2gram2gram)
 
     val errors =
       checkPipelineOutput(
         pipeline(sc.parallelize(idTextData))
+          .map({
+            case (id, x) =>
+              (
+                id,
+                DataPipeline.aggregateFeatureObservations(
+                  x.map(_._2).flatten
+                )
+              )
+          })
           .filter(_._2.nonEmpty)
           .collect().toSeq,
         idFeatureObs

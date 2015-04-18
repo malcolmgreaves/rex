@@ -4,37 +4,31 @@ import nak.data.FeatureObservation
 
 import scala.language.implicitConversions
 
-trait DataPipeline extends ((String, String) => Seq[FeatureObservation[String]])
+trait DataPipeline extends ((String, String) => Seq[(Candidate, Seq[FeatureObservation[String]])])
 
 object DataPipeline {
 
-  implicit class FnDataPipeline(f: (String, String) => Seq[FeatureObservation[String]]) extends DataPipeline {
-    override def apply(id: String, text: String): Seq[FeatureObservation[String]] = f(id, text)
+  implicit class FnDataPipeline(
+      f: (String, String) => Seq[(Candidate, Seq[FeatureObservation[String]])]) extends DataPipeline {
+    override def apply(id: String, text: String) = f(id, text)
   }
 
-  def apply(tp: TextProcessor)(cg: CandGen)(tf: TextFeatuerizer): DataPipeline =
+  def apply(tp: TextProcessor)(dk: DocumentChunker)(cg: CandGen)(tf: TextFeatuerizer): DataPipeline =
     (id: String, text: String) =>
-      aggregateFeatureObservations(cg.candidates(tp.process(id, text)).map(tf))
+      cg.candidates(dk(tp.process(id, text)))
+        .map(c => (c, aggregateFeatureObservations(tf(c))))
 
-  type FeatureValues = Seq[FeatureObservation[String]]
-
-  def aggregateFeatureObservations(x: Seq[FeatureValues]): FeatureValues =
-    x
+  def aggregateFeatureObservations(featureObservations: Seq[FeatureObservation[String]]): Seq[FeatureObservation[String]] =
+    featureObservations
       .foldLeft(Map.empty[String, Double])({
+        case (mapping, fobs) => mapping.get(fobs.feature) match {
 
-        case (m, featureObservations) =>
-          featureObservations
-            .foldLeft(m)({
+          case Some(existing) =>
+            (mapping - fobs.feature) + (fobs.feature -> (existing + fobs.magnitude))
 
-              case (mapping, fobs) => mapping.get(fobs.feature) match {
-
-                case Some(existing) =>
-                  (mapping - fobs.feature) + (fobs.feature -> (existing + fobs.magnitude))
-
-                case None =>
-                  mapping + (fobs.feature -> fobs.magnitude)
-              }
-            })
+          case None =>
+            mapping + (fobs.feature -> fobs.magnitude)
+        }
       })
       .toSeq
       .map({

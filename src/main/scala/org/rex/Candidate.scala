@@ -102,7 +102,8 @@ case class CandidateCorefQuery(
  * To access the word A, do:
  *   doc.sentences(sharedSentNum).tokens(answerCorefWordIndex)
  */
-case class CandidateCorefAnswer(doc: Document,
+case class CandidateCorefAnswer(
+    doc: Document,
     queryWordIndex: Int,
     sharedSentNum: Int,
     answerCorefWordIndex: Int,

@@ -25,10 +25,12 @@ object NPChunkingTest {
    */
   def testChunk(testPairs: Seq[(Sentence, Option[Seq[String]])])(implicit entSet: NamedEntitySet): Unit = {
 
+    val chunker = NerSentChunker(entSet)
+
     val errors =
       testPairs.foldLeft(List.empty[String])({
         case (agg, (sentence, correctResponse)) =>
-          val result = Sentence.chunkTokens(sentence)
+          val result = chunker(sentence)._1.tokens
           if (result != correctResponse)
             agg :+ s"""Sentence failed, (Chunked: ${result.mkString(" ")}) (Actual: ${correctResponse.mkString(" ")})"""
           else

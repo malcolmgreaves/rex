@@ -20,35 +20,46 @@ class CandGenTest extends FunSuite {
     )
   }
 
-  ignore("Coreference-based Candidate Generation") {
+  test("Coreference-based Candidate Generation") {
 
-    // TODO CLEAN UP println STATEMENTS !!
-
-    val doc = TextProcessorTest.makeProcessor().process("", TextProcessorTest.johnSmithText)
+    val doc = {
+      val es = NamedEntitySet.Default4Class.entSet
+      NerDocChunker(es)(
+        TextProcessorTest.makeProcessor(es).process("JohnJudy", johnJudyText)
+      )
+    }
 
     val mentions = doc.corefMentions.getOrElse(Seq.empty[Coref])
-    mentions.map(
-      _.mentions
-        .map(mention => s"${mention.sentenceNum} [${mention.from}:${mention.until}] :: ${doc.sentences(mention.sentenceNum).tokens.slice(mention.from, mention.until)}")
-        .mkString(" ; ")
-    ).foreach(println)
 
-    //    val candidates = {
-    //      import NamedEntitySet.Default4Class.entSet
-    //      CorefCandGen(WordFilter.default).candidates(doc)
-    //    }
-    //    println(s"${candidates.size} candidates")
-    //    candidates.foreach(cd =>
-    //      println(s"Query: ${cd.queryW} , Answer: ${cd.answerW} :: inside: ${cd.inner}")
-    //    )
-    ???
+    val candidates = CorefCandGen(WordFilter.noKnownPunct, candidateFilter).candidates(doc)
+
+    val actual = candidates.map(c => (c.queryW, c.answerW, c.inner)).toSet
+
+    val errors = checkCandidates(actual, expectedJohnJudyCandidates)
+
+    if (errors.nonEmpty)
+      fail(s"""Incorrect acutal candidates:\n${errors.mkString("\n")}""")
   }
-
 }
 
 object CandGenTest {
 
   val sentenceCandGenAllWord = SentenceCandGen(WordFilter.permitAll)
+
+  val candidateFilter = new WordFilter {
+    override def apply(s: Sentence)(i: Int): Boolean =
+      WordFilter.noKnownPunct(s)(i) && (pronounOnlyFilter(s)(i) || nounOnlyfilter(s)(i))
+  }
+
+  val nounOnlyfilter = new WordFilter {
+    override def apply(s: Sentence)(i: Int): Boolean =
+      s.tags.exists(tags => tags(i) == "NN" || tags(i) == "NNS" || tags(i) == "NNP" || tags(i) == "NNPS")
+  }
+
+  val pronounOnlyFilter = new WordFilter {
+    override def apply(s: Sentence)(i: Int): Boolean =
+      s.tags.exists(tags => tags(i) == "PRP")
+  }
 
   val sentenceCandGenNoKnownPunct = SentenceCandGen(WordFilter.noKnownPunct)
 
@@ -80,5 +91,40 @@ object CandGenTest {
     CandidateSentence(insurgentsSentence, 4, 2),
     CandidateSentence(insurgentsSentence, 4, 3)
   )
+
+  val johnJudyText = "John drove to Judy’s house. He made her dinner."
+
+  type SimpleCandSet = Set[(String, String, Seq[String])]
+
+  val expectedJohnJudyCandidates = Set(
+    ("John", "dinner", Seq("made", "her")),
+    ("dinner", "John", Seq("made", "her")),
+    ("He", "Judy", Seq("drove", "to")),
+    ("Judy", "He", Seq("drove", "to")),
+    ("He", "house", Seq("drove", "to", "Judy", "'s")),
+    ("house", "He", Seq("drove", "to", "Judy", "'s"))
+  )
+
+  type Error = String
+
+  def checkCandidates(actual: SimpleCandSet, expected: SimpleCandSet): List[Error] = {
+
+    val diff = actual.diff(expected)
+    val inter = actual.intersect(expected)
+
+    val diffErr =
+      if (diff.size > 0)
+        List(s"""Difference: ${diff.mkString(" : ")}""")
+      else
+        List.empty[String]
+
+    val interErr =
+      if (inter.size != expected.size)
+        List(s"""Intersection: ${inter.mkString(" : ")}""")
+      else
+        List.empty[String]
+
+    diffErr ++ interErr
+  }
 
 }

@@ -10,11 +10,21 @@ class DataPipelineTest extends FunSuite {
   import TextFeatuerizerTest.featuerizer2skip2gram2gram
 
   test("data pipeline test") {
-    val pipeline = DataPipeline(makeProcessor())(sentCGNoKnownPunct)(featuerizer2skip2gram2gram)
+    val pipeline = DataPipeline(makeProcessor())(IdentityDocChunker)(sentCGNoKnownPunct)(featuerizer2skip2gram2gram)
     val errors =
       checkPipelineOutput(
         idTextData
-          .map({ case (id, text) => (id, pipeline(id, text)) })
+          .map({
+            case (id, text) =>
+              (
+                id,
+                DataPipeline.aggregateFeatureObservations(
+                  pipeline(id, text)
+                    .map(_._2)
+                    .flatten
+                )
+              )
+          })
           .filter(_._2.nonEmpty),
         idFeatureObs
       )
@@ -38,7 +48,7 @@ object DataPipelineTest {
 
   val idFeatureObs = Seq(
     "1" ->
-      DataPipeline.aggregateFeatureObservations(Seq(
+      DataPipeline.aggregateFeatureObservations(
         expectedFeaturesForCandGenTestInsurgentCandidatesSentence
           .toSeq
           .flatMap({
@@ -52,7 +62,7 @@ object DataPipelineTest {
                       .map(feature => FeatureObservation(feature, 1.0))
                 })
           })
-      ))
+      )
   )
 
   type TestData = Seq[(String, Seq[FeatureObservation[String]])]

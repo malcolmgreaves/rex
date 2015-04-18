@@ -47,74 +47,11 @@ case class Sentence(
 
 object Sentence {
 
-  /**
-   * If present, is the sentence tokens combined based upon the entity information.
-   *
-   * Successive tokens with the samed named entity label are combined into a single token.
-   * Space (" ") is inserted between each combined token.
-   */
-  def chunkTokens(s: Sentence)(implicit entSet: NamedEntitySet): Option[Seq[String]] = {
-
-    s.entities.map(ents =>
-
-      if (ents.size <= 1) {
-        s.tokens
-
-      } else {
-
-        val (chunkedIndices, _, lastWorkingIndices) =
-          ents.slice(1, ents.size).zip(s.tokens.slice(1, s.tokens.size))
-            .zipWithIndex
-            .map({ case ((e, t), indexMinus1) => (e, t, indexMinus1 + 1) })
-            .foldLeft((Seq.empty[Seq[Int]], ents.head, Seq(0)))({
-
-              case ((indicesChunked, previousEnt, workingIndices), (entity, token, index)) =>
-
-                val isNonEnt = entity == entSet.nonEntityTag
-
-                val continueToChunk = !isNonEnt && previousEnt == entity
-
-                val updatedWorkingIndices =
-                  if (continueToChunk)
-                    workingIndices :+ index
-                  else
-                    Seq(index)
-
-                val updatedIndices =
-                  if (!continueToChunk)
-                    if (workingIndices.size > 0)
-                      indicesChunked :+ workingIndices
-                    else
-                      indicesChunked
-                  else
-                    indicesChunked
-
-                (updatedIndices, entity, updatedWorkingIndices)
-            })
-
-        val allChunkedIndices =
-          if (lastWorkingIndices.isEmpty)
-            chunkedIndices
-          else
-            chunkedIndices :+ lastWorkingIndices
-
-        allChunkedIndices
-          .foldLeft(Seq.empty[String])({
-
-            case (newChunkedTokens, indices) =>
-              newChunkedTokens :+ indices.map(index => s.tokens(index)).mkString(" ")
-          })
-
-      }
-    )
-
-  }
-
   import edu.arizona.sista.processors.{ Sentence => SistaSentence }
 
   /** Converts a edu.arizaona.sista.processors.Sentence into a org.rex.Sentence in a straightforward manner. */
   implicit def sistaSentence2Sentence(s: SistaSentence): Sentence =
-    Sentence(s.words, s.tags.map(_.toSeq), s.entities.map(_.toSeq))
+    Sentence(s.words, s.entities.map(_.toSeq), s.tags.map(_.toSeq))
 
 }
 
