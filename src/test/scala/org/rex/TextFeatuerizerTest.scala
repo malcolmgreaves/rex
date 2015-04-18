@@ -128,11 +128,11 @@ class TextFeatuerizerTest extends FunSuite {
       }
   }
 
-  test("full-on Featuerizer using candidates (inside 4-skip 2-grams + adjacent 2-grams)") {
+  test("full-on Featuerizer using candidates (inside 2-skip 2-grams + adjacent 2-grams)") {
 
     val featuerized =
       insurgentsCandidatesSentence
-        .map(cand => (cand, featuerizer4skip2gram2gram(cand)))
+        .map(cand => (cand, featuerizer2skip2gram2gram(cand)))
         .toList
         .sortBy(_._1.queryW)
 
@@ -205,40 +205,40 @@ object TextFeatuerizerTest {
   // for sentence text "Insurgents killed in ongoing fighting."
   val expectedFeaturesForCandGenTestInsurgentCandidatesSentence = Map(
     "insurgents" -> Map(
-      ("killed", Set("in", "in,ongoing")),
-      ("in", Set("killed", "ongoing", "ongoing,fighting")),
-      ("ongoing", Set("killed", "killed,in", "in", "fighting")),
-      ("fighting", Set("killed", "killed,in", "killed,ongoing", "in", "in,ongoing", "ongoing"))
+      ("killed", Seq("in", "in,ongoing")),
+      ("in", Seq("killed", "ongoing", "ongoing,fighting")),
+      ("ongoing", Seq("killed", "killed,in", "in", "fighting")),
+      ("fighting", Seq("killed", "killed,in", "killed,ongoing", "in", "in,ongoing", "ongoing"))
     ),
     "killed" -> Map(
-      ("insurgents", Set("in", "in,ongoing")),
-      ("in", Set("insurgents", "ongoing", "ongoing,fighting")),
-      ("ongoing", Set("insurgents", "in", "fighting")),
-      ("fighting", Set("insurgents", "in", "ongoing", "in,ongoing"))
+      ("insurgents", Seq("in", "in,ongoing")),
+      ("in", Seq("insurgents", "ongoing", "ongoing,fighting")),
+      ("ongoing", Seq("insurgents", "in", "fighting")),
+      ("fighting", Seq("insurgents", "in", "ongoing", "in,ongoing"))
     ),
     "in" -> Map(
-      ("insurgents", Set("killed", "ongoing", "ongoing,fighting")),
-      ("killed", Set("insurgents", "ongoing", "ongoing,fighting")),
-      ("ongoing", Set("insurgents,killed", "killed", "fighting")),
-      ("fighting", Set("insurgents,killed", "killed", "ongoing"))
+      ("insurgents", Seq("killed", "ongoing", "ongoing,fighting")),
+      ("killed", Seq("insurgents", "ongoing", "ongoing,fighting")),
+      ("ongoing", Seq("insurgents,killed", "killed", "fighting")),
+      ("fighting", Seq("insurgents,killed", "killed", "ongoing"))
     ),
     "ongoing" -> Map(
-      ("insurgents", Set("killed", "killed,in", "in", "fighting")),
-      ("killed", Set("insurgents", "in", "fighting")),
-      ("in", Set("insurgents,killed", "killed", "fighting")),
-      ("fighting", Set("killed,in", "in"))
+      ("insurgents", Seq("killed", "killed,in", "in", "fighting")),
+      ("killed", Seq("insurgents", "in", "fighting")),
+      ("in", Seq("insurgents,killed", "killed", "fighting")),
+      ("fighting", Seq("killed,in", "in"))
     ),
     "fighting" -> Map(
-      ("insurgents", Set("killed", "killed,in", "killed,ongoing", "in", "in,ongoing", "ongoing")),
-      ("killed", Set("insurgents", "in", "ongoing", "in,ongoing")),
-      ("in", Set("insurgents,killed", "killed", "ongoing")),
-      ("ongoing", Set("killed,in", "in"))
+      ("insurgents", Seq("killed", "killed,in", "killed,ongoing", "in", "in,ongoing", "ongoing")),
+      ("killed", Seq("insurgents", "in", "ongoing", "in,ongoing")),
+      ("in", Seq("insurgents,killed", "killed", "ongoing")),
+      ("ongoing", Seq("killed,in", "in"))
     )
   )
 
   type Error = String
 
-  def checkCandidate(groundTruth: Map[String, Map[String, Set[String]]])(
+  def checkCandidate(groundTruth: Map[String, Map[String, Seq[String]]])(
     query: String, answer: String, actual: Set[String]): Option[Error] = {
 
     groundTruth.get(query) match {
@@ -252,7 +252,7 @@ object TextFeatuerizerTest {
           Some(s"no ground truth for query: $query and answer: $answer")
 
         case Some(expectedFeatures) =>
-          if (actual != expectedFeatures)
+          if (actual != expectedFeatures.toSet)
             Some(s"""For ($query,$answer)\nexpecting: "${expectedFeatures.mkString(";")}"\nactual:    "${actual.mkString(";")}"""")
           else
             None

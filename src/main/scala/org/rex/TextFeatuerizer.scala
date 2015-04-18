@@ -3,6 +3,7 @@ package org.rex
 import nak.data.{ FeatureObservation, Featurizer }
 import org.rex.AdjacentFeatures._
 
+import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
 
@@ -16,10 +17,6 @@ object TextFeatuerizer {
     new TextFeatuerizer {
       override def apply(v1: Candidate): Seq[FeatureObservation[String]] = f.apply(v1)
     }
-
-  private type SentViewFilt = Seq[(String, Boolean)]
-
-  private val nothingStrBool: SentViewFilt = IndexedSeq.empty[(String, Boolean)]
 
   /**
    * Creates a Featuerizer[Candidate,String] instance that creates ngram and skip-ngram
@@ -59,7 +56,41 @@ object TextFeatuerizer {
           })
           .toSeq
 
-      @inline private def adjFeats1Sent(words: SentViewFilt, qIdx: Int, aIdx: Int): Int => Seq[SentViewFilt] = {
+      @inline private def filterAndRecomputeIndices(w: Seq[(String, Boolean)], qi: Int, ai: Int): (Seq[String], Int, Int) = {
+
+        @inline def updateIndex(removingIndex: Int, indexToUpdate: Int): Int =
+          if (removingIndex < indexToUpdate)
+            indexToUpdate - 1
+          else
+            indexToUpdate
+
+        @tailrec def f(words: List[(String, Boolean, Int)], q: Int, a: Int, filtered: Seq[String]): (Seq[String], Int, Int) =
+          words match {
+
+            case (word, shouldKeep, index) :: rest =>
+              if (shouldKeep)
+                f(rest, q, a, filtered :+ word)
+              else
+                f(rest, updateIndex(index, q), updateIndex(index, a), filtered)
+
+            case Nil =>
+              (filtered, q, a)
+          }
+
+        f(
+          w.zipWithIndex
+            .map(x => (x._1._1, x._1._2, x._2))
+            .toList,
+          qi,
+          ai,
+          Seq.empty[String]
+        )
+      }
+
+      private def adjFeats1Sent(wordfilts: Seq[(String, Boolean)], origQIdx: Int, origAIdx: Int): Int => Seq[Seq[String]] = {
+
+        val (words, qIdx, aIdx) = filterAndRecomputeIndices(wordfilts.toList, origQIdx, origAIdx)
+
         val (lIndex, rIndex) =
           if (qIdx < aIdx)
             (qIdx, aIdx)
@@ -68,11 +99,11 @@ object TextFeatuerizer {
 
         (ngramSize: Int) => Seq(
           if (lIndex - ngramSize < 0)
-            nothingStrBool
+            nothingStr
           else
             left(words, lIndex)(ngramSize),
-          if (rIndex + ngramSize >= words.size - 1)
-            nothingStrBool
+          if (rIndex + ngramSize >= words.size)
+            nothingStr
           else
             right(words, rIndex)(ngramSize)
         )
@@ -98,7 +129,7 @@ object TextFeatuerizer {
 
                   (ngramSize: Int) =>
                     sentenceFeatures(ngramSize)
-                      .map(_.filter(_._2).map(_._1))
+                      //                      .map(_.filter(_._2).map(_._1))
                       .filter(_.nonEmpty)
                 }
 
@@ -120,7 +151,7 @@ object TextFeatuerizer {
 
                   (ngramSize: Int) =>
                     (sharedFeatures(ngramSize) ++ featuresAroundQuery(ngramSize))
-                      .map(_.filter(_._2).map(_._1))
+                      //                      .map(_.filter(_._2).map(_._1))
                       .filter(_.nonEmpty)
                 }
 
@@ -142,7 +173,7 @@ object TextFeatuerizer {
 
                   (ngramSize: Int) =>
                     (sharedFeatures(ngramSize) ++ featuresAroundAnswer(ngramSize))
-                      .map(_.filter(_._2).map(_._1))
+                      //                      .map(_.filter(_._2).map(_._1))
                       .filter(_.nonEmpty)
                 }
               }

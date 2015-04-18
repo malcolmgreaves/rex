@@ -13,7 +13,7 @@ class SparkCandGenTest extends SparkTestSuite {
     val data = sc.parallelize(Seq(insurgentsDoc))
 
     val createdCandidatesRDD =
-      SparkCandGen(KryoSerializationWrapper(SentenceCandGen(WordFilter.noKnownPunct)))(data)
+      SparkCandGen(KryoSerializationWrapper(sentenceCandGenNoKnownPunct))(data)
         .map(_._2)
         .filter(_.forall(_.isInstanceOf[CandidateSentence]))
         .map(_.map(_.asInstanceOf[CandidateSentence]))

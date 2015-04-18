@@ -50,6 +50,8 @@ object CandGenTest {
 
   val sentenceCandGenAllWord = SentenceCandGen(WordFilter.permitAll)
 
+  val sentenceCandGenNoKnownPunct = SentenceCandGen(WordFilter.noKnownPunct)
+
   import TextFeatuerizerTest._
 
   val insurgentsSentence = Sentence(insurgentsSeq)
