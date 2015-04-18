@@ -51,7 +51,7 @@ object Sentence {
 
   /** Converts a edu.arizaona.sista.processors.Sentence into a org.rex.Sentence in a straightforward manner. */
   implicit def sistaSentence2Sentence(s: SistaSentence): Sentence =
-    Sentence(s.words, s.entities.map(_.toSeq), s.tags.map(_.toSeq))
+    Sentence(s.words, s.tags.map(_.toSeq), s.entities.map(_.toSeq))
 
 }
 
