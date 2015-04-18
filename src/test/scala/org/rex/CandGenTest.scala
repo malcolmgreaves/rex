@@ -38,7 +38,7 @@ class CandGenTest extends FunSuite {
     val errors = checkCandidates(actual, expectedJohnJudyCandidates)
 
     if (errors.nonEmpty)
-      fail(s"""Incorrect acutal candidates:\n${errors.mkString("\n")}""")
+      fail(s"""Incorrect actual candidates:\n${errors.mkString("\n")}""")
   }
 }
 
