@@ -1,8 +1,8 @@
 name := "rex"
 
-version := "0.1"
+version := "0.0.1"
 
-organization := "mwg"
+organization := "io.malcolmgreaves"
 
 scalaVersion := "2.10.5"
 
