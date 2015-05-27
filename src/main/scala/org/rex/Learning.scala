@@ -1,6 +1,6 @@
 package org.rex
 
-import scala.language.implicitConversions
+import scala.language.{ postfixOps, implicitConversions }
 
 trait Learning[A, B] {
 
@@ -9,6 +9,38 @@ trait Learning[A, B] {
 
   type Classifier = Instance => Label
   type Estimator = Instance => Distribution[Label]
+  type Learner = Seq[(Instance, Label)] => (Classifier, Estimator)
+}
+
+object Learning {
+
+  private val emptyEstimation =
+    new IllegalStateException("Unexpected state: Estimator evalauted to empty Map.")
+
+  def classifierFromEstimator[A, B](e: Learning[A, B]#Estimator): Learning[A, B]#Classifier =
+    (instance: A) => {
+      // do estimation, get it as mapping
+      val dist = e(instance).asMap
+      // classificaiton is the item with the maximum probability
+      dist.size match {
+        case 0 =>
+          throw emptyEstimation
+
+        case 1 =>
+          dist.head._1
+
+        case n =>
+          dist.foldLeft(dist.head) {
+            case (max @ (maxItem, maxProb), next @ (item, prob)) =>
+              if (prob > maxProb)
+                next
+              else
+                max
+          }
+            ._1
+      }
+    }
+
 }
 
 trait Distribution[A] {
