@@ -64,7 +64,7 @@ case class NerSentChunker(entSet: NamedEntitySet) extends SentenceChunker {
             s.tags.map(t => doChunking(t, firstToStr)),
             Some(doChunking(ents, firstToStr))
           ),
-          allChunkedIndices
+            allChunkedIndices
         )
       }
     ).getOrElse((s, Seq.empty[Seq[Int]]))
