@@ -28,4 +28,6 @@ It will limit the logging output.
 
 LICENSE
 =======
-Everything within this repository is copyright (b2015) by Malcolm Greaves.
+Everything within this repository is copyright (2015-) by Malcolm Greaves.
+
+Use of this code is permitted according to the stipulations of the [Apache 2](http://www.apache.org/licenses/LICENSE-2.0.txt) license.
