@@ -20,7 +20,7 @@ object RelationLearner {
 
   type CandidateTextFeaturizer = Featurizer[Candidate, String]
 
-  def learner(
+  def apply(
     conf: LiblinearConfig,
     tfeat: CandidateTextFeaturizer,
     sizeForFeatureHashing: Option[Int] = None): RelationLearner#Learner =
