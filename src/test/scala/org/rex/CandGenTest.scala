@@ -22,12 +22,7 @@ class CandGenTest extends FunSuite {
 
   test("Coreference-based Candidate Generation") {
 
-    val doc = {
-      val es = NamedEntitySet.Default4Class.entSet
-      NerDocChunker(es)(
-        TextProcessorTest.makeProcessor(es).process("JohnJudy", johnJudyText)
-      )
-    }
+    val doc = TextProcessorTest.process("JohnJudy", johnJudyText)
 
     val mentions = doc.corefMentions.getOrElse(Seq.empty[Coref])
 

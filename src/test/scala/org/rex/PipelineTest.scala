@@ -5,13 +5,12 @@ import org.scalatest.FunSuite
 
 class PipelineTest extends FunSuite {
 
-  import TextProcessorTest.makeProcessor
   import PipelineTest._
   import TextFeatuerizerTest.featuerizer2skip2gram2gram
 
   test("data pipeline test") {
     val pipeline = Pipeline(
-      makeProcessor(),
+      TextProcessorTest,
       IdentityDocChunker,
       sentCGNoKnownPunct,
       featuerizer2skip2gram2gram

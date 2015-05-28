@@ -8,7 +8,7 @@ case object IdentitySentChunker extends SentenceChunker {
   override def apply(s: Sentence) = (s, Seq.empty[Seq[Int]])
 }
 
-case class NerSentChunker(entSet: NamedEntitySet) extends SentenceChunker {
+case class NerSentChunker(entSet: NeTagSet) extends SentenceChunker {
 
   import NerSentChunker._
 

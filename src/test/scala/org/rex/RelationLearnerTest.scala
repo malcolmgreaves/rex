@@ -12,15 +12,15 @@ class RelationLearnerTest extends FunSuite {
 
   test("basic relation learning test") {
 
-    val textProcessor = TextProcessorTest.makeProcessor(NamedEntitySet.Default4Class.entSet)
+    val textProcessor = TextProcessorTest
 
-    {// so that we can force the loading of the CoreNLP stuff
+    { // so that we can force the loading of the CoreNLP stuff
       textProcessor.process("_", "Hello world.")
     }
 
     val candidatePipeln = Pipeline(
       textProcessor,
-      NerDocChunker(NamedEntitySet.Default4Class.entSet),
+      NerDocChunker(NeTagSet.Default4Class.entSet),
       CorefCandGen(WordFilter.noKnownPunct, CandGenTest.candidateFilter)
     )
 

@@ -5,12 +5,11 @@ import org.rex._
 class SparkPipelineTest extends SparkTestSuite {
 
   import PipelineTest._
-  import TextProcessorTest.makeProcessor
   import org.rex.TextFeatuerizerTest.featuerizer2skip2gram2gram
 
   sparkTest("spark data pipeline test") {
 
-    val pipeline = SparkDataPipeline(makeProcessor())(IdentityDocChunker)(sentCGNoKnownPunct)(featuerizer2skip2gram2gram)
+    val pipeline = SparkDataPipeline(TextProcessorTest)(IdentityDocChunker)(sentCGNoKnownPunct)(featuerizer2skip2gram2gram)
 
     val errors =
       checkPipelineOutput(

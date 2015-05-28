@@ -12,7 +12,7 @@ class SparkTextProcessorTest extends SparkTestSuite {
 
     val data = sc.parallelize(Seq(("JohnSmithSentence", johnSmithText)))
 
-    val processedRdd = SparkTextProcessor(KryoSerializationWrapper(makeProcessor()))(data)
+    val processedRdd = SparkTextProcessor(KryoSerializationWrapper(TextProcessorTest))(data)
 
     assert(processedRdd.count == data.count)
 

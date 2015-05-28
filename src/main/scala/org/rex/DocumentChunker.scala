@@ -8,7 +8,7 @@ case object IdentityDocChunker extends DocumentChunker {
   override def apply(d: Document) = d
 }
 
-case class NerDocChunker(entitySet: NamedEntitySet) extends DocumentChunker {
+case class NerDocChunker(entitySet: NeTagSet) extends DocumentChunker {
 
   private val sentChunker = NerSentChunker(entitySet)
 
