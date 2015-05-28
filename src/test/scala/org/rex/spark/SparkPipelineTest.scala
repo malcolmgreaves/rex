@@ -2,9 +2,9 @@ package org.rex.spark
 
 import org.rex._
 
-class SparkDataPipelineTest extends SparkTestSuite {
+class SparkPipelineTest extends SparkTestSuite {
 
-  import DataPipelineTest._
+  import PipelineTest._
   import TextProcessorTest.makeProcessor
   import org.rex.TextFeatuerizerTest.featuerizer2skip2gram2gram
 
@@ -19,7 +19,7 @@ class SparkDataPipelineTest extends SparkTestSuite {
             case (id, x) =>
               (
                 id,
-                DataPipeline.aggregateFeatureObservations(
+                Pipeline.aggregateFeatureObservations(
                   x.map(_._2).flatten
                 )
               )

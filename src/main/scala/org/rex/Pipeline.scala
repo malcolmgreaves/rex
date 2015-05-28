@@ -4,21 +4,26 @@ import nak.data.FeatureObservation
 
 import scala.language.implicitConversions
 
-trait DataPipeline extends ((String, String) => Seq[(Candidate, Seq[FeatureObservation[String]])])
+object Pipeline {
 
-object DataPipeline {
+  type Id = String
+  type Text = String
+  type Features = Seq[FeatureObservation[String]]
 
-  implicit class FnDataPipeline(
-      f: (String, String) => Seq[(Candidate, Seq[FeatureObservation[String]])]) extends DataPipeline {
-    override def apply(id: String, text: String) = f(id, text)
-  }
+  type OfCandidates = (Id, Text) => Seq[Candidate]
 
-  def apply(tp: TextProcessor)(dk: DocumentChunker)(cg: CandGen)(tf: TextFeatuerizer): DataPipeline =
-    (id: String, text: String) =>
+  def apply(tp: TextProcessor, dk: DocumentChunker, cg: CandGen): OfCandidates =
+    (id: Id, text: Text) =>
+      cg.candidates(dk(tp.process(id, text)))
+
+  type OfFeatsAndCands = (Id, Text) => Seq[(Candidate, Features)]
+
+  def apply(tp: TextProcessor, dk: DocumentChunker, cg: CandGen, tf: TextFeatuerizer): OfFeatsAndCands =
+    (id: Id, text: Text) =>
       cg.candidates(dk(tp.process(id, text)))
         .map(c => (c, aggregateFeatureObservations(tf(c))))
 
-  def aggregateFeatureObservations(featureObservations: Seq[FeatureObservation[String]]): Seq[FeatureObservation[String]] =
+  @inline def aggregateFeatureObservations(featureObservations: Features): Features =
     featureObservations
       .foldLeft(Map.empty[String, Double])({
         case (mapping, fobs) => mapping.get(fobs.feature) match {

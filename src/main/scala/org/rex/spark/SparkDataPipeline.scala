@@ -16,7 +16,7 @@ object SparkDataPipeline {
     override def apply(data: RDD[(String, String)]) = f(data)
   }
 
-  import org.rex.DataPipeline.aggregateFeatureObservations
+  import org.rex.Pipeline.aggregateFeatureObservations
 
   def apply(tp: TextProcessor)(dk: DocumentChunker)(cg: CandGen)(tf: TextFeatuerizer): SparkDataPipeline =
     apply(SparkTextProcessor(KryoSerializationWrapper(tp)))(dk)(SparkCandGen(KryoSerializationWrapper(cg)))(tf)

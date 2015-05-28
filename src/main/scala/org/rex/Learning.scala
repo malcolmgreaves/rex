@@ -1,6 +1,7 @@
 package org.rex
 
 import scala.language.{ postfixOps, implicitConversions }
+import scala.util.Try
 
 trait Learning[A, B] {
 
@@ -17,6 +18,9 @@ object Learning {
   private val emptyEstimation =
     new IllegalStateException("Unexpected state: Estimator evalauted to empty Map.")
 
+  private val empty =
+    new IllegalStateException("Cannot call argmax on an empty sequence.")
+
   def classifierFromEstimator[A, B](e: Learning[A, B]#Estimator): Learning[A, B]#Classifier =
     (instance: A) => {
       // do estimation, get it as mapping
@@ -30,16 +34,53 @@ object Learning {
           dist.head._1
 
         case n =>
-          dist.foldLeft(dist.head) {
-            case (max @ (maxItem, maxProb), next @ (item, prob)) =>
-              if (prob > maxProb)
-                next
-              else
-                max
-          }
-            ._1
+          argmax(dist)(TupleVal2[B])._1
       }
     }
+
+  trait Val[A] {
+    def valueOf(a: A): Double
+  }
+
+  trait TupleVal1[X] extends Val[(Double, X)] {
+    override def valueOf(a: (Double, X)): Double =
+      a._1
+  }
+
+  object TupleVal1 {
+    def apply[X] = new TupleVal1[X] {}
+  }
+
+  trait TupleVal2[X] extends Val[(X, Double)] {
+    override def valueOf(a: (X, Double)): Double =
+      a._2
+  }
+
+  object TupleVal2 {
+    def apply[X] = new TupleVal2[X] {}
+  }
+
+  def argmax[B: Val](xs: Traversable[B]): B =
+    if (xs isEmpty)
+      throw empty
+
+    else if (xs.size == 1)
+      xs.head
+
+    else {
+      val ev = implicitly[Val[B]]
+      xs
+        .foldLeft(xs.head) {
+          case (max, next) =>
+            if (ev.valueOf(next) > ev.valueOf(max))
+              next
+            else
+              max
+        }
+    }
+
+  def someArgmax[B: Val](xs: Traversable[B]): Option[B] =
+    Try(argmax(xs)).toOption
 
 }
 
