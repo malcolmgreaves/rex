@@ -36,27 +36,56 @@ object TextProcessor {
     new TextProcessor {
       override val conf = pConf
       override def process(id: String, text: String): Document =
-        (id, corenlpProcessor.annotate(text))
+        (
+          id,
+          {
+            val doc = corenlpProcessor.mkDocument(text)
+
+            if (conf.tagSet.isDefined) {
+              corenlpProcessor.tagPartsOfSpeech(doc)
+
+              if (conf.lemmatize) {
+                corenlpProcessor.lemmatize(doc)
+
+                if (conf.entSet.isDefined)
+                  corenlpProcessor.recognizeNamedEntities(doc)
+
+                if (conf.parse) {
+                  corenlpProcessor.parse(doc)
+
+                  if (conf.resolveCoreference)
+                    corenlpProcessor.resolveCoreference(doc)
+
+                  if (conf.discourse)
+                    corenlpProcessor.discourse(doc)
+                }
+              }
+            }
+
+            doc
+          }
+        )
     }
 
 }
 
-trait ProcessingConf extends Serializable {
-  /** Information about the named entities that the associated processor uses, if applicable. */
-  def entSet: Option[NamedEntitySet]
-
-  /** Information about the part-of-speech tags that the associated processor uses, if applicable. */
-  def tagSet: Option[PosTagSet]
-}
-
-object ProcessingConf {
-
-  def apply(entities: Option[NamedEntitySet], tags: Option[PosTagSet]): ProcessingConf =
-    new ProcessingConf {
-      override val entSet = entities
-      override val tagSet = tags
-    }
-}
+/**
+ * Information about the configuration of a natural language parser.
+ *
+ * @param entSet Information about the named entities that the associated processor uses, if applicable.
+ * @param tagSet Information about the part-of-speech tags that the associated processor uses, if applicable.
+ * @param parse Whether or not the associated parser should construct a syntactic parse tree of sentences.
+ * @param lemmatize Whether or not the associated parser should perform lemmatization. Needs POS tagging.
+ * @param resolveCoreference Whether or not the associated parser should perform co-reference resolution. Needs parsing.
+ * @param discourse Whether or not the associated parser should perform additional discourse parsing. Needs parsing.
+ */
+case class ProcessingConf(
+  entSet: Option[NamedEntitySet],
+  tagSet: Option[PosTagSet],
+  parse: Boolean,
+  lemmatize: Boolean,
+  resolveCoreference: Boolean,
+  discourse: Boolean)
 
 trait NamedEntitySet extends Serializable {
   /** All named entity tags. Does not include the nonEntityTag. */
@@ -82,4 +111,61 @@ object NamedEntitySet {
 trait PosTagSet extends Serializable {
   /** All part-of-speech tags. */
   def tags: Set[String]
+}
+
+object PosTagSet {
+
+  object DefaultPennTreebank {
+    implicit val posSet =
+      new PosTagSet {
+        override val tags = Set(
+          "$",
+          "``",
+          "''",
+          "(",
+          ")",
+          ",",
+          "--",
+          ".",
+          ":",
+          "CC",
+          "CD",
+          "DT",
+          "EX",
+          "FW",
+          "IN",
+          "JJ",
+          "JJR",
+          "JJS",
+          "LS",
+          "MD",
+          "NN",
+          "NNP",
+          "NNPS",
+          "NNS",
+          "PDT",
+          "POS",
+          "PRP",
+          "PRP$",
+          "RB",
+          "RBR",
+          "RBS",
+          "RP",
+          "SYM",
+          "TO",
+          "UH",
+          "VB",
+          "VBD",
+          "VBG",
+          "VBN",
+          "VBP",
+          "VBZ",
+          "WDT",
+          "WP",
+          "WP$",
+          "WRB"
+        )
+      }
+  }
+
 }

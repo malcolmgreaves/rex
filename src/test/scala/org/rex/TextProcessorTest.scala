@@ -1,5 +1,6 @@
 package org.rex
 
+import edu.arizona.sista.processors.fastnlp.FastNLPProcessor
 import org.scalatest.{ BeforeAndAfterAll, FunSuite }
 import edu.arizona.sista.processors.corenlp.CoreNLPProcessor
 
@@ -60,11 +61,26 @@ class TextProcessorTest extends FunSuite with BeforeAndAfterAll {
 
 object TextProcessorTest {
 
+  val defaultProcessingConf =
+    ProcessingConf(
+
+    )
+
   /** Loads up a Core NLP processor from the attached jar. */
-  def makeProcessor(entSet: NamedEntitySet = NamedEntitySet.Default4Class.entSet): TextProcessor =
+  def makeProcessor(c: ProcessingConf): TextProcessor =
     TextProcessor(
-      ProcessingConf(Some(entSet), None),
-      new CoreNLPProcessor(withDiscourse = false)
+      c,
+      if(c.resolveCoreference)
+        new CoreNLPProcessor(
+          internStrings = false,
+          basicDependencies = true,
+          withDiscourse = c.discourse
+        )
+      else
+        new FastNLPProcessor(
+          internStrings = false,
+          withDiscourse = c.discourse
+        )
     )
 
   /**
