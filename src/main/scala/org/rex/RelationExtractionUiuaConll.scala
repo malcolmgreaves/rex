@@ -160,11 +160,16 @@ object RelationExtractionUiuaConll extends App {
 
   println(s"A total of ${trainingData.size} candidates, of which ${trainingData.count(_._2 == negrel)} are unlabeled.")
 
+
+  def makeBinary(max:Int)(v: Int):Int =
+    if(v >= max-1) 1 else 0
+
   val (train, test) = {
+    val lim = 4
     val rand = new Random()
     val grouped =
       trainingData
-        .map(x => (x, rand.nextInt(2)))
+        .map(x => (x, makeBinary(lim)(rand.nextInt(lim))))
         .toList
         .groupBy(_._2)
 
@@ -246,7 +251,6 @@ object RelationExtractionUiuaConll extends App {
             Learning.argmax(
               estimators
                 .map { case (r, estimator) => (r, estimator(instance).result.head) }
-                .toSeq
             )(Learning.TupleVal2[String])._1
 
           if (predicted == label)
