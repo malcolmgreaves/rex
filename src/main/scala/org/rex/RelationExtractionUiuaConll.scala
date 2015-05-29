@@ -124,7 +124,15 @@ object RelationExtractionUiuaConll extends App {
 
   val negrel = "nothing"
 
-  val candgen = SentenceCandGen(WordFilter.noKnownPunct)
+  val candgen = SentenceCandGen {
+    val okTags = pconf.tagSet.get.nouns ++ pconf.tagSet.get.pronouns
+
+    (s: Sentence) =>
+      (index: Int) =>
+        s.tags
+          .map(posTags => okTags contains posTags(index))
+          .getOrElse(WordFilter.noKnownPunct(s)(index))
+  }
 
   val trainingData: RelationLearner.TrainingData =
     labeledSentences
