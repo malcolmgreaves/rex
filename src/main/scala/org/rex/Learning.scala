@@ -43,7 +43,7 @@ object Learning {
       }
     }
 
-  trait Val[A] {
+  trait Val[-A] {
     def valueOf(a: A): Double
   }
 
@@ -91,6 +91,8 @@ object Learning {
 
 trait Distribution[A] {
 
+  def result:Array[Double]
+
   type Item = A
 
   type Probability = Double
@@ -104,25 +106,24 @@ trait Distribution[A] {
 
 object Distribution {
 
-  def fromMap[A](m: Map[A, Double]): Distribution[A] =
-    new Distribution[A] {
-
-      override val asMap =
-        m
-
-      override def apply(i: Item): Probability =
-        m(i)
-
-      override def get(i: Item): Option[Probability] =
-        m.get(i)
-    }
-
   def renormalize[A](dist: Distribution[A]): Distribution[A] = {
     val m = dist.asMap
     val total = m.foldLeft(0.0) { case (s, (_, v)) => s + v }
-    fromMap(
-      m.map { case (item, prob) => (item, prob / total) }
-    )
+    val newM = m.map { case (item, prob) => (item, prob / total) }
+    new Distribution[A] {
+
+      override def asMap: Map[Item, Probability] =
+        newM
+
+      override def result: Array[Probability] =
+        dist.result.map(_ / total)
+
+      override def get(i: Item): Option[Probability] =
+        newM.get(i)
+
+      override def apply(i: Item): Probability =
+        newM(i)
+    }
   }
 
 }

@@ -7,7 +7,7 @@ import nak.liblinear._
 import org.rex.Learning.TupleVal1
 
 import scala.language.implicitConversions
-import scala.util.{ Failure, Success, Try }
+import scala.util.Try
 
 object RelationLearner extends Learning[Candidate, String] {
 
@@ -83,7 +83,7 @@ object RelationLearner extends Learning[Candidate, String] {
         (c: Candidate) =>
           new Distribution[Label] {
 
-            private val result = nakClassifier.evalRaw(c)
+            override val result = nakClassifier.evalRaw(c)
 
             override def apply(i: Item): Probability =
               result(label2index(i))

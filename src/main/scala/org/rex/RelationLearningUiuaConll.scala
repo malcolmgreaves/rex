@@ -9,7 +9,7 @@ import scala.util.Try
 import java.io.File
 import scala.io.Source
 
-object ReleationExtractionLocal extends App {
+object RelationLearningUiuaConll extends App {
 
   sealed trait Line
   case object Break extends Line
@@ -129,6 +129,67 @@ object ReleationExtractionLocal extends App {
   //  )
   //
   //  val negrel = "nothing"
+
+  //ok for MC_SVM
+  //  val trainingData: RelationLearner.TrainingData =
+  //    labeledSentences
+  //      .filter { _._2 nonEmpty }
+  //      .flatMap {
+  //        case (sentence, relations) =>
+  //          relations.map { r =>
+  //            (CandidateSentence(sentence, r.arg1, r.arg2), r.relation)
+  //          }
+  //      }
+  //
+  //  val (train, test) = {
+  //    val rand = new Random()
+  //    val grouped =
+  //      trainingData
+  //        .map(x => (x, rand.nextInt(2)))
+  //        .toList
+  //        .groupBy(_._2)
+  //
+  //    println(s"grouped keyset: ${grouped.keySet}")
+  //
+  //    (grouped(0).map(_._1), grouped(1).map(_._1))
+  //  }
+  //
+  //  val rlearner = RelationLearner(
+  //    LiblinearConfig(
+  //      solverType = SolverType.MCSVM_CS,
+  //      cost = 1.0,
+  //      eps = 0.001,
+  //      showDebug = false
+  //    ),
+  //    CandidateFeatuerizer(
+  //      Some((
+  //        AdjacentFeatures(2),
+  //        SentenceViewFilter.noKnownPunctLowercase
+  //      )),
+  //      Some((
+  //        InsideFeatures(2, 4),
+  //        WordFilter.noKnownPunct,
+  //        WordView.lowercase
+  //      ))
+  //    )
+  //  )
+  //
+  //  println(s"Training on ${train.size} instances")
+  //  val (classifier, _) = rlearner(train)
+  //
+  //  val numberCorrectPredictions =
+  //    test
+  //      .foldLeft(0) {
+  //        case (nCorrect, (instance, label)) =>
+  //          val predicted = classifier(instance)
+  //          if (predicted == label)
+  //            nCorrect + 1
+  //          else
+  //            nCorrect
+  //      }
+  //
+  //  println(s"# correct $numberCorrectPredictions out of ${test.size} : accuracy: ${(numberCorrectPredictions.toDouble / test.size) * 100.0}")
+
   val trainingData: RelationLearner.TrainingData =
     labeledSentences
       .filter { _._2 nonEmpty }
@@ -152,13 +213,16 @@ object ReleationExtractionLocal extends App {
     (grouped(0).map(_._1), grouped(1).map(_._1))
   }
 
-  val rlearner = RelationLearner(
-    LiblinearConfig(
-      solverType = SolverType.MCSVM_CS,
-      cost = 1.0,
-      eps = 0.001,
-      showDebug = false
-    ),
+  val relations = trainingData.map(_._2).toSet
+
+  val llConf = LiblinearConfig(
+    solverType = SolverType.L1R_L2LOSS_SVC,
+    cost = 5.0,
+    eps = 0.001,
+    showDebug = false
+  )
+
+  val featurizer =
     CandidateFeatuerizer(
       Some((
         AdjacentFeatures(2),
@@ -170,16 +234,38 @@ object ReleationExtractionLocal extends App {
         WordView.lowercase
       ))
     )
-  )
 
-  println(s"Training on ${train.size} instances")
-  val (classifier, _) = rlearner(train)
+  val rlearners =
+    relations
+      .map(r => (r, RelationLearner(llConf, featurizer)))
+      .toMap
+
+  println(s"Training on ${train.size} instances, one binary SVM per relation (${relations.size} relations)")
+
+  val noneLabel = "none"
+
+  val estimators =
+    rlearners
+      .map {
+        case (r, rl) =>
+          (
+            r,
+            rl(train.map { case (inst, lab) => if (lab == r) (inst, r) else (inst, noneLabel) })._2
+          )
+      }
 
   val numberCorrectPredictions =
     test
       .foldLeft(0) {
         case (nCorrect, (instance, label)) =>
-          val predicted = classifier(instance)
+
+          val predicted =
+            Learning.argmax(
+              estimators
+                .map { case (r, estimator) => (r, estimator(instance).result.head) }
+                .toSeq
+            )(Learning.TupleVal2[String])._1
+
           if (predicted == label)
             nCorrect + 1
           else
