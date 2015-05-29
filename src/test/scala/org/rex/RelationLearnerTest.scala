@@ -13,12 +13,11 @@ class RelationLearnerTest extends FunSuite {
   import RelationLearnerTest._
 
   test("basic relation learning test: memorization") {
-
     val rlearner = RelationLearner(
       LiblinearConfig(),
       CandidateFeatuerizer(
-        Some((adjacentConf2gram, sentenceViewFilter)),
-        Some((insideConf4skip2gram, relWordFilter, wordView))
+        Some((adjacentConf2gram, SentenceViewFilter.noKnownPunctLowercase)),
+        Some((insideConf4skip2gram, wordFilter, wordView))
       )
     )
 
