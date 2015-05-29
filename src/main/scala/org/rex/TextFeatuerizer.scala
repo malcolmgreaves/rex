@@ -16,14 +16,12 @@ trait TextFeatuerizer[T] {
   type Fn = Input => Seq[FeatureObservation[String]]
 }
 
-object CandidateFeatuerizer extends TextFeatuerizer[Candidate]
+object CandidateFeatuerizer extends TextFeatuerizer[Candidate] {
 
-object TextFeatuerizer {
-
-  implicit def candFeat2NakFeat(f: Featurizer[Candidate, String]): CandidateFeatuerizer.Fn =
+  implicit def candFeat2NakFeat(f: Featurizer[Candidate, String]): Fn =
     f.apply
 
-  implicit def nakFeat2CandFeat(f: CandidateFeatuerizer.Fn): Featurizer[Candidate, String] =
+  implicit def nakFeat2CandFeat(f: Fn): Featurizer[Candidate, String] =
     new Featurizer[Candidate, String] {
       override def apply(v1: Candidate): Seq[FeatureObservation[String]] = f(v1)
     }
@@ -44,7 +42,7 @@ object TextFeatuerizer {
    */
   def apply(
     adjacentConf: Option[(AdjacentFeatures, SentenceViewFilter.Fn)],
-    insideConf: Option[(InsideFeatures, WordFilter.Fn, WordView.Fn)]): CandidateFeatuerizer.Fn =
+    insideConf: Option[(InsideFeatures, WordFilter.Fn, WordView.Fn)]): Fn =
 
     new Featurizer[Candidate, String] {
 

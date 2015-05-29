@@ -35,7 +35,7 @@ class RelationLearnerTest extends FunSuite {
 
     val rlearner = RelationLearner(
       LiblinearConfig(),
-      TextFeatuerizer(
+      CandidateFeatuerizer(
         Some((adjacentConf2gram, SentenceViewFilter.noKnownPunctLowercase)),
         Some((insideConf4skip2gram, wordFilter, wordView))
       )

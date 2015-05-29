@@ -10,11 +10,10 @@ import scala.language.implicitConversions
 
 object RelationLearner extends Learning[Candidate, String] {
 
-  import TextFeatuerizer._
-
   @inline def toNakExample(inst: Instance, label: Label): Example[Label, Candidate] =
-
     Example(label, inst)
+
+  import CandidateFeatuerizer._
 
   def apply(
     conf: LiblinearConfig,
