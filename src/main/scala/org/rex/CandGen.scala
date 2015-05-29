@@ -1,15 +1,15 @@
 package org.rex
 
-trait CandGen {
-  def candidates(doc: Document): Seq[Candidate]
+object CandGen {
+  type Fn = Document => Seq[Candidate]
 }
 
 /**
  * Creates candidates using tokens within each Sentence only.
  */
-case class SentenceCandGen(wordFilter: WordFilter.Fn) extends CandGen {
+case class SentenceCandGen(wordFilter: WordFilter.Fn) extends CandGen.Fn {
 
-  override def candidates(doc: Document): Seq[CandidateSentence] =
+  override def apply(doc: Document): Seq[CandidateSentence] =
     doc.sentences.flatMap(s => {
 
       val wf = wordFilter(s)
@@ -37,11 +37,11 @@ case class SentenceCandGen(wordFilter: WordFilter.Fn) extends CandGen {
 /**
  * Generates candidates using co-reference resolution information in the Document.
  */
-case class CorefCandGen(mentionFilt: WordFilter.Fn, candFilt: WordFilter.Fn) extends CandGen {
+case class CorefCandGen(mentionFilt: WordFilter.Fn, candFilt: WordFilter.Fn) extends CandGen.Fn {
 
   private val candidateHelper = CorefCandGen.candidates_h(candFilt) _
 
-  override def candidates(doc: Document): Seq[CandidateDocument] =
+  override def apply(doc: Document): Seq[CandidateDocument] =
     doc.corefMentions match {
 
       case Some(corefMentions) =>

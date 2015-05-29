@@ -12,6 +12,7 @@ import scala.xml.parsing.TokenTests
 object SentenceViewFilter {
 
   type TokenTest = (String, Boolean)
+
   type Fn = Sentence => Seq[TokenTest]
 
   def apply(wordView: WordView.Fn, wordFilter: WordFilter.Fn): SentenceViewFilter.Fn =

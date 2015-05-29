@@ -8,7 +8,7 @@ class CandGenTest extends FunSuite {
 
   test("Simple Sentence Candidate Generation") {
 
-    val createdCandidates = sentenceCandGenAllWord.candidates(insurgentsDoc).toSet
+    val createdCandidates = sentenceCandGenAllWord(insurgentsDoc).toSet
 
     val diff = insurgentsCandidatesSentence.toSet.diff(createdCandidates)
     val intersection = insurgentsCandidatesSentence.toSet.intersect(createdCandidates)
@@ -26,7 +26,7 @@ class CandGenTest extends FunSuite {
 
     val mentions = doc.corefMentions.getOrElse(Seq.empty[Coref])
 
-    val candidates = CorefCandGen(WordFilter.noKnownPunct, candidateFilter).candidates(doc)
+    val candidates = CorefCandGen(WordFilter.noKnownPunct, candidateFilter)(doc)
 
     val actual = candidates.map(c => (c.queryW, c.answerW, c.inner)).toSet
 

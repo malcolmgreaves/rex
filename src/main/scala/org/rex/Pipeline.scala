@@ -12,15 +12,15 @@ object Pipeline {
 
   type OfCandidates = (Id, Text) => Seq[Candidate]
 
-  def apply(tp: TextProcessor, dk: DocumentChunker, cg: CandGen): OfCandidates =
+  def apply(tp: TextProcessor, dk: DocumentChunker.Fn, cg: CandGen.Fn): OfCandidates =
     (id: Id, text: Text) =>
-      cg.candidates(dk(tp.process(id, text)))
+      cg(dk(tp.process(id, text)))
 
   type OfFeatsAndCands = (Id, Text) => Seq[(Candidate, Features)]
 
-  def apply(tp: TextProcessor, dk: DocumentChunker, cg: CandGen, tf: TextFeatuerizer[Candidate]#Fn): OfFeatsAndCands =
+  def apply(tp: TextProcessor, dk: DocumentChunker.Fn, cg: CandGen.Fn, tf: TextFeatuerizer[Candidate]#Fn): OfFeatsAndCands =
     (id: Id, text: Text) =>
-      cg.candidates(dk(tp.process(id, text)))
+      cg(dk(tp.process(id, text)))
         .map(c => (c, aggregateFeatureObservations(tf(c))))
 
   @inline def aggregateFeatureObservations(featureObservations: Features): Features =

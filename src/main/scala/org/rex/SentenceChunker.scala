@@ -2,13 +2,18 @@ package org.rex
 
 import scala.language.implicitConversions
 
-trait SentenceChunker extends (Sentence => (Sentence, Seq[Seq[Int]]))
+object SentenceChunker {
 
-case object IdentitySentChunker extends SentenceChunker {
+  type Index = Int
+
+  type Fn = Sentence => (Sentence, Seq[Seq[Index]])
+}
+
+case object IdentitySentChunker extends SentenceChunker.Fn {
   override def apply(s: Sentence) = (s, Seq.empty[Seq[Int]])
 }
 
-case class NerSentChunker(entSet: NeTagSet) extends SentenceChunker {
+case class NerSentChunker(entSet: NeTagSet) extends SentenceChunker.Fn {
 
   import NerSentChunker._
 
