@@ -2,9 +2,12 @@ package org.rex
 
 import java.io.File
 import java.util.Random
+import java.util.concurrent.TimeUnit
 
 import nak.liblinear.{ LiblinearConfig, SolverType }
 
+import scala.concurrent.duration.Duration
+import scala.concurrent.{ Await, Future }
 import scala.io.Source
 import scala.language.{ implicitConversions, postfixOps }
 import scala.util.Try
@@ -119,7 +122,6 @@ object RelationExtractionUiuaConll extends App {
     )
   }
 
-
   val negrel = "nothing"
 
   val candgen = SentenceCandGen(WordFilter.noKnownPunct)
@@ -139,13 +141,13 @@ object RelationExtractionUiuaConll extends App {
           val unlabeled =
             candgen(Document("", Seq(sentence)))
               .flatMap(candidate => {
-                if(!anyIndexPairs.contains((candidate.queryIndex, candidate.answerIndex)))
+                if (!anyIndexPairs.contains((candidate.queryIndex, candidate.answerIndex)))
                   Some((candidate, negrel))
                 else
                   None
               })
 
-        labeled ++ unlabeled
+          labeled ++ unlabeled
       }
 
   println(s"A total of ${trainingData.size} candidates, of which ${trainingData.count(_._2 == negrel)} are unlabeled.")
@@ -185,28 +187,44 @@ object RelationExtractionUiuaConll extends App {
       ))
     )
 
+  val sourceRelationLearner = RelationLearner(llConf, featurizer)
+
   val rlearners =
     relations
-      .map(r => (r, RelationLearner(llConf, featurizer)))
+      .map(r => (r, sourceRelationLearner))
       .filter(_._1 == negrel)
       .toMap
 
   println(s"Training on ${train.size} instances, one binary SVM per relation (${relations.size} relations)")
 
-  val estimators =
-    rlearners
-      .map {
-        case (r, rl) =>
-          (
-            r,
-            rl(
-              train.map {
-                case (inst, lab) =>
-                  if (lab == r) (inst, r) else (inst, negrel)
+  val start = System.currentTimeMillis()
+  val estimators = {
+    import scala.concurrent.ExecutionContext.Implicits.global
+    Await.result(
+      Future.sequence(
+        rlearners
+          .toSeq
+          .map {
+            case (r, rl) =>
+              Future {
+                (
+                  r,
+                  rl(
+                    train.map {
+                      case (inst, lab) =>
+                        if (lab == r) (inst, r) else (inst, negrel)
+                    }
+                  )._2
+                )
               }
-            )._2
-          )
-      }
+          }
+      ),
+      Duration.Inf
+    )
+  }
+  val end = System.currentTimeMillis()
+
+  println(s"finished training in ${Duration(end - start, TimeUnit.MILLISECONDS).toMinutes} minutes (${end - start} ms)")
 
   val numberCorrectPredictions =
     test
