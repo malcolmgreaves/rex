@@ -1,15 +1,15 @@
 package org.rex
 
+import java.io.File
 import java.util.Random
 
-import nak.liblinear.{ SolverType, LiblinearConfig }
+import nak.liblinear.{ LiblinearConfig, SolverType }
 
+import scala.io.Source
 import scala.language.{ implicitConversions, postfixOps }
 import scala.util.Try
-import java.io.File
-import scala.io.Source
 
-object RelationLearningUiuaConll extends App {
+object RelationExtractionUiuaConll extends App {
 
   sealed trait Line
   case object Break extends Line
@@ -104,75 +104,51 @@ object RelationLearningUiuaConll extends App {
   println(s"Obtained ${labeledSentences.size} sentences")
   println(s"Of those, ${labeledSentences.filter(_._2.nonEmpty).size} are labeled")
 
-  //ok for MC_SVM
-  //  val trainingData: RelationLearner.TrainingData =
-  //    labeledSentences
-  //      .filter { _._2 nonEmpty }
-  //      .flatMap {
-  //        case (sentence, relations) =>
-  //          relations.map { r =>
-  //            (CandidateSentence(sentence, r.arg1, r.arg2), r.relation)
-  //          }
-  //      }
-  //
-  //  val (train, test) = {
-  //    val rand = new Random()
-  //    val grouped =
-  //      trainingData
-  //        .map(x => (x, rand.nextInt(2)))
-  //        .toList
-  //        .groupBy(_._2)
-  //
-  //    println(s"grouped keyset: ${grouped.keySet}")
-  //
-  //    (grouped(0).map(_._1), grouped(1).map(_._1))
-  //  }
-  //
-  //  val rlearner = RelationLearner(
-  //    LiblinearConfig(
-  //      solverType = SolverType.MCSVM_CS,
-  //      cost = 1.0,
-  //      eps = 0.001,
-  //      showDebug = false
-  //    ),
-  //    CandidateFeatuerizer(
-  //      Some((
-  //        AdjacentFeatures(2),
-  //        SentenceViewFilter.noKnownPunctLowercase
-  //      )),
-  //      Some((
-  //        InsideFeatures(2, 4),
-  //        WordFilter.noKnownPunct,
-  //        WordView.lowercase
-  //      ))
-  //    )
-  //  )
-  //
-  //  println(s"Training on ${train.size} instances")
-  //  val (classifier, _) = rlearner(train)
-  //
-  //  val numberCorrectPredictions =
-  //    test
-  //      .foldLeft(0) {
-  //        case (nCorrect, (instance, label)) =>
-  //          val predicted = classifier(instance)
-  //          if (predicted == label)
-  //            nCorrect + 1
-  //          else
-  //            nCorrect
-  //      }
-  //
-  //  println(s"# correct $numberCorrectPredictions out of ${test.size} : accuracy: ${(numberCorrectPredictions.toDouble / test.size) * 100.0}")
+  val pconf = {
+    val (es, ps) = labeledSentences.foldLeft((Set.empty[String], Set.empty[String])) {
+      case ((e, p), (s, _)) =>
+        (e ++ s.entities.get, p ++ s.tags.get)
+    }
+    ProcessingConf(
+      entSet = Some(NeTagSet(es, "O")),
+      tagSet = Some(PosTagSet.DefaultPennTreebank.posSet),
+      parse = false,
+      lemmatize = true,
+      resolveCoreference = false,
+      discourse = false
+    )
+  }
+
+
+  val negrel = "nothing"
+
+  val candgen = SentenceCandGen(WordFilter.noKnownPunct)
 
   val trainingData: RelationLearner.TrainingData =
     labeledSentences
-      .filter { _._2 nonEmpty }
       .flatMap {
-        case (sentence, rels) =>
-          rels.map { r =>
-            (CandidateSentence(sentence, r.arg1, r.arg2), r.relation)
-          }
+        case (sentence, relz) =>
+
+          val labeled =
+            relz.map { r =>
+              (CandidateSentence(sentence, r.arg1, r.arg2), r.relation)
+            }
+
+          val anyIndexPairs = relz.map(r => (r.arg1, r.arg2)).toSet
+
+          val unlabeled =
+            candgen(Document("", Seq(sentence)))
+              .flatMap(candidate => {
+                if(!anyIndexPairs.contains((candidate.queryIndex, candidate.answerIndex)))
+                  Some((candidate, negrel))
+                else
+                  None
+              })
+
+        labeled ++ unlabeled
       }
+
+  println(s"A total of ${trainingData.size} candidates, of which ${trainingData.count(_._2 == negrel)} are unlabeled.")
 
   val (train, test) = {
     val rand = new Random()
@@ -191,7 +167,7 @@ object RelationLearningUiuaConll extends App {
 
   val llConf = LiblinearConfig(
     solverType = SolverType.L1R_L2LOSS_SVC,
-    cost = 5.0,
+    cost = 12.0,
     eps = 0.001,
     showDebug = false
   )
@@ -212,11 +188,10 @@ object RelationLearningUiuaConll extends App {
   val rlearners =
     relations
       .map(r => (r, RelationLearner(llConf, featurizer)))
+      .filter(_._1 == negrel)
       .toMap
 
   println(s"Training on ${train.size} instances, one binary SVM per relation (${relations.size} relations)")
-
-  val noneLabel = "none"
 
   val estimators =
     rlearners
@@ -224,7 +199,12 @@ object RelationLearningUiuaConll extends App {
         case (r, rl) =>
           (
             r,
-            rl(train.map { case (inst, lab) => if (lab == r) (inst, r) else (inst, noneLabel) })._2
+            rl(
+              train.map {
+                case (inst, lab) =>
+                  if (lab == r) (inst, r) else (inst, negrel)
+              }
+            )._2
           )
       }
 

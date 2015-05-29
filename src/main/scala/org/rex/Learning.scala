@@ -91,7 +91,7 @@ object Learning {
 
 trait Distribution[A] {
 
-  def result:Array[Double]
+  def result: Array[Double]
 
   type Item = A
 
