@@ -12,17 +12,17 @@ trait RelationLearner extends Learning[Candidate, String]
 
 object RelationLearner {
 
+  import TextFeatuerizer._
+
   @inline def toNakExample(
     inst: RelationLearner#Instance,
     label: RelationLearner#Label): Example[RelationLearner#Label, Candidate] =
 
     Example(label, inst)
 
-  type CandidateTextFeaturizer = Featurizer[Candidate, String]
-
   def apply(
     conf: LiblinearConfig,
-    tfeat: CandidateTextFeaturizer,
+    tfeat: CandidateFeatuerizer.Fn,
     sizeForFeatureHashing: Option[Int] = None): RelationLearner#Learner =
 
     (examples: Seq[(RelationLearner#Instance, RelationLearner#Label)]) => {

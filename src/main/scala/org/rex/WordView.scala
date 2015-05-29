@@ -2,24 +2,15 @@ package org.rex
 
 import scala.language.implicitConversions
 
-trait WordView extends Serializable {
-  def apply(s: Sentence)(i: Int): String
-}
-
 object WordView {
 
-  implicit def fn2wordView(fn: Sentence => Int => String): WordView =
-    new WordView {
-      override def apply(s: Sentence)(i: Int): String = fn(s)(i)
-    }
+  type Index = Int
 
-  lazy val lowercase: WordView =
-    (s: Sentence) =>
-      (i: Int) =>
-        s.tokens(i).toLowerCase
+  type Fn = Sentence => Index => String
 
-  lazy val identity: WordView =
-    (s: Sentence) =>
-      (i: Int) =>
-        s.tokens(i)
+  lazy val lowercase: WordView.Fn =
+    (s: Sentence) => (i: Int) => s.tokens(i).toLowerCase
+
+  lazy val identity: WordView.Fn =
+    (s: Sentence) => (i: Int) => s.tokens(i)
 }

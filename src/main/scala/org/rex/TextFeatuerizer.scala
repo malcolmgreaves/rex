@@ -9,13 +9,23 @@ import scala.language.implicitConversions
 
 import spire.syntax.cfor._
 
-trait TextFeatuerizer extends Featurizer[Candidate, String]
+trait TextFeatuerizer[T] {
+
+  type Input = T
+
+  type Fn = Input => Seq[FeatureObservation[String]]
+}
+
+object CandidateFeatuerizer extends TextFeatuerizer[Candidate]
 
 object TextFeatuerizer {
 
-  implicit def convFeatuerizer(f: Featurizer[Candidate, String]): TextFeatuerizer =
-    new TextFeatuerizer {
-      override def apply(v1: Candidate): Seq[FeatureObservation[String]] = f.apply(v1)
+  implicit def candFeat2NakFeat(f: Featurizer[Candidate, String]): CandidateFeatuerizer.Fn =
+    f.apply
+
+  implicit def nakFeat2CandFeat(f: CandidateFeatuerizer.Fn): Featurizer[Candidate, String] =
+    new Featurizer[Candidate, String] {
+      override def apply(v1: Candidate): Seq[FeatureObservation[String]] = f(v1)
     }
 
   /**
@@ -33,8 +43,8 @@ object TextFeatuerizer {
    * or combinations thereof.
    */
   def apply(
-    adjacentConf: Option[(AdjacentFeatures, SentenceViewFilter)],
-    insideConf: Option[(InsideFeatures, WordFilter, WordView)]): TextFeatuerizer =
+    adjacentConf: Option[(AdjacentFeatures, SentenceViewFilter.Fn)],
+    insideConf: Option[(InsideFeatures, WordFilter.Fn, WordView.Fn)]): CandidateFeatuerizer.Fn =
 
     new Featurizer[Candidate, String] {
 
@@ -212,8 +222,8 @@ object TextFeatuerizer {
         case Some((inside, wordFilter, wordView)) =>
           (cand: Candidate) => {
 
-            val wf = wordFilter(cand.innerFromSentence) _
-            val wv = wordView(cand.innerFromSentence) _
+            val wf = wordFilter(cand.innerFromSentence)
+            val wv = wordView(cand.innerFromSentence)
 
             // the following code to compute innerFiltered is equivalent to:
             //              val innerFiltered =

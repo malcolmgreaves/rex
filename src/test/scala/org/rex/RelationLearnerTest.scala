@@ -29,14 +29,17 @@ class RelationLearnerTest extends FunSuite {
     val end = System.currentTimeMillis()
     println(s"Took ${Duration.ofMillis(end - start).getSeconds} seconds (${end - start} ms) to generate ${candidates.size} candidates from ${bernieSentences.size} sentences.")
 
-    val rlearner = RelationLearner(
-      LiblinearConfig(),
-      featuerizer4skip2gram2gram
-    )
-
     candidates.foreach(c => {
       println(s"${c.queryW}\t|\t${c.answerW}")
     })
+
+    val rlearner = RelationLearner(
+      LiblinearConfig(),
+      TextFeatuerizer(
+        Some((adjacentConf2gram, SentenceViewFilter.noKnownPunctLowercase)),
+        Some((insideConf4skip2gram, wordFilter, wordView))
+      )
+    )
 
   }
 

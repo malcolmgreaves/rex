@@ -18,10 +18,10 @@ object SparkDataPipeline {
 
   import org.rex.Pipeline.aggregateFeatureObservations
 
-  def apply(tp: TextProcessor)(dk: DocumentChunker)(cg: CandGen)(tf: TextFeatuerizer): SparkDataPipeline =
+  def apply(tp: TextProcessor)(dk: DocumentChunker)(cg: CandGen)(tf: CandidateFeatuerizer.Fn): SparkDataPipeline =
     apply(SparkTextProcessor(KryoSerializationWrapper(tp)))(dk)(SparkCandGen(KryoSerializationWrapper(cg)))(tf)
 
-  @inline private def apply(stp: SparkTextProcessor.Type)(dk: DocumentChunker)(scg: SparkCandGen.Type)(tf: TextFeatuerizer): SparkDataPipeline =
+  @inline private def apply(stp: SparkTextProcessor.Type)(dk: DocumentChunker)(scg: SparkCandGen.Type)(tf: CandidateFeatuerizer.Fn): SparkDataPipeline =
     (data: RDD[(String, String)]) =>
       scg(stp(data).map(dk))
         .map({

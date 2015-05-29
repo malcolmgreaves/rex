@@ -41,22 +41,19 @@ object CandGenTest {
 
   val sentenceCandGenAllWord = SentenceCandGen(WordFilter.permitAll)
 
-  val candidateFilter = new WordFilter {
-    override def apply(s: Sentence)(i: Int): Boolean =
+  lazy val candidateFilter: WordFilter.Fn =
+    (s: Sentence) => (i: Int) =>
       WordFilter.noKnownPunct(s)(i) && (pronounOnlyFilter(s)(i) || nounOnlyfilter(s)(i))
-  }
 
-  val nounOnlyfilter = new WordFilter {
-    override def apply(s: Sentence)(i: Int): Boolean =
+  lazy val nounOnlyfilter: WordFilter.Fn =
+    (s: Sentence) => (i: Int) =>
       s.tags.exists(tags => tags(i) == "NN" || tags(i) == "NNS" || tags(i) == "NNP" || tags(i) == "NNPS")
-  }
 
-  val pronounOnlyFilter = new WordFilter {
-    override def apply(s: Sentence)(i: Int): Boolean =
+  lazy val pronounOnlyFilter: WordFilter.Fn =
+    (s: Sentence) => (i: Int) =>
       s.tags.exists(tags => tags(i) == "PRP")
-  }
 
-  val sentenceCandGenNoKnownPunct = SentenceCandGen(WordFilter.noKnownPunct)
+  lazy val sentenceCandGenNoKnownPunct = SentenceCandGen(WordFilter.noKnownPunct)
 
   import TextFeatuerizerTest._
 

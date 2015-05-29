@@ -18,7 +18,7 @@ object Pipeline {
 
   type OfFeatsAndCands = (Id, Text) => Seq[(Candidate, Features)]
 
-  def apply(tp: TextProcessor, dk: DocumentChunker, cg: CandGen, tf: TextFeatuerizer): OfFeatsAndCands =
+  def apply(tp: TextProcessor, dk: DocumentChunker, cg: CandGen, tf: TextFeatuerizer[Candidate]#Fn): OfFeatsAndCands =
     (id: Id, text: Text) =>
       cg.candidates(dk(tp.process(id, text)))
         .map(c => (c, aggregateFeatureObservations(tf(c))))

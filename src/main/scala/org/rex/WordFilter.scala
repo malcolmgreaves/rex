@@ -2,26 +2,21 @@ package org.rex
 
 import scala.language.implicitConversions
 
-/**
- * Evaluates to true iff the word at position i in sentence s should be accepted.
- */
-trait WordFilter extends Serializable {
-  def apply(s: Sentence)(i: Int): Boolean
-}
-
 object WordFilter {
 
-  implicit def fn2wordFilter(fn: Sentence => Int => Boolean): WordFilter =
-    new WordFilter {
-      override def apply(s: Sentence)(i: Int): Boolean = fn(s)(i)
-    }
+  type Index = Int
 
-  lazy val permitAll: WordFilter =
+  /**
+   * Evaluates to true iff the word at position i in sentence s should be accepted.
+   */
+  type Fn = Sentence => Index => Boolean
+
+  lazy val permitAll: WordFilter.Fn =
     (ignoreS: Sentence) =>
       (ignoreI: Int) =>
         true
 
-  lazy val noTaggedPunct: WordFilter =
+  lazy val noTaggedPunct: WordFilter.Fn =
     (s: Sentence) => s.tags match {
 
       case Some(tags) =>
@@ -33,7 +28,7 @@ object WordFilter {
           true
     }
 
-  lazy val noKnownPunct: WordFilter = {
+  lazy val noKnownPunct: WordFilter.Fn = {
     (s: Sentence) =>
       (i: Int) =>
         !knownPunct.contains(s.tokens(i))
