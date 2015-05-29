@@ -102,7 +102,7 @@ object Distribution {
   def fromMap[A](m: Map[A, Double]): Distribution[A] =
     new Distribution[A] {
 
-      override def asMap: Map[Item, Probability] =
+      override val asMap =
         m
 
       override def apply(i: Item): Probability =
@@ -115,7 +115,9 @@ object Distribution {
   def renormalize[A](dist: Distribution[A]): Distribution[A] = {
     val m = dist.asMap
     val total = m.foldLeft(0.0) { case (s, (_, v)) => s + v }
-    fromMap(m.map { case (item, prob) => (item, prob / total) })
+    fromMap(
+      m.map { case (item, prob) => (item, prob / total) }
+    )
   }
 
 }
