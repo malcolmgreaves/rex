@@ -173,7 +173,11 @@ object RelationExtractionUiuaConll extends App {
     (grouped(0).map(_._1), grouped(1).map(_._1))
   }
 
-  val relations = trainingData.map(_._2).toSet
+  val relations =
+    trainingData
+      .filter(_._2 != negrel)
+      .map(_._2)
+      .toSet
 
   val llConf = LiblinearConfig(
     solverType = SolverType.L1R_L2LOSS_SVC,
@@ -200,7 +204,6 @@ object RelationExtractionUiuaConll extends App {
   val rlearners =
     relations
       .map(r => (r, sourceRelationLearner))
-      .filter(_._1 == negrel)
       .toMap
 
   println(s"Training on ${train.size} instances, one binary SVM per relation (${relations.size} relations)")
