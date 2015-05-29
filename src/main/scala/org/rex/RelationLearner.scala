@@ -8,24 +8,20 @@ import org.rex.Learning.TupleVal1
 
 import scala.language.implicitConversions
 
-trait RelationLearner extends Learning[Candidate, String]
-
-object RelationLearner {
+object RelationLearner extends Learning[Candidate, String] {
 
   import TextFeatuerizer._
 
-  @inline def toNakExample(
-    inst: RelationLearner#Instance,
-    label: RelationLearner#Label): Example[RelationLearner#Label, Candidate] =
+  @inline def toNakExample(inst: Instance, label: Label): Example[Label, Candidate] =
 
     Example(label, inst)
 
   def apply(
     conf: LiblinearConfig,
     tfeat: CandidateFeatuerizer.Fn,
-    sizeForFeatureHashing: Option[Int] = None): RelationLearner#Learner =
+    sizeForFeatureHashing: Option[Int] = None): Learner =
 
-    (examples: Seq[(RelationLearner#Instance, RelationLearner#Label)]) => {
+    (examples: Seq[(Instance, Label)]) => {
 
       val nakFmtExamples =
         examples.map { case (instance, label) => Example(label, instance) }
@@ -64,7 +60,7 @@ object RelationLearner {
 
       val estimator =
         (c: Candidate) =>
-          new Distribution[RelationLearner#Label] {
+          new Distribution[Label] {
 
             private val result = nakClassifier.evalRaw(c)
 
