@@ -1,6 +1,6 @@
 package org.rex
 
-import nak.data.{FeatureObservation, Featurizer}
+import nak.data.{ FeatureObservation, Featurizer }
 import org.rex.AdjacentFeatures._
 import spire.syntax.cfor._
 
@@ -34,82 +34,73 @@ object CandidateFeatuerizer extends TextFeatuerizer[Candidate] {
    */
   def apply(
     adjacentConf: Option[(AdjacentFeatures, SentenceViewFilter.Fn)],
-    insideConf: Option[(InsideFeatures, WordFilter.Fn, WordView.Fn)]): Fn =
+    insideConf: Option[(InsideFeatures, WordFilter.Fn, WordView.Fn)]): Fn = {
 
-    new Featurizer[Candidate, String] {
+    @inline def filterAndRecomputeIndices(
+      w: Seq[(String, Boolean)],
+      qi: Int,
+      ai: Int): (Seq[String], Int, Int) = {
 
-      override def apply(cand: Candidate): Seq[FeatureObservation[String]] =
-        (makeAdjacentFeatures(cand) ++ makeInsideFeatures(cand))
-          .foldLeft(Map.empty[String, Double])(
-            (fmap, feature) => fmap.get(feature) match {
+      @inline def updateIndex(removingIndex: Int, indexToUpdate: Int): Int =
+        if (removingIndex < indexToUpdate)
+          indexToUpdate - 1
+        else
+          indexToUpdate
 
-              case Some(value) =>
-                (fmap - feature) + (feature -> (value + 1.0))
+      @tailrec def f(
+        words: List[(String, Boolean, Int)],
+        q: Int,
+        a: Int,
+        filtered: Seq[String]): (Seq[String], Int, Int) =
+        words match {
 
-              case None =>
-                fmap + (feature -> 1.0)
-            }
-          )
-          .map({
-            case (feature, value) =>
-              FeatureObservation[String](feature, value)
-          })
-          .toSeq
+          case (word, shouldKeep, index) :: rest =>
+            if (shouldKeep)
+              f(rest, q, a, filtered :+ word)
+            else
+              f(rest, updateIndex(index, q), updateIndex(index, a), filtered)
 
-      @inline private def filterAndRecomputeIndices(w: Seq[(String, Boolean)], qi: Int, ai: Int): (Seq[String], Int, Int) = {
+          case Nil =>
+            (filtered, q, a)
+        }
 
-        @inline def updateIndex(removingIndex: Int, indexToUpdate: Int): Int =
-          if (removingIndex < indexToUpdate)
-            indexToUpdate - 1
-          else
-            indexToUpdate
+      f(
+        w.zipWithIndex
+          .map(x => (x._1._1, x._1._2, x._2))
+          .toList,
+        qi,
+        ai,
+        Seq.empty[String]
+      )
+    }
 
-        @tailrec def f(words: List[(String, Boolean, Int)], q: Int, a: Int, filtered: Seq[String]): (Seq[String], Int, Int) =
-          words match {
+    def adjFeats1Sent(
+      wordfilts: Seq[(String, Boolean)],
+      origQIdx: Int,
+      origAIdx: Int): Int => Seq[Seq[String]] = {
 
-            case (word, shouldKeep, index) :: rest =>
-              if (shouldKeep)
-                f(rest, q, a, filtered :+ word)
-              else
-                f(rest, updateIndex(index, q), updateIndex(index, a), filtered)
+      val (words, qIdx, aIdx) = filterAndRecomputeIndices(wordfilts.toList, origQIdx, origAIdx)
 
-            case Nil =>
-              (filtered, q, a)
-          }
+      val (lIndex, rIndex) =
+        if (qIdx < aIdx)
+          (qIdx, aIdx)
+        else
+          (aIdx, qIdx)
 
-        f(
-          w.zipWithIndex
-            .map(x => (x._1._1, x._1._2, x._2))
-            .toList,
-          qi,
-          ai,
-          Seq.empty[String]
-        )
-      }
+      (ngramSize: Int) => Seq(
+        if (lIndex - ngramSize < 0)
+          nothingStr
+        else
+          left(words, lIndex)(ngramSize),
+        if (rIndex + ngramSize >= words.size)
+          nothingStr
+        else
+          right(words, rIndex)(ngramSize)
+      )
+    }
 
-      private def adjFeats1Sent(wordfilts: Seq[(String, Boolean)], origQIdx: Int, origAIdx: Int): Int => Seq[Seq[String]] = {
-
-        val (words, qIdx, aIdx) = filterAndRecomputeIndices(wordfilts.toList, origQIdx, origAIdx)
-
-        val (lIndex, rIndex) =
-          if (qIdx < aIdx)
-            (qIdx, aIdx)
-          else
-            (aIdx, qIdx)
-
-        (ngramSize: Int) => Seq(
-          if (lIndex - ngramSize < 0)
-            nothingStr
-          else
-            left(words, lIndex)(ngramSize),
-          if (rIndex + ngramSize >= words.size)
-            nothingStr
-          else
-            right(words, rIndex)(ngramSize)
-        )
-      }
-
-      private val makeAdjacentFeatures: Candidate => Seq[String] = adjacentConf match {
+    val makeAdjacentFeatures: Candidate => Seq[String] =
+      adjacentConf match {
 
         case Some((AdjacentFeatures(width), sentViewFilt)) => {
 
@@ -207,7 +198,8 @@ object CandidateFeatuerizer extends TextFeatuerizer[Candidate] {
         }
       }
 
-      private val makeInsideFeatures: Candidate => Seq[String] = insideConf match {
+    val makeInsideFeatures: Candidate => Seq[String] =
+      insideConf match {
 
         case Some((inside, wordFilter, wordView)) =>
           (cand: Candidate) => {
@@ -246,7 +238,26 @@ object CandidateFeatuerizer extends TextFeatuerizer[Candidate] {
           case None =>
           (ignore: Candidate) => nothingStr
       }
-    }
 
-  private val nothingStr = IndexedSeq.empty[String]
+    // the candidate featurization function at last!
+    (cand: Candidate) =>
+      (makeAdjacentFeatures(cand) ++ makeInsideFeatures(cand))
+        .foldLeft(Map.empty[String, Double])(
+          (fmap, feature) => fmap.get(feature) match {
+
+            case Some(value) =>
+              (fmap - feature) + (feature -> (value + 1.0))
+
+            case None =>
+              fmap + (feature -> 1.0)
+          }
+        )
+        .map({
+          case (feature, value) =>
+            FeatureObservation[String](feature, value)
+        })
+        .toSeq
+  }
+
+  val nothingStr = IndexedSeq.empty[String]
 }
