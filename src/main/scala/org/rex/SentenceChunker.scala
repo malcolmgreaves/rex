@@ -13,9 +13,12 @@ case object IdentitySentChunker extends SentenceChunker.Fn {
   override def apply(s: Sentence) = (s, Seq.empty[Seq[Int]])
 }
 
-case class NerSentChunker(entSet: NeTagSet) extends SentenceChunker.Fn {
+case class NerSentChunker(entSet: NeTagSet) extends SentenceChunker.Fn{
 
   import NerSentChunker._
+
+  val isNonEntity =
+    (entity: String) => entity == entSet.nonEntityTag
 
   override def apply(s: Sentence) =
     s.entities.map(ents =>
@@ -31,29 +34,27 @@ case class NerSentChunker(entSet: NeTagSet) extends SentenceChunker.Fn {
             .map({ case ((e, t), indexMinus1) => (e, t, indexMinus1 + 1) })
             .foldLeft((Seq.empty[Seq[Int]], ents.head, Seq(0)))({
 
-              case ((indicesChunked, previousEnt, workingIndices), (entity, token, index)) =>
+            case ((indicesChunked, previousEnt, workingIndices), (entity, token, index)) =>
 
-                val isNonEnt = entity == entSet.nonEntityTag
+              val continueToChunk = !isNonEntity(entity) && previousEnt == entity
 
-                val continueToChunk = !isNonEnt && previousEnt == entity
+              val updatedWorkingIndices =
+                if (continueToChunk)
+                  workingIndices :+ index
+                else
+                  Seq(index)
 
-                val updatedWorkingIndices =
-                  if (continueToChunk)
-                    workingIndices :+ index
-                  else
-                    Seq(index)
-
-                val updatedIndices =
-                  if (!continueToChunk)
-                    if (workingIndices.size > 0)
-                      indicesChunked :+ workingIndices
-                    else
-                      indicesChunked
+              val updatedIndices =
+                if (!continueToChunk)
+                  if (workingIndices.size > 0)
+                    indicesChunked :+ workingIndices
                   else
                     indicesChunked
+                else
+                  indicesChunked
 
-                (updatedIndices, entity, updatedWorkingIndices)
-            })
+              (updatedIndices, entity, updatedWorkingIndices)
+          })
 
         val allChunkedIndices =
           if (lastWorkingIndices.isEmpty)
@@ -65,38 +66,40 @@ case class NerSentChunker(entSet: NeTagSet) extends SentenceChunker.Fn {
 
         (
           Sentence(
-            doChunking(s.tokens, tokenToStr),
-            s.tags.map(t => doChunking(t, firstToStr)),
-            Some(doChunking(ents, firstToStr))
+            doChunking(s.tokens, tokenToStr), // tokens
+            s.tags.map(t => doChunking(t, firstToStr)), // pos tags
+            Some(doChunking(ents, firstToStr)) // named entities
           ),
-            allChunkedIndices
-        )
+          allChunkedIndices
+          )
       }
     ).getOrElse((s, Seq.empty[Seq[Int]]))
 }
 
 private object NerSentChunker {
 
-  val tokenToStr =
-    (l: Seq[String]) =>
-      (indices: Seq[Int]) =>
-        indices
-          .map(index => l(index))
-          .mkString(" ")
+  // for the token case
+  def tokenToStr(tokens: Seq[String])(indices: Seq[Int]) =
+    indices
+      .map(tokens.apply)
+      .mkString(" ")
 
-  val firstToStr =
-    (l: Seq[String]) =>
-      (indices: Seq[Int]) =>
-        indices
-          .map(index => l(index))
-          .headOption.getOrElse("")
+  // for the POS tag & NE tag cases
+  def firstToStr(tokens: Seq[String])(indices: Seq[Int]) =
+    indices
+      .map(tokens.apply)
+      .headOption.getOrElse("")
+
+  type Tokens2Str = Seq[String] => Seq[Int] => String
 
   // Does chunking on l according to the chunked indices (idxs).
-  @inline def chunk_h(idxs: Seq[Seq[Int]])(l: Seq[String], toStr: Seq[String] => Seq[Int] => String): Seq[String] =
+  @inline def chunk_h(idxs: Seq[Seq[Int]])(tokens: Seq[String], toStr: Tokens2Str): Seq[String] = {
+    val select = toStr(tokens)
     idxs
       .foldLeft(Seq.empty[String])({
-        case (newChunked, indices) =>
-          newChunked :+ toStr(l)(indices)
-      })
+      case (newChunked, indices) =>
+        newChunked :+ select(indices)
+    })
+  }
 
 }

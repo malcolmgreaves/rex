@@ -34,8 +34,11 @@ case class CandidateSentence(s: Sentence, queryIndex: Int, answerIndex: Int) ext
     else
       (answerIndex, queryIndex)
 
-  override val startInnerIndex = start + 1
-  override val endInnerIndex = end
+  override val startInnerIndex =
+    start + 1
+
+  override val endInnerIndex =
+    end
 
   override lazy val queryW =
     s.tokens(queryIndex)
@@ -87,8 +90,11 @@ case class CandidateCorefQuery(
     else
       (answerWordIndex, queryCorefWordIndex)
 
-  override val startInnerIndex = start + 1
-  override val endInnerIndex = end
+  override val startInnerIndex =
+    start + 1
+
+  override val endInnerIndex =
+    end
 
   override lazy val queryW =
     word_h(query)
@@ -115,8 +121,11 @@ case class CandidateCorefAnswer(
     else
       (answerCorefWordIndex, queryWordIndex)
 
-  override val startInnerIndex = start + 1
-  override val endInnerIndex = end
+  override val startInnerIndex =
+    start + 1
+
+  override val endInnerIndex =
+    end
 
   override lazy val queryW =
     word_h(sharedSentNum, queryWordIndex)
