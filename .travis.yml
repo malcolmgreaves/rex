@@ -2,6 +2,6 @@ language: scala
 scala:
   - 2.10.5
 jdk:
-    - oraclejdk7
+   - oraclejdk8
 script: "sbt -J-Xmx2700m -J-XX:+UseConcMarkSweepGC test"
 after_success: "sbt -J-Xmx2700m -J-XX:+UseConcMarkSweepGC coveralls"
