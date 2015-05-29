@@ -6,11 +6,16 @@ import scala.util.Try
 trait Learning[A, B] {
 
   type Instance = A
+
   type Label = B
 
   type Classifier = Instance => Label
+
   type Estimator = Instance => Distribution[Label]
-  type Learner = Seq[(Instance, Label)] => (Classifier, Estimator)
+
+  type TrainingData = Seq[(Instance, Label)]
+
+  type Learner = TrainingData => (Classifier, Estimator)
 }
 
 object Learning {

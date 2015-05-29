@@ -10,7 +10,7 @@ import scala.language.implicitConversions
 
 object RelationLearner extends Learning[Candidate, String] {
 
-  @inline def toNakExample(inst: Instance, label: Label): Example[Label, Candidate] =
+  @inline def toNakExample(inst: Instance, label: Label): Example[Label, Instance] =
     Example(label, inst)
 
   import CandidateFeatuerizer._
