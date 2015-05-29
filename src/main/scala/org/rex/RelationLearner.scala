@@ -1,12 +1,13 @@
 package org.rex
 
 import nak.NakContext._
-import nak.core.Classifier
+import nak.core.{ FeaturizedClassifier, LiblinearClassifier, Classifier }
 import nak.data._
-import nak.liblinear.LiblinearConfig
+import nak.liblinear._
 import org.rex.Learning.TupleVal1
 
 import scala.language.implicitConversions
+import scala.util.{ Failure, Success, Try }
 
 object RelationLearner extends Learning[Candidate, String] {
 
@@ -27,7 +28,7 @@ object RelationLearner extends Learning[Candidate, String] {
 
       // Featurize and index the examples.
 
-      val nakClassifier =
+      val __nakClassifier =
         sizeForFeatureHashing match {
 
           case Some(featureSpaceSize) =>
@@ -53,6 +54,27 @@ object RelationLearner extends Learning[Candidate, String] {
               tfeat
             )
         }
+
+      val nakClassifier = new LiblinearClassifier with FeaturizedClassifier[String, Candidate] {
+
+        override def fmap: FeatureMap = __nakClassifier.fmap
+        override val lmap: Map[String, Int] = __nakClassifier.lmap
+        override val model: Model = __nakClassifier.model
+        override val featurizer: Featurizer[Candidate, String] = __nakClassifier.featurizer
+
+        override def apply(context: Array[(Int, Double)]): Array[Double] = {
+          val ctxt = context.map(c => new FeatureNode(c._1, c._2).asInstanceOf[nak.liblinear.Feature])
+          Try {
+            val labelScores = Array.fill(numLabels)(0.0)
+            Linear.predictProbability(model, ctxt, labelScores)
+            labelScores
+
+          } getOrElse {
+            Array(Linear.predict(model, ctxt))
+          }
+        }
+
+      }
 
       val label2index = nakClassifier.lmap
       val index2label = label2index.toList.sortBy(_._2).map(_._1).toSeq

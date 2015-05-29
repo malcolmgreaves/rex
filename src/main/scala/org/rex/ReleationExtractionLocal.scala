@@ -1,6 +1,8 @@
 package org.rex
 
-import nak.liblinear.LiblinearConfig
+import java.util.Random
+
+import nak.liblinear.{ SolverType, LiblinearConfig }
 
 import scala.language.{ implicitConversions, postfixOps }
 import scala.util.Try
@@ -100,52 +102,90 @@ object ReleationExtractionLocal extends App {
     groupedLines.map(x => x.copy(_1 = sentenceFrom(x._1)))
 
   println(s"Obtained ${labeledSentences.size} sentences")
-  println(s"Of those, ${labeledSentences.filter(_._2.nonEmpty)} are labeled")
+  println(s"Of those, ${labeledSentences.filter(_._2.nonEmpty).size} are labeled")
 
-  val pconf = {
-    val (es, ps) = labeledSentences.foldLeft((Set.empty[String], Set.empty[String])){
-      case ((e,p), (s, _)) =>
-        (e ++ s.entities.get, p ++ s.tags.get)
-    }
-    ProcessingConf(
-      entSet = Some(NeTagSet(es, "O")),
-      tagSet = Some(PosTagSet.DefaultPennTreebank.posSet),
-      parse = false,
-      lemmatize = true,
-      resolveCoreference = false,
-      discourse = false
-    )
+  //  val pconf = {
+  //    val (es, ps) = labeledSentences.foldLeft((Set.empty[String], Set.empty[String])){
+  //      case ((e,p), (s, _)) =>
+  //        (e ++ s.entities.get, p ++ s.tags.get)
+  //    }
+  //    ProcessingConf(
+  //      entSet = Some(NeTagSet(es, "O")),
+  //      tagSet = Some(PosTagSet.DefaultPennTreebank.posSet),
+  //      parse = false,
+  //      lemmatize = true,
+  //      resolveCoreference = false,
+  //      discourse = false
+  //    )
+  //  }
+  //
+  //  val candidatePipeln = Pipeline(
+  //    CoreNlpTextProcessor(pconf),
+  //    NerDocChunker(pconf.entSet.get),
+  //    {
+  //      val wf = WordFilter.noKnownPunct
+  //      CorefCandGen(wf,wf)
+  //    }
+  //  )
+  //
+  //  val negrel = "nothing"
+  val trainingData: RelationLearner.TrainingData =
+    labeledSentences
+      .filter { _._2 nonEmpty }
+      .flatMap {
+        case (sentence, relations) =>
+          relations.map { r =>
+            (CandidateSentence(sentence, r.arg1, r.arg2), r.relation)
+          }
+      }
+
+  val (train, test) = {
+    val rand = new Random()
+    val grouped =
+      trainingData
+        .map(x => (x, rand.nextInt(2)))
+        .toList
+        .groupBy(_._2)
+
+    println(s"grouped keyset: ${grouped.keySet}")
+
+    (grouped(0).map(_._1), grouped(1).map(_._1))
   }
 
-  val candidatePipeln = Pipeline(
-    CoreNlpTextProcessor(pconf),
-    NerDocChunker(pconf.entSet.get),
-    {
-      val wf = WordFilter.noKnownPunct
-      CorefCandGen(wf,wf)
-    }
-  )
-
-  val negrel = "nothing"
-  val trainingData = labeledSentences
-    .map {
-      case (sentence, relations) =>
-        ???
-    }
-
   val rlearner = RelationLearner(
-    LiblinearConfig(),
+    LiblinearConfig(
+      solverType = SolverType.MCSVM_CS,
+      cost = 1.0,
+      eps = 0.001,
+      showDebug = false
+    ),
     CandidateFeatuerizer(
       Some((
         AdjacentFeatures(2),
         SentenceViewFilter.noKnownPunctLowercase
-        )),
+      )),
       Some((
         InsideFeatures(2, 4),
         WordFilter.noKnownPunct,
         WordView.lowercase
-        ))
+      ))
     )
   )
+
+  println(s"Training on ${train.size} instances")
+  val (classifier, _) = rlearner(train)
+
+  val numberCorrectPredictions =
+    test
+      .foldLeft(0) {
+        case (nCorrect, (instance, label)) =>
+          val predicted = classifier(instance)
+          if (predicted == label)
+            nCorrect + 1
+          else
+            nCorrect
+      }
+
+  println(s"# correct $numberCorrectPredictions out of ${test.size} : accuracy: ${(numberCorrectPredictions.toDouble / test.size) * 100.0}")
 
 }

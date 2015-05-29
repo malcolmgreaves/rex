@@ -13,7 +13,7 @@ case object IdentitySentChunker extends SentenceChunker.Fn {
   override def apply(s: Sentence) = (s, Seq.empty[Seq[Int]])
 }
 
-case class NerSentChunker(entSet: NeTagSet) extends SentenceChunker.Fn{
+case class NerSentChunker(entSet: NeTagSet) extends SentenceChunker.Fn {
 
   import NerSentChunker._
 
@@ -34,27 +34,27 @@ case class NerSentChunker(entSet: NeTagSet) extends SentenceChunker.Fn{
             .map({ case ((e, t), indexMinus1) => (e, t, indexMinus1 + 1) })
             .foldLeft((Seq.empty[Seq[Int]], ents.head, Seq(0)))({
 
-            case ((indicesChunked, previousEnt, workingIndices), (entity, token, index)) =>
+              case ((indicesChunked, previousEnt, workingIndices), (entity, token, index)) =>
 
-              val continueToChunk = !isNonEntity(entity) && previousEnt == entity
+                val continueToChunk = !isNonEntity(entity) && previousEnt == entity
 
-              val updatedWorkingIndices =
-                if (continueToChunk)
-                  workingIndices :+ index
-                else
-                  Seq(index)
+                val updatedWorkingIndices =
+                  if (continueToChunk)
+                    workingIndices :+ index
+                  else
+                    Seq(index)
 
-              val updatedIndices =
-                if (!continueToChunk)
-                  if (workingIndices.size > 0)
-                    indicesChunked :+ workingIndices
+                val updatedIndices =
+                  if (!continueToChunk)
+                    if (workingIndices.size > 0)
+                      indicesChunked :+ workingIndices
+                    else
+                      indicesChunked
                   else
                     indicesChunked
-                else
-                  indicesChunked
 
-              (updatedIndices, entity, updatedWorkingIndices)
-          })
+                (updatedIndices, entity, updatedWorkingIndices)
+            })
 
         val allChunkedIndices =
           if (lastWorkingIndices.isEmpty)
@@ -70,8 +70,8 @@ case class NerSentChunker(entSet: NeTagSet) extends SentenceChunker.Fn{
             s.tags.map(t => doChunking(t, firstToStr)), // pos tags
             Some(doChunking(ents, firstToStr)) // named entities
           ),
-          allChunkedIndices
-          )
+            allChunkedIndices
+        )
       }
     ).getOrElse((s, Seq.empty[Seq[Int]]))
 }
@@ -97,9 +97,9 @@ private object NerSentChunker {
     val select = toStr(tokens)
     idxs
       .foldLeft(Seq.empty[String])({
-      case (newChunked, indices) =>
-        newChunked :+ select(indices)
-    })
+        case (newChunked, indices) =>
+          newChunked :+ select(indices)
+      })
   }
 
 }

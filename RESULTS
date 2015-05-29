@@ -1,0 +1,9 @@
+Reading input from:
+/Users/mgreaves/data/uiuc/entity_and_relation_regcognition_corpora/conll04.corp
+Obtained 142241 individual lines
+Obtained 5516 grouped lines
+Obtained 5516 sentences
+Of those, 1441 are labeled
+grouped keyset: Set(1, 0)
+Training on 1003 instances
+# correct 250 out of 1045 : accuracy: 23.923444976076556
