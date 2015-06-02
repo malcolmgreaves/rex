@@ -70,7 +70,6 @@ object Connl04Format {
 
       groupedLines
         .map(x => x.copy(_1 = sentenceFrom(x._1)))
-        .toIterator
     }
 
   def cleanWord(word: String): String =

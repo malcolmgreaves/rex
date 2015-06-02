@@ -10,7 +10,9 @@ trait Reader[I, T] {
   type InputSource = I
   type Element = T
 
-  type Fn = InputSource => Iterator[Element]
+  type Readable = Traversable[Element]
+
+  type Fn = InputSource => Readable
 }
 
 object ReaderMap {

@@ -100,7 +100,7 @@ object RelationExtractionLearningMain extends App {
       .children()
   }
 
-  def mkStdCandGen(labeledSentences: Iterator[LabeledSentence]): SentenceCandGen = {
+  def mkStdCandGen(labeledSentences: Reader[A forSome { type A }, LabeledSentence]#Readable): SentenceCandGen = {
 
     val pconf = {
       val (es, ps) = labeledSentences.foldLeft((Set.empty[String], Set.empty[String])) {
@@ -130,7 +130,7 @@ object RelationExtractionLearningMain extends App {
 
   def mkTrainData(
     candgen: SentenceCandGen,
-    labeledSentences: Iterator[LabeledSentence]): RelationLearner.TrainingData =
+    labeledSentences: Reader[A forSome { type A }, LabeledSentence]#Readable): RelationLearner.TrainingData =
 
     labeledSentences
       .flatMap {
@@ -223,7 +223,7 @@ object RelationExtractionLearningMain extends App {
   parser.parse(args, RelConfig.empty) match {
 
     case Some(config) =>
-      if(!(config.lr.isDefined || config.ev.isDefined || config.ex.isDefined)) {
+      if (!(config.lr.isDefined || config.ev.isDefined || config.ex.isDefined)) {
         println("ERROR: One of LearningCmd, EvaluationCmd, or ExtractionCmd must be defined.\nUse option \"--help\" for option descriptions.")
         System.exit(1)
       }
