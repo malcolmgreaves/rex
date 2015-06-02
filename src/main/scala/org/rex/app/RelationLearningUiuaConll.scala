@@ -1,8 +1,9 @@
-package org.rex
+package org.rex.app
 
 import java.util.Random
 
 import nak.liblinear.{ SolverType, LiblinearConfig }
+import org.rex._
 
 import scala.language.{ implicitConversions, postfixOps }
 import scala.util.Try
@@ -102,7 +103,7 @@ object RelationLearningUiuaConll extends App {
     groupedLines.map(x => x.copy(_1 = sentenceFrom(x._1)))
 
   println(s"Obtained ${labeledSentences.size} sentences")
-  println(s"Of those, ${labeledSentences.filter(_._2.nonEmpty).size} are labeled")
+  println(s"Of those, ${labeledSentences.count(_._2.nonEmpty)} are labeled")
 
   //ok for MC_SVM
   //  val trainingData: RelationLearner.TrainingData =

@@ -21,7 +21,7 @@ object RelationLearner extends Learning[Candidate, String] {
     tfeat: CandidateFeatuerizer.Fn,
     sizeForFeatureHashing: Option[Int] = None): Learner =
 
-    (examples: Seq[(Instance, Label)]) => {
+    (examples: Traversable[(Instance, Label)]) => {
 
       val nakFmtExamples =
         examples.map { case (instance, label) => Example(label, instance) }

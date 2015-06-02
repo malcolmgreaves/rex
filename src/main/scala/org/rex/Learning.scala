@@ -9,11 +9,13 @@ trait Learning[A, B] {
 
   type Label = B
 
+  type Pair = (Instance, Label)
+
+  type TrainingData = Traversable[Pair]
+
   type Classifier = Instance => Label
 
   type Estimator = Instance => Distribution[Label]
-
-  type TrainingData = Seq[(Instance, Label)]
 
   type Learner = TrainingData => (Classifier, Estimator)
 }
