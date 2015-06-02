@@ -17,20 +17,22 @@ resolvers ++= Seq(
 )
 
 libraryDependencies ++= Seq(
-  // visualization
+  // Visualization
   "com.quantifind" %% "wisp" % "0.0.1",
   // NLP
   "edu.arizona.sista" % "processors" % "3.3",
   "edu.arizona.sista" % "processors" % "3.3" classifier "models",
   // "org.scalanlp" % "chalk" % "1.2.0",
-  // Concurrent 
+  // Concurrent and Distributed 
   "org.apache.spark" %% "spark-core" % "1.2.0",
-  // math
+  // Math
   "org.spire-math" %% "spire" % "0.9.1",
-  "org.apache.spark" %% "spark-mllib" % "1.2.0",
   "org.scalanlp" % "breeze-core_2.10" % "0.4",
   "org.scalanlp" % "breeze-math_2.10" % "0.4",
+  // ML
   "org.scalanlp" % "nak" % "1.1.3",
+  // Util
+  "com.github.scopt" %% "scopt" % "3.3.0",
   // Testing
   "org.scalatest" %% "scalatest" % "2.2.1" % "test"
 )

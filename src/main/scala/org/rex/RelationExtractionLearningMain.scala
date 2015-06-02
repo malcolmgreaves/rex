@@ -4,7 +4,9 @@ import java.io.File
 import java.util.Random
 import java.util.concurrent.TimeUnit
 
+import edu.stanford.nlp.io.EncodingPrintWriter.out
 import nak.liblinear.{ LiblinearConfig, SolverType }
+import org.apache.log4j.Level
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ Await, Future }
@@ -12,7 +14,7 @@ import scala.io.Source
 import scala.language.{ implicitConversions, postfixOps }
 import scala.util.Try
 
-object RelationExtractionUiuaConll extends App {
+object RelationExtractionLearningMain extends App {
 
   sealed trait Line
   case object Break extends Line
@@ -47,31 +49,178 @@ object RelationExtractionUiuaConll extends App {
     }
   }
 
-  type LabeledLines = (Seq[TokenLine], Seq[RelationLine])
+  sealed trait Reader {
 
-  def lineAggregate(lines: Traversable[Line]): Seq[LabeledLines] =
-    lines
-      .foldLeft((Seq.empty[LabeledLines], Seq.empty[TokenLine], Seq.empty[RelationLine], false)) {
-        case ((labeled, workingToks, workingRels, brokenBefore), l) => l match {
+    type InputSource
+    type Element
 
-          case Break =>
-            if (!brokenBefore)
-              (labeled, workingToks, workingRels, true)
-            else
-              (
-                labeled :+ ((workingToks, workingRels)),
-                Seq.empty[TokenLine],
-                Seq.empty[RelationLine],
-                false
-              )
+    def read(in: InputSource): Iterator[Element]
+  }
 
-          case tl: TokenLine =>
-            (labeled, workingToks :+ tl, workingRels, brokenBefore)
+  object ReaderMap {
 
-          case rl: RelationLine =>
-            (labeled, workingToks, workingRels :+ rl, brokenBefore)
-        }
-      }._1
+    def apply(s: String): Option[Reader] =
+      s match {
+        case "conll" =>
+          Some(LabeledConll04Reader)
+
+        case _ =>
+          None
+      }
+  }
+
+  type LabeledSentence = (Sentence, Seq[RelationLine])
+
+  case object LabeledConll04Reader extends Reader { //[File, LabeledSentence] {
+
+    override type InputSource = File
+
+    override type Element = LabeledSentence
+
+    def cleanWord(word: String): String =
+      word.replaceAll("/", " ")
+
+    type LabeledLines = (Seq[TokenLine], Seq[RelationLine])
+
+    def lineAggregate(lines: Traversable[Line]): Seq[LabeledLines] =
+      lines
+        .foldLeft((Seq.empty[LabeledLines], Seq.empty[TokenLine], Seq.empty[RelationLine], false)) {
+          case ((labeled, workingToks, workingRels, brokenBefore), l) => l match {
+
+            case Break =>
+              if (!brokenBefore)
+                (labeled, workingToks, workingRels, true)
+              else
+                (
+                  labeled :+ ((workingToks, workingRels)),
+                  Seq.empty[TokenLine],
+                  Seq.empty[RelationLine],
+                  false
+                )
+
+            case tl: TokenLine =>
+              (labeled, workingToks :+ tl, workingRels, brokenBefore)
+
+            case rl: RelationLine =>
+              (labeled, workingToks, workingRels :+ rl, brokenBefore)
+          }
+        }._1
+
+    def sentenceFrom(tls: Seq[TokenLine]): Sentence =
+      Sentence(
+        tls.map(_.word).map(cleanWord),
+        Some(tls.map(_.posTag)),
+        Some(tls.map(_.neTag))
+      )
+
+    override def read(input: File): Iterator[LabeledSentence] = {
+      println(s"Reading input from:\n$inputFile")
+      val input = Source.fromFile(inputFile)
+
+      val rawLines = input.getLines().flatMap(Line.apply).toSeq
+      println(s"Obtained ${rawLines.size} individual lines")
+
+      val groupedLines = lineAggregate(rawLines)
+      println(s"Obtained ${groupedLines.size} grouped lines")
+
+      val labeledSentences: Seq[(Sentence, Seq[RelationLine])] =
+        groupedLines
+          .map(x => x.copy(_1 = sentenceFrom(x._1)))
+      println(s"Obtained ${labeledSentences.size} sentences")
+      println(s"Of those, ${labeledSentences.count(_._2.nonEmpty)} are labeled")
+
+      labeledSentences.toIterator
+    }
+  }
+
+  sealed trait Command
+
+  case class LearningCmd(
+    labeledInput: File,
+    reader: Reader,
+    modelOut: Option[File]) extends Command
+
+  object LearningCmd {
+    def emptyUnsafe = LearningCmd(null, null, None)
+  }
+
+  case class Evaluation(
+    labeledInput: File,
+    reader: Reader,
+    modelIn: Option[File],
+    evalOut: Option[File])
+
+  object Evaluation {
+    def emptyUnsafe = Evaluation(null, null, None, None)
+  }
+
+  case class Extraction(
+    rawInput: File,
+    reader: Reader,
+    modelIn: Option[File],
+    extractOut: Option[File]) extends Command
+
+  object Extraction {
+    def emptyUnsafe = Extraction(null, null, None, None)
+  }
+
+  case class RelConfig(
+    lr: Option[LearningCmd],
+    ev: Option[Evaluation],
+    ex: Option[Extraction])
+
+  object RelConfig {
+    def empty = RelConfig(None, None, None)
+  }
+
+  val parser = new scopt.OptionParser[RelConfig]("scopt") {
+    head("Relation Learning and Extraction")
+    note("some notes.\n")
+    help("help")
+      .text("prints this usage text")
+    cmd("learning")
+      .optional()
+      .action { (_, c) => c.copy(lr = Some(LearningCmd.emptyUnsafe)) }
+      .text("Perform relation learning.")
+      .children(
+        opt[File]("labeledInput")
+          .abbr("li")
+          .valueName("<file>")
+          .action { (li, c) =>
+            c.copy(lr = Some(c.lr.getOrElse(LearningCmd.emptyUnsafe)
+              .copy(labeledInput = li)))
+          }
+          .text("Input of labeled relation data."),
+        opt[String]("learnReader")
+          .abbr("lr")
+          .valueName("typeOf[Reader]")
+          .action { (r, c) =>
+            ReaderMap(r).map { lr =>
+              c.copy(lr = Some(c.lr.getOrElse(LearningCmd.emptyUnsafe)
+                .copy(reader = lr)))
+            }.getOrElse(c)
+          }
+          .text("Input of labeled relation data.")
+      //        opt[File]("labeledInput")
+      //          .abbr("li")
+      //          .valueName("<file>")
+      //          .action {(li, c) =>
+      //            c.copy(lr = Some(c.lr.getOrElse(Learning.emptyUnsafe).copy(labeledInput = li)))
+      //          }
+      //          .text("Input of labeled relation data."),
+      //        checkConfig { c => if (c.keepalive && c.xyz) failure("xyz cannot keep alive") else success }
+      )
+  }
+
+  // parser.parse returns Option[C]
+  parser.parse(args, RelConfig.empty) match {
+
+    case Some(config) =>
+    // do stuff
+
+    case None         =>
+    // arguments are bad, error message will have been displayed
+  }
 
   val inputFile = new File(
     args.headOption
@@ -97,7 +246,7 @@ object RelationExtractionUiuaConll extends App {
 
   println(s"Obtained ${rawLines.size} individual lines")
 
-  val groupedLines = lineAggregate(rawLines)
+  val groupedLines = LabeledConll04Reader.lineAggregate(rawLines)
 
   println(s"Obtained ${groupedLines.size} grouped lines")
 
@@ -105,7 +254,7 @@ object RelationExtractionUiuaConll extends App {
     groupedLines.map(x => x.copy(_1 = sentenceFrom(x._1)))
 
   println(s"Obtained ${labeledSentences.size} sentences")
-  println(s"Of those, ${labeledSentences.filter(_._2.nonEmpty).size} are labeled")
+  println(s"Of those, ${labeledSentences.count(_._2.nonEmpty)} are labeled")
 
   val pconf = {
     val (es, ps) = labeledSentences.foldLeft((Set.empty[String], Set.empty[String])) {
@@ -160,9 +309,8 @@ object RelationExtractionUiuaConll extends App {
 
   println(s"A total of ${trainingData.size} candidates, of which ${trainingData.count(_._2 == negrel)} are unlabeled.")
 
-
-  def makeBinary(max:Int)(v: Int):Int =
-    if(v >= max-1) 1 else 0
+  def makeBinary(max: Int)(v: Int): Int =
+    if (v >= max - 1) 1 else 0
 
   val (train, test) = {
     val lim = 4
