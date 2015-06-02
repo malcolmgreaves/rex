@@ -16,12 +16,14 @@ object RelationExtractionLearningMain extends App {
 
   sealed trait Command
 
+  sealed trait CommandT
+
   case class LearningCmd(
     labeledInput: File,
     reader: Reader[File, LabeledSentence]#Fn,
     modelOut: Option[File]) extends Command
 
-  object LearningCmd {
+  case object LearningCmd extends CommandT {
     val emptyUnsafe = LearningCmd(null, null, None)
   }
 
@@ -29,9 +31,9 @@ object RelationExtractionLearningMain extends App {
     labeledInput: File,
     reader: Reader[File, LabeledSentence]#Fn,
     modelIn: Option[File],
-    evalOut: Option[File])
+    evalOut: Option[File]) extends Command
 
-  object Evaluation {
+  case object Evaluation extends CommandT {
     val emptyUnsafe = Evaluation(null, null, None, None)
   }
 
@@ -41,69 +43,108 @@ object RelationExtractionLearningMain extends App {
     modelIn: Option[File],
     extractOut: Option[File]) extends Command
 
-  object Extraction {
+  case object Extraction extends CommandT {
     val emptyUnsafe = Extraction(null, null, None, None)
   }
 
   case class RelConfig(
+    cmd: CommandT,
     lr: Option[LearningCmd],
     ev: Option[Evaluation],
     ex: Option[Extraction])
 
   object RelConfig {
-    val empty = RelConfig(None, None, None)
+    val emptyUnsafe = RelConfig(null, None, None, None)
   }
 
   val parser = new scopt.OptionParser[RelConfig]("scopt") {
     head("Relation Learning and Extraction")
-    note("some notes.\n")
+
     help("help")
       .text("prints this usage text")
+
     cmd("learning")
       .optional()
-      .action { (_, c) => c.copy(lr = Some(LearningCmd.emptyUnsafe)) }
-      .text("Perform relation learning.")
-      .children(
-        opt[File]("labeledInput")
-          .abbr("li")
-          .valueName("<file>")
-          .action { (li, c) =>
-            c.copy(lr = Some(c.lr.getOrElse(LearningCmd.emptyUnsafe)
-              .copy(labeledInput = li)))
-          }
-          .text("Input of labeled relation data."),
-        opt[String]("learnReader")
-          .abbr("lr")
-          .valueName("typeOf[Reader]")
-          .action { (readerStrInput, c) =>
-            ReaderMap[File, LabeledSentence](readerStrInput).map { r =>
-              c.copy(lr = Some(c.lr.getOrElse(LearningCmd.emptyUnsafe)
-                .copy(reader = r)))
-            }.getOrElse(c)
-          }
-          .text("Input (training) data file format reader type (conll)"),
-        opt[File]("modelOut")
-          .abbr("mo")
-          .optional()
-          .valueName("<file>")
-          .action { (mo, c) =>
-            c.copy(lr = Some(c.lr.getOrElse(LearningCmd.emptyUnsafe).copy(modelOut = Some(mo))))
-          }
-          .text("Path to where the trained relation classifier and pipeline config should be saved to.")
-      )
+      .action { (_, c) =>
+        (
+          if (!c.lr.isDefined)
+            c.copy(lr = Some(LearningCmd.emptyUnsafe))
+          else
+            c
+        ).copy(cmd = LearningCmd)
+      }
+
     cmd("evaluation")
       .optional()
-      .action { (_, c) => c.copy(ev = Some(Evaluation.emptyUnsafe)) }
-      .text("Evaluate a relation learning model.")
-      .children()
+      .action { (_, c) =>
+        (
+          if (!c.ev.isDefined)
+            c.copy(ev = Some(Evaluation.emptyUnsafe))
+          else
+            c
+        ).copy(cmd = Evaluation)
+      }
+
+    cmd("extraction")
+      .optional()
+      .action { (_, c) =>
+        (
+          if (!c.ex.isDefined)
+            c.copy(ex = Some(Extraction.emptyUnsafe))
+          else
+            c
+        ).copy(cmd = Extraction)
+      }
+
+    opt[File]("labeledInput")
+      .optional()
+      .abbr("li")
+      .valueName("<file>")
+      .action { (li, c) =>
+        c.copy(lr = Some(c.lr.getOrElse(LearningCmd.emptyUnsafe)
+          .copy(labeledInput = li)))
+      }
+      .text("Input of labeled relation data.")
+
+    opt[String]("learnReader")
+      .optional()
+      .abbr("lr")
+      .valueName("typeOf[Reader]")
+      .action { (readerStrInput, c) =>
+        ReaderMap[File, LabeledSentence](readerStrInput) match {
+          case Some(r) =>
+            c.copy(lr = Some(c.lr.getOrElse(LearningCmd.emptyUnsafe)
+              .copy(reader = r)))
+          case None =>
+            println(s"ERROR: Unrecognized labeled reader: $readerStrInput")
+            c
+        }
+      }
+      .text("Input (training) data file format reader type (conll)")
+
+    opt[File]("modelOut")
+      .optional()
+      .abbr("mo")
+      .valueName("<file>")
+      .action { (mo, c) =>
+        c.copy(lr = Some(c.lr.getOrElse(LearningCmd.emptyUnsafe).copy(modelOut = Some(mo))))
+      }
+      .text("Path to where the trained relation classifier and pipeline config should be saved to.")
+
   }
 
   // parser.parse returns Option[C]
-  parser.parse(args, RelConfig.empty) match {
+  parser.parse(args, RelConfig.emptyUnsafe) match {
 
     case Some(config) =>
       if (!(config.lr.isDefined || config.ev.isDefined || config.ex.isDefined)) {
         println("ERROR: One of LearningCmd, EvaluationCmd, or ExtractionCmd must be defined.")
+        parser.showUsage
+        System.exit(1)
+      }
+
+      if (config.cmd == LearningCmd && config.lr.get.modelOut.isEmpty) {
+        println("ERROR: Command is \"learning\" and no model output path is specified.")
         parser.showUsage
         System.exit(1)
       }
