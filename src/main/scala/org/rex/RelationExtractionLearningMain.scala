@@ -11,7 +11,7 @@ import org.apache.log4j.Level
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ Await, Future }
 import scala.io.Source
-import scala.language.{ implicitConversions, postfixOps }
+import scala.language.{existentials, implicitConversions, postfixOps}
 import scala.util.Try
 
 object RelationExtractionLearningMain extends App {
@@ -54,15 +54,15 @@ object RelationExtractionLearningMain extends App {
     type InputSource
     type Element
 
-    def read(in: InputSource): Iterator[Element]
+    type Fn = InputSource => Iterator[Element]
   }
 
   object ReaderMap {
 
-    def apply(s: String): Option[Reader] =
+    def apply(s: String): Option[(T#Fn, T) forSome {type T <: Reader}] =
       s match {
         case "conll" =>
-          Some(LabeledConll04Reader)
+          Some((LabeledConll04Reader.read, LabeledConll04Reader))
 
         case _ =>
           None
@@ -113,31 +113,32 @@ object RelationExtractionLearningMain extends App {
         Some(tls.map(_.neTag))
       )
 
-    override def read(input: File): Iterator[LabeledSentence] = {
-      println(s"Reading input from:\n$inputFile")
-      val input = Source.fromFile(inputFile)
+    val read: Fn =
+      (inFi: File) => {
+        println(s"Reading input from:\n$inFi")
+        val input = Source.fromFile(inFi)
 
-      val rawLines = input.getLines().flatMap(Line.apply).toSeq
-      println(s"Obtained ${rawLines.size} individual lines")
+        val rawLines = input.getLines().flatMap(Line.apply).toSeq
+        println(s"Obtained ${rawLines.size} individual lines")
 
-      val groupedLines = lineAggregate(rawLines)
-      println(s"Obtained ${groupedLines.size} grouped lines")
+        val groupedLines = lineAggregate(rawLines)
+        println(s"Obtained ${groupedLines.size} grouped lines")
 
-      val labeledSentences: Seq[(Sentence, Seq[RelationLine])] =
-        groupedLines
-          .map(x => x.copy(_1 = sentenceFrom(x._1)))
-      println(s"Obtained ${labeledSentences.size} sentences")
-      println(s"Of those, ${labeledSentences.count(_._2.nonEmpty)} are labeled")
+        val labeledSentences: Seq[(Sentence, Seq[RelationLine])] =
+          groupedLines
+            .map(x => x.copy(_1 = sentenceFrom(x._1)))
+        println(s"Obtained ${labeledSentences.size} sentences")
+        println(s"Of those, ${labeledSentences.count(_._2.nonEmpty)} are labeled")
 
-      labeledSentences.toIterator
-    }
+        labeledSentences.toIterator
+      }
   }
 
   sealed trait Command
 
   case class LearningCmd(
     labeledInput: File,
-    reader: Reader,
+    reader: Reader#Fn,
     modelOut: Option[File]) extends Command
 
   object LearningCmd {
@@ -146,7 +147,7 @@ object RelationExtractionLearningMain extends App {
 
   case class Evaluation(
     labeledInput: File,
-    reader: Reader,
+    reader: Reader#Fn,
     modelIn: Option[File],
     evalOut: Option[File])
 
@@ -156,7 +157,7 @@ object RelationExtractionLearningMain extends App {
 
   case class Extraction(
     rawInput: File,
-    reader: Reader,
+    reader: Reader#Fn,
     modelIn: Option[File],
     extractOut: Option[File]) extends Command
 
@@ -194,219 +195,240 @@ object RelationExtractionLearningMain extends App {
         opt[String]("learnReader")
           .abbr("lr")
           .valueName("typeOf[Reader]")
-          .action { (r, c) =>
-            ReaderMap(r).map { lr =>
+          .action { (readerStrInput, c) =>
+            ReaderMap(readerStrInput).map { r =>
               c.copy(lr = Some(c.lr.getOrElse(LearningCmd.emptyUnsafe)
-                .copy(reader = lr)))
+                .copy(reader = r._1)))
             }.getOrElse(c)
           }
-          .text("Input of labeled relation data.")
-      //        opt[File]("labeledInput")
-      //          .abbr("li")
-      //          .valueName("<file>")
-      //          .action {(li, c) =>
-      //            c.copy(lr = Some(c.lr.getOrElse(Learning.emptyUnsafe).copy(labeledInput = li)))
-      //          }
-      //          .text("Input of labeled relation data."),
-      //        checkConfig { c => if (c.keepalive && c.xyz) failure("xyz cannot keep alive") else success }
+          .text("Input (training) data file format reader type (conll)"),
+        opt[File]("modelOut")
+          .abbr("mo")
+          .optional()
+          .valueName("<file>")
+          .action { (mo, c) =>
+            c.copy(lr = Some(c.lr.getOrElse(LearningCmd.emptyUnsafe).copy(modelOut = Some(mo))))
+          }
+          .text("Path to where the trained relation classifier and pipeline config should be saved to.")
       )
+    cmd("evaluation")
+      .optional()
+      .action { (_, c) => c.copy(ev = Some(Evaluation.emptyUnsafe)) }
+      .text("Evaluate a relation learning model.")
+      .children()
+    //      .checkConfig { c =>
+    //      if (true)
+    //        failure("xyz cannot keep alive")
+    //      else
+    //        success
+    //    }
+
   }
 
   // parser.parse returns Option[C]
   parser.parse(args, RelConfig.empty) match {
 
     case Some(config) =>
-    // do stuff
+      val maybeModelTrainData =
+        config.lr.map {
+          case LearningCmd(labeledInput, reader, modelOut) =>
 
-    case None         =>
-    // arguments are bad, error message will have been displayed
+            reader(labeledInput)
+
+            ???
+        }
+
+    case None =>
+      // arguments are bad, error message will have been displayed
+      println("Bad arguments. Exiting.")
+      System.exit(1)
   }
 
-  val inputFile = new File(
-    args.headOption
-      .getOrElse("/Users/mgreaves/data/uiuc/entity_and_relation_regcognition_corpora/conll04.corp")
-  )
-  println(s"Reading input from:\n$inputFile")
-  val input = Source.fromFile(inputFile)
-
-  def cleanWord(word: String) =
-    word.replaceAll("/", " ")
-
+  //  val inputFile = new File(
+  //    args.headOption
+  //      .getOrElse("/Users/mgreaves/data/uiuc/entity_and_relation_regcognition_corpora/conll04.corp")
+  //  )
+  //  println(s"Reading input from:\n$inputFile")
+  //  val input = Source.fromFile(inputFile)
   //
-  // Seq[Sentence,Relation]
+  //  def cleanWord(word: String) =
+  //    word.replaceAll("/", " ")
   //
-
-  def sentenceFrom(tls: Seq[TokenLine]) = Sentence(
-    tls.map(_.word).map(cleanWord),
-    Some(tls.map(_.posTag)),
-    Some(tls.map(_.neTag))
-  )
-
-  val rawLines = input.getLines().flatMap(Line.apply).toSeq
-
-  println(s"Obtained ${rawLines.size} individual lines")
-
-  val groupedLines = LabeledConll04Reader.lineAggregate(rawLines)
-
-  println(s"Obtained ${groupedLines.size} grouped lines")
-
-  val labeledSentences: Seq[(Sentence, Seq[RelationLine])] =
-    groupedLines.map(x => x.copy(_1 = sentenceFrom(x._1)))
-
-  println(s"Obtained ${labeledSentences.size} sentences")
-  println(s"Of those, ${labeledSentences.count(_._2.nonEmpty)} are labeled")
-
-  val pconf = {
-    val (es, ps) = labeledSentences.foldLeft((Set.empty[String], Set.empty[String])) {
-      case ((e, p), (s, _)) =>
-        (e ++ s.entities.get, p ++ s.tags.get)
-    }
-    ProcessingConf(
-      entSet = Some(NeTagSet(es, "O")),
-      tagSet = Some(PosTagSet.DefaultPennTreebank.posSet),
-      parse = false,
-      lemmatize = true,
-      resolveCoreference = false,
-      discourse = false
-    )
-  }
-
-  val negrel = "nothing"
-
-  val candgen = SentenceCandGen {
-    val okTags = pconf.tagSet.get.nouns ++ pconf.tagSet.get.pronouns
-
-    (s: Sentence) =>
-      (index: Int) =>
-        s.tags
-          .map(posTags => okTags contains posTags(index))
-          .getOrElse(WordFilter.noKnownPunct(s)(index))
-  }
-
-  val trainingData: RelationLearner.TrainingData =
-    labeledSentences
-      .flatMap {
-        case (sentence, relz) =>
-
-          val labeled =
-            relz.map { r =>
-              (CandidateSentence(sentence, r.arg1, r.arg2), r.relation)
-            }
-
-          val anyIndexPairs = relz.map(r => (r.arg1, r.arg2)).toSet
-
-          val unlabeled =
-            candgen(Document("", Seq(sentence)))
-              .flatMap(candidate => {
-                if (!anyIndexPairs.contains((candidate.queryIndex, candidate.answerIndex)))
-                  Some((candidate, negrel))
-                else
-                  None
-              })
-
-          labeled ++ unlabeled
-      }
-
-  println(s"A total of ${trainingData.size} candidates, of which ${trainingData.count(_._2 == negrel)} are unlabeled.")
-
-  def makeBinary(max: Int)(v: Int): Int =
-    if (v >= max - 1) 1 else 0
-
-  val (train, test) = {
-    val lim = 4
-    val rand = new Random()
-    val grouped =
-      trainingData
-        .map(x => (x, makeBinary(lim)(rand.nextInt(lim))))
-        .toList
-        .groupBy(_._2)
-
-    println(s"grouped keyset: ${grouped.keySet}")
-
-    (grouped(0).map(_._1), grouped(1).map(_._1))
-  }
-
-  val relations =
-    trainingData
-      .filter(_._2 != negrel)
-      .map(_._2)
-      .toSet
-
-  val llConf = LiblinearConfig(
-    solverType = SolverType.L1R_L2LOSS_SVC,
-    cost = 12.0,
-    eps = 0.001,
-    showDebug = false
-  )
-
-  val featurizer =
-    CandidateFeatuerizer(
-      Some((
-        AdjacentFeatures(2),
-        SentenceViewFilter.noKnownPunctLowercase
-      )),
-      Some((
-        InsideFeatures(2, 4),
-        WordFilter.noKnownPunct,
-        WordView.lowercase
-      ))
-    )
-
-  val sourceRelationLearner = RelationLearner(llConf, featurizer)
-
-  val rlearners =
-    relations
-      .map(r => (r, sourceRelationLearner))
-      .toMap
-
-  println(s"Training on ${train.size} instances, one binary SVM per relation (${relations.size} relations)")
-
-  val start = System.currentTimeMillis()
-  val estimators = {
-    import scala.concurrent.ExecutionContext.Implicits.global
-    Await.result(
-      Future.sequence(
-        rlearners
-          .toSeq
-          .map {
-            case (r, rl) =>
-              Future {
-                (
-                  r,
-                  rl(
-                    train.map {
-                      case (inst, lab) =>
-                        if (lab == r) (inst, r) else (inst, negrel)
-                    }
-                  )._2
-                )
-              }
-          }
-      ),
-      Duration.Inf
-    )
-  }
-  val end = System.currentTimeMillis()
-
-  println(s"finished training in ${Duration(end - start, TimeUnit.MILLISECONDS).toMinutes} minutes (${end - start} ms)")
-
-  val numberCorrectPredictions =
-    test
-      .foldLeft(0) {
-        case (nCorrect, (instance, label)) =>
-
-          val predicted =
-            Learning.argmax(
-              estimators
-                .map { case (r, estimator) => (r, estimator(instance).result.head) }
-            )(Learning.TupleVal2[String])._1
-
-          if (predicted == label)
-            nCorrect + 1
-          else
-            nCorrect
-      }
-
-  println(s"# correct $numberCorrectPredictions out of ${test.size} : accuracy: ${(numberCorrectPredictions.toDouble / test.size) * 100.0}")
+  //  //
+  //  // Seq[Sentence,Relation]
+  //  //
+  //
+  //  def sentenceFrom(tls: Seq[TokenLine]) = Sentence(
+  //    tls.map(_.word).map(cleanWord),
+  //    Some(tls.map(_.posTag)),
+  //    Some(tls.map(_.neTag))
+  //  )
+  //
+  //  val rawLines = input.getLines().flatMap(Line.apply).toSeq
+  //
+  //  println(s"Obtained ${rawLines.size} individual lines")
+  //
+  //  val groupedLines = LabeledConll04Reader.lineAggregate(rawLines)
+  //
+  //  println(s"Obtained ${groupedLines.size} grouped lines")
+  //
+  //  val labeledSentences: Seq[(Sentence, Seq[RelationLine])] =
+  //    groupedLines.map(x => x.copy(_1 = sentenceFrom(x._1)))
+  //
+  //  println(s"Obtained ${labeledSentences.size} sentences")
+  //  println(s"Of those, ${labeledSentences.count(_._2.nonEmpty)} are labeled")
+  //
+  //  val pconf = {
+  //    val (es, ps) = labeledSentences.foldLeft((Set.empty[String], Set.empty[String])) {
+  //      case ((e, p), (s, _)) =>
+  //        (e ++ s.entities.get, p ++ s.tags.get)
+  //    }
+  //    ProcessingConf(
+  //      entSet = Some(NeTagSet(es, "O")),
+  //      tagSet = Some(PosTagSet.DefaultPennTreebank.posSet),
+  //      parse = false,
+  //      lemmatize = true,
+  //      resolveCoreference = false,
+  //      discourse = false
+  //    )
+  //  }
+  //
+  //  val negrel = "nothing"
+  //
+  //  val candgen = SentenceCandGen {
+  //    val okTags = pconf.tagSet.get.nouns ++ pconf.tagSet.get.pronouns
+  //
+  //    (s: Sentence) =>
+  //      (index: Int) =>
+  //        s.tags
+  //          .map(posTags => okTags contains posTags(index))
+  //          .getOrElse(WordFilter.noKnownPunct(s)(index))
+  //  }
+  //
+  //  val trainingData: RelationLearner.TrainingData =
+  //    labeledSentences
+  //      .flatMap {
+  //        case (sentence, relz) =>
+  //
+  //          val labeled =
+  //            relz.map { r =>
+  //              (CandidateSentence(sentence, r.arg1, r.arg2), r.relation)
+  //            }
+  //
+  //          val anyIndexPairs = relz.map(r => (r.arg1, r.arg2)).toSet
+  //
+  //          val unlabeled =
+  //            candgen(Document("", Seq(sentence)))
+  //              .flatMap(candidate => {
+  //                if (!anyIndexPairs.contains((candidate.queryIndex, candidate.answerIndex)))
+  //                  Some((candidate, negrel))
+  //                else
+  //                  None
+  //              })
+  //
+  //          labeled ++ unlabeled
+  //      }
+  //
+  //  println(s"A total of ${trainingData.size} candidates, of which ${trainingData.count(_._2 == negrel)} are unlabeled.")
+  //
+  //  def makeBinary(max: Int)(v: Int): Int =
+  //    if (v >= max - 1) 1 else 0
+  //
+  //  val (train, test) = {
+  //    val lim = 4
+  //    val rand = new Random()
+  //    val grouped =
+  //      trainingData
+  //        .map(x => (x, makeBinary(lim)(rand.nextInt(lim))))
+  //        .toList
+  //        .groupBy(_._2)
+  //
+  //    println(s"grouped keyset: ${grouped.keySet}")
+  //
+  //    (grouped(0).map(_._1), grouped(1).map(_._1))
+  //  }
+  //
+  //  val relations =
+  //    trainingData
+  //      .filter(_._2 != negrel)
+  //      .map(_._2)
+  //      .toSet
+  //
+  //  val llConf = LiblinearConfig(
+  //    solverType = SolverType.L1R_L2LOSS_SVC,
+  //    cost = 12.0,
+  //    eps = 0.001,
+  //    showDebug = false
+  //  )
+  //
+  //  val featurizer =
+  //    CandidateFeatuerizer(
+  //      Some((
+  //        AdjacentFeatures(2),
+  //        SentenceViewFilter.noKnownPunctLowercase
+  //      )),
+  //      Some((
+  //        InsideFeatures(2, 4),
+  //        WordFilter.noKnownPunct,
+  //        WordView.lowercase
+  //      ))
+  //    )
+  //
+  //  val sourceRelationLearner = RelationLearner(llConf, featurizer)
+  //
+  //  val rlearners =
+  //    relations
+  //      .map(r => (r, sourceRelationLearner))
+  //      .toMap
+  //
+  //  println(s"Training on ${train.size} instances, one binary SVM per relation (${relations.size} relations)")
+  //
+  //  val start = System.currentTimeMillis()
+  //  val estimators = {
+  //    import scala.concurrent.ExecutionContext.Implicits.global
+  //    Await.result(
+  //      Future.sequence(
+  //        rlearners
+  //          .toSeq
+  //          .map {
+  //            case (r, rl) =>
+  //              Future {
+  //                (
+  //                  r,
+  //                  rl(
+  //                    train.map {
+  //                      case (inst, lab) =>
+  //                        if (lab == r) (inst, r) else (inst, negrel)
+  //                    }
+  //                  )._2
+  //                )
+  //              }
+  //          }
+  //      ),
+  //      Duration.Inf
+  //    )
+  //  }
+  //  val end = System.currentTimeMillis()
+  //
+  //  println(s"finished training in ${Duration(end - start, TimeUnit.MILLISECONDS).toMinutes} minutes (${end - start} ms)")
+  //
+  //  val numberCorrectPredictions =
+  //    test
+  //      .foldLeft(0) {
+  //        case (nCorrect, (instance, label)) =>
+  //
+  //          val predicted =
+  //            Learning.argmax(
+  //              estimators
+  //                .map { case (r, estimator) => (r, estimator(instance).result.head) }
+  //            )(Learning.TupleVal2[String])._1
+  //
+  //          if (predicted == label)
+  //            nCorrect + 1
+  //          else
+  //            nCorrect
+  //      }
+  //
+  //  println(s"# correct $numberCorrectPredictions out of ${test.size} : accuracy: ${(numberCorrectPredictions.toDouble / test.size) * 100.0}")
 
 }
