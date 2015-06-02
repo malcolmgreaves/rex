@@ -12,6 +12,7 @@ import org.rex._
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ Future, Await, ExecutionContext }
 import scala.language.{ existentials, implicitConversions, postfixOps }
+import scala.util.Try
 
 object RelationExtractionLearningMain extends App {
 
@@ -97,13 +98,6 @@ object RelationExtractionLearningMain extends App {
       .action { (_, c) => c.copy(ev = Some(Evaluation.emptyUnsafe)) }
       .text("Evaluate a relation learning model.")
       .children()
-    //      .checkConfig { c =>
-    //      if (true)
-    //        failure("xyz cannot keep alive")
-    //      else
-    //        success
-    //    }
-
   }
 
   def mkStdCandGen(labeledSentences: Iterator[LabeledSentence]): SentenceCandGen = {
@@ -229,6 +223,10 @@ object RelationExtractionLearningMain extends App {
   parser.parse(args, RelConfig.empty) match {
 
     case Some(config) =>
+      if(!(config.lr.isDefined || config.ev.isDefined || config.ex.isDefined)) {
+        println("ERROR: One of LearningCmd, EvaluationCmd, or ExtractionCmd must be defined.\nUse option \"--help\" for option descriptions.")
+        System.exit(1)
+      }
 
       val featurizer =
         CandidateFeatuerizer(
