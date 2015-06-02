@@ -103,7 +103,8 @@ object RelationExtractionLearningMain extends App {
 
     case Some(config) =>
       if (!(config.lr.isDefined || config.ev.isDefined || config.ex.isDefined)) {
-        println("ERROR: One of LearningCmd, EvaluationCmd, or ExtractionCmd must be defined.\nUse option \"--help\" for option descriptions.")
+        println("ERROR: One of LearningCmd, EvaluationCmd, or ExtractionCmd must be defined.")
+        parser.showUsage
         System.exit(1)
       }
 
