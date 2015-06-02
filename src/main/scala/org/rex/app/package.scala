@@ -6,6 +6,7 @@ import org.rex.app.Connl04Format._
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ Future, Await, ExecutionContext }
+import scala.language.existentials
 
 package object app {
 
@@ -65,9 +66,6 @@ package object app {
       }
       .toIterable
 
-  def makeBinary(max: Int)(v: Int): Int =
-    if (v >= max - 1) 1 else 0
-
   type Train = RelationLearner.TrainingData
   type Test = RelationLearner.TrainingData
 
@@ -77,7 +75,7 @@ package object app {
 
     val partitions =
       labeledData
-        .map(x => (x, makeBinary(nFolds)(rand.nextInt(nFolds))))
+        .map(x => (x, rand.nextInt(nFolds)))
         .toList
         .groupBy(_._2)
         .map { case (fold, dataPart) => (fold, dataPart.map(_._1).toTraversable) }

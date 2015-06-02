@@ -57,7 +57,7 @@ object RelationExtractionLearningMain extends App {
     val emptyUnsafe = RelConfig(null, None, None, None)
   }
 
-  val parser = new scopt.OptionParser[RelConfig]("scopt") {
+  val parser = new scopt.OptionParser[RelConfig]("relation-extraction-learning-main") {
     head("Relation Learning and Extraction")
 
     help("help")
@@ -138,13 +138,13 @@ object RelationExtractionLearningMain extends App {
 
     case Some(config) =>
       if (!(config.lr.isDefined || config.ev.isDefined || config.ex.isDefined)) {
-        println("ERROR: One of LearningCmd, EvaluationCmd, or ExtractionCmd must be defined.")
+        println("ERROR: One of LearningCmd, EvaluationCmd, or ExtractionCmd must be defined.\n")
         parser.showUsage
         System.exit(1)
       }
 
       if (config.cmd == LearningCmd && config.lr.get.modelOut.isEmpty) {
-        println("ERROR: Command is \"learning\" and no model output path is specified.")
+        println("ERROR: Command is \"learning\" and no model output path is specified.\n")
         parser.showUsage
         System.exit(1)
       }
@@ -232,8 +232,8 @@ object RelationExtractionLearningMain extends App {
                   println(s"Ignoring Evaluation's labeledInput in favor of LearningCmd's labeledInput\n(ignored: $labeledInput)")
 
                   val nFolds = 4
-                  val dataTrainTest = mkCrossValid(labeledData, nFolds)
                   println(s"Performing $nFolds-fold cross validation")
+                  val dataTrainTest = mkCrossValid(labeledData, nFolds)
 
                   dataTrainTest
                     .toSeq
@@ -242,7 +242,7 @@ object RelationExtractionLearningMain extends App {
 
                       case ((train, test), fold) =>
 
-                        println(s"#$fold : Begin Training & testing")
+                        println(s"#${fold+1}/$nFolds : Begin Training & testing")
                         val start = System.currentTimeMillis()
 
                         val estimators = trainLearners(rlearners, train)
