@@ -62,8 +62,6 @@ testOptions += Tests.Argument(TestFrameworks.JUnit, "-v")
 
 testOptions in Test += Tests.Argument("-oF")
 
-instrumentSettings
-
 CoverallsPlugin.coverallsSettings
 
 packAutoSettings
@@ -73,4 +71,6 @@ defaultScalariformSettings
 fork in Test := false
 
 parallelExecution in Test := false
+
+ScoverageSbtPlugin.ScoverageKeys.coverageExcludedPackages := "*.app\\.*Main"
 
