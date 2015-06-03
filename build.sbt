@@ -62,8 +62,6 @@ testOptions += Tests.Argument(TestFrameworks.JUnit, "-v")
 
 testOptions in Test += Tests.Argument("-oF")
 
-CoverallsPlugin.coverallsSettings
-
 packAutoSettings
 
 defaultScalariformSettings
