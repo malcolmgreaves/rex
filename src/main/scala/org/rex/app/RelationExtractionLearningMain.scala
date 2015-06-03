@@ -35,10 +35,11 @@ object RelationExtractionLearningMain extends App {
     labeledInput: File,
     reader: Reader[File, LabeledSentence]#Fn,
     modelIn: Option[File],
-    evalOut: Option[File]) extends Command
+    evalOut: Option[File],
+    maybeNFolds: Option[Int]) extends Command
 
   case object Evaluation extends CommandT {
-    val emptyUnsafe = Evaluation(null, null, None, None)
+    val emptyUnsafe = Evaluation(null, null, None, None, None)
   }
 
   case class Extraction(
@@ -163,6 +164,15 @@ object RelationExtractionLearningMain extends App {
       }
       .text("Stopping criterion for learning: when the parameter change between iterations is less than eps, learning stops.")
 
+    opt[Int]("nfolds")
+      .optional()
+      .abbr("nf")
+      .action { (nFolds, c) =>
+        c.copy(ev = Some(c.ev.getOrElse(Evaluation.emptyUnsafe)
+          .copy(maybeNFolds = Some(nFolds))))
+      }
+      .text("# Folds for cross validation")
+
   }
 
   // parser.parse returns Option[C]
@@ -260,7 +270,7 @@ object RelationExtractionLearningMain extends App {
 
       val maybeEvaluation =
         config.ev.foreach {
-          case Evaluation(labeledInput, reader, modelIn, evalOut) =>
+          case Evaluation(labeledInput, reader, modelIn, evalOut, maybeNFolds) =>
 
             val eval =
               maybeModelTrainData match {
@@ -268,7 +278,7 @@ object RelationExtractionLearningMain extends App {
                 case Some((rlearners, labeledData, completeEstimators)) =>
                   println(s"Ignoring Evaluation's labeledInput in favor of LearningCmd's labeledInput\n(ignored: $labeledInput)")
 
-                  val nFolds = 4
+                  val nFolds = maybeNFolds.getOrElse(4)
                   println(s"Performing $nFolds-fold cross validation")
                   val dataTrainTest = mkCrossValid(labeledData, nFolds)
 
