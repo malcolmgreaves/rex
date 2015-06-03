@@ -99,6 +99,8 @@ trait Distribution[A] {
 
   type Probability = Double
 
+  //  def map[B](f: (Item, Probability) => B): Distribution[B]
+
   def apply(i: Item): Probability
 
   def get(i: Item): Option[Probability]
