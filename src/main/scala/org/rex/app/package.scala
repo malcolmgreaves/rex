@@ -66,6 +66,15 @@ package object app {
       }
       .toIterable
 
+  def mkPositiveTrainData(labeledSentences: Reader[A forSome { type A }, LabeledSentence]#Readable): RelationLearner.TrainingData =
+    labeledSentences
+      .flatMap {
+        case (sentence, relz) =>
+          relz.map { r =>
+            (CandidateSentence(sentence, r.arg1, r.arg2), r.relation)
+          }
+      }
+
   type Train = RelationLearner.TrainingData
   type Test = RelationLearner.TrainingData
 

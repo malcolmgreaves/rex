@@ -21,10 +21,11 @@ object RelationExtractionLearningMain extends App {
   case class LearningCmd(
     labeledInput: File,
     reader: Reader[File, LabeledSentence]#Fn,
+    doCandGen: Boolean = true,
     modelOut: Option[File]) extends Command
 
   case object LearningCmd extends CommandT {
-    val emptyUnsafe = LearningCmd(null, null, None)
+    val emptyUnsafe = LearningCmd(null, null, true, None)
   }
 
   case class Evaluation(
@@ -127,9 +128,19 @@ object RelationExtractionLearningMain extends App {
       .abbr("mo")
       .valueName("<file>")
       .action { (mo, c) =>
-        c.copy(lr = Some(c.lr.getOrElse(LearningCmd.emptyUnsafe).copy(modelOut = Some(mo))))
+        c.copy(lr = Some(c.lr.getOrElse(LearningCmd.emptyUnsafe)
+          .copy(modelOut = Some(mo))))
       }
       .text("Path to where the trained relation classifier and pipeline config should be saved to.")
+
+    opt[Boolean]("candgen")
+      .optional()
+      .abbr("cg")
+      .action { (cg, c) =>
+        c.copy(lr = Some(c.lr.getOrElse(LearningCmd.emptyUnsafe)
+          .copy(doCandGen = cg)))
+      }
+      .text("Perform sentence-based candidate generation during training? False means only use positively labeled things.")
 
   }
 
@@ -168,7 +179,7 @@ object RelationExtractionLearningMain extends App {
 
       val maybeModelTrainData: Option[(MultiLearner, RelationLearner.TrainingData, () => MultiEstimator)] =
         config.lr.map {
-          case LearningCmd(labeledInput, reader, modelOut) =>
+          case LearningCmd(labeledInput, reader, doCG, modelOut) =>
 
             val labeledSentences = reader(labeledInput)
             println(s"Obtained ${labeledSentences.size} sentences")
@@ -176,7 +187,12 @@ object RelationExtractionLearningMain extends App {
 
             val candgen = mkStdCandGen(labeledSentences)
 
-            val labeledData = mkTrainData(candgen, labeledSentences)
+            println(s"Making training data with sentence-based candidate generation? $doCG")
+            val labeledData =
+              if (doCG)
+                mkTrainData(candgen, labeledSentences)
+              else
+                mkPositiveTrainData(labeledSentences)
             println(s"A total of ${labeledData.size} candidates, of which ${labeledData.count(_._2 == negrel)} are unlabeled.")
 
             val relations =
@@ -240,9 +256,10 @@ object RelationExtractionLearningMain extends App {
                     .zipWithIndex
                     .foreach {
 
-                      case ((train, test), fold) =>
+                      case ((train, test), fIndex) =>
 
-                        println(s"#${fold+1}/$nFolds : Begin Training & testing")
+                        val fold = fIndex + 1
+                        println(s"#$fold/$nFolds : Begin Training & testing")
                         val start = System.currentTimeMillis()
 
                         val estimators = trainLearners(rlearners, train)
@@ -266,8 +283,10 @@ object RelationExtractionLearningMain extends App {
 
                         val end = System.currentTimeMillis()
 
-                        println(s"#$fold : Completed in ${Duration(end - start, TimeUnit.MILLISECONDS).toMinutes} minutes (${end - start} ms)")
-                        println(s"# correct $numberCorrectPredictions out of ${test.size} : accuracy: ${(numberCorrectPredictions.toDouble / test.size) * 100.0}")
+                        println("" +
+                          s"#$fold/$nFolds : Completed in ${Duration(end - start, TimeUnit.MILLISECONDS).toMinutes} minutes (${end - start} ms)\n" +
+                          s"#$fold/$nFolds correct $numberCorrectPredictions out of ${test.size} : accuracy: ${(numberCorrectPredictions.toDouble / test.size) * 100.0}"
+                        )
                     }
 
                 case None =>
