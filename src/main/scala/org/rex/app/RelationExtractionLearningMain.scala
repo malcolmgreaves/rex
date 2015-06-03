@@ -22,10 +22,12 @@ object RelationExtractionLearningMain extends App {
     labeledInput: File,
     reader: Reader[File, LabeledSentence]#Fn,
     doCandGen: Boolean = true,
-    modelOut: Option[File]) extends Command
+    modelOut: Option[File],
+    cost: Option[Double],
+    eps: Option[Double]) extends Command
 
   case object LearningCmd extends CommandT {
-    val emptyUnsafe = LearningCmd(null, null, true, None)
+    val emptyUnsafe = LearningCmd(null, null, doCandGen = true, None, None, None)
   }
 
   case class Evaluation(
@@ -142,6 +144,24 @@ object RelationExtractionLearningMain extends App {
       }
       .text("Perform sentence-based candidate generation during training? False means only use positively labeled things.")
 
+    opt[Double]("cost")
+      .optional()
+      .abbr("c")
+      .action { (cost, c) =>
+        c.copy(lr = Some(c.lr.getOrElse(LearningCmd.emptyUnsafe)
+          .copy(cost = Some(cost))))
+      }
+      .text("Positive mis-classificaiton cost for cost-sensative learning.")
+
+    opt[Double]("eps")
+      .optional()
+      .abbr("e")
+      .action { (eps, c) =>
+        c.copy(lr = Some(c.lr.getOrElse(LearningCmd.emptyUnsafe)
+          .copy(eps = Some(eps))))
+      }
+      .text("Stopping criterion for learning: when the parameter change between iterations is less than eps, learning stops.")
+
   }
 
   // parser.parse returns Option[C]
@@ -179,7 +199,7 @@ object RelationExtractionLearningMain extends App {
 
       val maybeModelTrainData: Option[(MultiLearner, RelationLearner.TrainingData, () => MultiEstimator)] =
         config.lr.map {
-          case LearningCmd(labeledInput, reader, doCG, modelOut) =>
+          case LearningCmd(labeledInput, reader, doCG, modelOut, cost, eps) =>
 
             val labeledSentences = reader(labeledInput)
             println(s"Obtained ${labeledSentences.size} sentences")
@@ -204,8 +224,8 @@ object RelationExtractionLearningMain extends App {
             val sourceRelationLearner = RelationLearner(
               LiblinearConfig(
                 solverType = SolverType.L1R_L2LOSS_SVC,
-                cost = 12.0,
-                eps = 0.001,
+                cost = cost.getOrElse(8.5),
+                eps = eps.getOrElse(0.001),
                 showDebug = false
               ),
               featurizer

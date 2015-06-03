@@ -88,9 +88,8 @@ package object app {
         .toList
         .groupBy(_._2)
         .map { case (fold, dataPart) => (fold, dataPart.map(_._1).toTraversable) }
-    println(s"partitions keyset: ${partitions.keySet}")
 
-    (0 until nFolds - 1)
+    (0 until nFolds)
       .map(fold =>
         (
           partitions
