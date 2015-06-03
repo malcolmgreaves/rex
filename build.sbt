@@ -72,5 +72,5 @@ fork in Test := false
 
 parallelExecution in Test := false
 
-ScoverageSbtPlugin.ScoverageKeys.coverageExcludedPackages := "*\\.app\\.*"
+ScoverageSbtPlugin.ScoverageKeys.coverageExcludedPackages := "*.app\\.*Main"
 
