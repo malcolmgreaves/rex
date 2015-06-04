@@ -221,16 +221,17 @@ object RelationExtractionLearningMain extends App {
             println(s"Making training data with sentence-based candidate generation? $doCG")
             val labeledData =
               if (doCG)
-                mkTrainData(candgen, labeledSentences)
+                mkTrainData(candgen, labeledSentences, noRelation)
               else
                 mkPositiveTrainData(labeledSentences)
             println(s"A total of ${labeledData.size} candidates, of which ${labeledData.count(_._2 == negrel)} are unlabeled.")
 
             val relations =
               labeledData
-                .filter(_._2 != negrel)
-                .map(_._2)
-                .toSet
+                .foldLeft(Set.empty[RelationLearner.Label]) {
+                  case (rs, (_, rel)) => rs + rel
+                }
+            println(s"""There are ${relations.size} relations:\n${relations.mkString("\n\t")}""")
 
             val sourceRelationLearner = RelationLearner(
               LiblinearConfig(

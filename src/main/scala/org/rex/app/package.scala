@@ -40,7 +40,8 @@ package object app {
 
   def mkTrainData(
     candgen: SentenceCandGen,
-    labeledSentences: Reader[A forSome { type A }, LabeledSentence]#Readable): RelationLearner.TrainingData =
+    labeledSentences: Reader[A forSome { type A }, LabeledSentence]#Readable,
+    noRelationPresent: RelationLearner.Label): RelationLearner.TrainingData =
 
     labeledSentences
       .flatMap {
@@ -57,7 +58,7 @@ package object app {
             candgen(Document("", Seq(sentence)))
               .flatMap(candidate => {
                 if (!anyIndexPairs.contains((candidate.queryIndex, candidate.answerIndex)))
-                  Some((candidate, negrel))
+                  Some((candidate, noRelationPresent))
                 else
                   None
               })
@@ -103,7 +104,11 @@ package object app {
       .toTraversable
   }
 
-  val negrel: RelationLearner.Label = "nothing"
+  val noRelation: RelationLearner.Label =
+    "no_relation"
+
+  val negrel: RelationLearner.Label =
+    "negative"
 
   type MultiLearner = Map[RelationLearner.Label, RelationLearner.Learner]
 
