@@ -301,7 +301,7 @@ object RelationExtractionLearningMain extends App {
                         .foreach {
 
                           case ((train, test), fIndex) =>
-                            Future {
+//                            Future {
                               val fold = fIndex + 1
                               println(s"#$fold/$nFolds : Begin Training & testing")
                               val start = System.currentTimeMillis()
@@ -331,7 +331,7 @@ object RelationExtractionLearningMain extends App {
                                 s"#$fold/$nFolds : Completed in ${Duration(end - start, TimeUnit.MILLISECONDS).toMinutes} minutes (${end - start} ms)\n" +
                                 s"#$fold/$nFolds correct $numberCorrectPredictions out of ${test.size} : accuracy: ${(numberCorrectPredictions.toDouble / test.size) * 100.0}"
                               )
-                            }
+//                            }
                         }
 //                    ),
 //                    Duration.Inf
