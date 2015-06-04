@@ -224,7 +224,7 @@ object RelationExtractionLearningMain extends App {
                 mkTrainData(candgen, labeledSentences, noRelation)
               else
                 mkPositiveTrainData(labeledSentences)
-            println(s"A total of ${labeledData.size} candidates, of which ${(labeledData.count(_._2 != noRelation) / labeledData.size.toDouble) * 100.0}% are labeled.")
+            println(s"A total of ${labeledData.size} candidates, of which ${(labeledData.count(_._2 != noRelation) / labeledData.size.toDouble) * 100.0} % are labeled.")
 
             val relations =
               labeledData
