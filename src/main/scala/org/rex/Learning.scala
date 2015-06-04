@@ -109,7 +109,7 @@ case class DistributionStr(
 
   assert(
     labels.size == result.size && labels.size > 0,
-    s"Labels and results sizes must be equal and positive, not: ${labels.size} and ${result.size}, respectively"
+    s"""Labels and results sizes must be equal and positive, not: ${labels.size} and ${result.size}, respectively\nLABELS\n\t${labels.mkString("\n\t")}"""
   )
 
   override lazy val zip = super.zip

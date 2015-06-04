@@ -280,8 +280,18 @@ object RelationExtractionLearningMain extends App {
                   println(s"Ignoring Evaluation's labeledInput in favor of LearningCmd's labeledInput\n(ignored: $labeledInput)")
 
                   val nFolds = maybeNFolds.getOrElse(4)
-                  println(s"Performing $nFolds-fold cross validation")
-                  val dataTrainTest = mkCrossValid(labeledData, nFolds)
+                  val dataTrainTest =
+                    if (nFolds == 1) {
+                      println(s"Performing train-test with 75% train")
+                      trainTestSplit(labeledData, 0.75)
+
+                    } else {
+                      println(s"Performing $nFolds-fold cross validation")
+                      mkCrossValid(labeledData, nFolds)
+                    }
+
+                  println(s"dataTrainTest.head._1.size: ${dataTrainTest.head._1.size}")
+                  println(s"dataTrainTest.head._2.size: ${dataTrainTest.head._2.size}")
 
                   Await.result(
                     Future.sequence(

@@ -83,12 +83,12 @@ package object app {
     labeledData: RelationLearner.TrainingData,
     nFolds: Int)(implicit rand: Random): Traversable[(Train, Test)] = {
 
-    val partitions =
-      labeledData
-        .map(x => (x, rand.nextInt(nFolds)))
-        .toList
-        .groupBy(_._2)
-        .map { case (fold, dataPart) => (fold, dataPart.map(_._1).toTraversable) }
+    val partitions = shuffleAssign(
+      labeledData,
+      (r: Random) =>
+        () =>
+          r.nextInt(nFolds)
+    )
 
     (0 until nFolds)
       .map(fold =>
@@ -102,6 +102,36 @@ package object app {
         )
       )
       .toTraversable
+  }
+
+  def shuffleAssign(
+    labeledData: RelationLearner.TrainingData,
+    randAssign: Random => () => Int)(implicit rand: Random) = {
+
+    val rAssign = randAssign(rand)
+
+    labeledData
+      .map(x => (x, rAssign()))
+      .toList
+      .groupBy(_._2)
+      .map { case (fold, dataPart) => (fold, dataPart.map(_._1).toTraversable) }
+  }
+
+  def trainTestSplit(
+    labeledData: RelationLearner.TrainingData,
+    proportionTrain: Double)(implicit rand: Random): Traversable[(Train, Test)] = {
+
+    val partitioned = shuffleAssign(
+      labeledData,
+      (r: Random) =>
+        () =>
+          if (r.nextDouble() < proportionTrain)
+            0
+          else
+            1
+    )
+
+    Seq((partitioned(0), partitioned(1)))
   }
 
   val noRelation: RelationLearner.Label =
