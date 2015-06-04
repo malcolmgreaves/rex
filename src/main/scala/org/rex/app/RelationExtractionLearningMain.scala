@@ -290,49 +290,49 @@ object RelationExtractionLearningMain extends App {
                       mkCrossValid(labeledData, nFolds)
                     }
 
-//                  Await.result(
-//                    Future.sequence(
-                      dataTrainTest
-                        .toSeq
-                        .zipWithIndex
-                        .foreach {
+                  //                  Await.result(
+                  //                    Future.sequence(
+                  dataTrainTest
+                    .toSeq
+                    .zipWithIndex
+                    .foreach {
 
-                          case ((train, test), fIndex) =>
-//                            Future {
-                              val fold = fIndex + 1
-                              println(s"#$fold/$nFolds : Begin Training & testing")
-                              val start = System.currentTimeMillis()
+                      case ((train, test), fIndex) =>
+                        //                            Future {
+                        val fold = fIndex + 1
+                        println(s"#$fold/$nFolds : Begin Training & testing")
+                        val start = System.currentTimeMillis()
 
-                              val estimators = trainLearners(rlearners, train)
+                        val estimators = trainLearners(rlearners, train)
 
-                              val numberCorrectPredictions =
-                                test
-                                  .foldLeft(0) {
-                                    case (nCorrect, (instance, label)) =>
+                        val numberCorrectPredictions =
+                          test
+                            .foldLeft(0) {
+                              case (nCorrect, (instance, label)) =>
 
-                                      val predicted =
-                                        Learning.argmax(
-                                          estimators
-                                            .map { case (r, estimator) => (r, estimator(instance).result.head) }
-                                        )(Learning.TupleVal2[String])._1
+                                val predicted =
+                                  Learning.argmax(
+                                    estimators
+                                      .map { case (r, estimator) => (r, estimator(instance).result.head) }
+                                  )(Learning.TupleVal2[String])._1
 
-                                      if (predicted == label)
-                                        nCorrect + 1
-                                      else
-                                        nCorrect
-                                  }
+                                if (predicted == label)
+                                  nCorrect + 1
+                                else
+                                  nCorrect
+                            }
 
-                              val end = System.currentTimeMillis()
+                        val end = System.currentTimeMillis()
 
-                              println("" +
-                                s"#$fold/$nFolds : Completed in ${Duration(end - start, TimeUnit.MILLISECONDS).toMinutes} minutes (${end - start} ms)\n" +
-                                s"#$fold/$nFolds correct $numberCorrectPredictions out of ${test.size} : accuracy: ${(numberCorrectPredictions.toDouble / test.size) * 100.0}"
-                              )
-//                            }
-                        }
-//                    ),
-//                    Duration.Inf
-//                  )
+                        println("" +
+                          s"#$fold/$nFolds : Completed in ${Duration(end - start, TimeUnit.MILLISECONDS).toMinutes} minutes (${end - start} ms)\n" +
+                          s"#$fold/$nFolds correct $numberCorrectPredictions out of ${test.size} : accuracy: ${(numberCorrectPredictions.toDouble / test.size) * 100.0}"
+                        )
+                      //                            }
+                    }
+                //                    ),
+                //                    Duration.Inf
+                //                  )
 
                 case None =>
                   throw new RuntimeException("ERROR: Evaluation from serialized model is not implemented.")

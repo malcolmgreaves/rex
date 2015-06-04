@@ -80,13 +80,13 @@ object RelationLearner extends Learning[Candidate, String] {
       val index2label = label2index.toList.sortBy(_._2).map(_._1).toSeq
 
       val estimator =
-        if(index2label.size == 2)
+        if (index2label.size == 2)
           (c: Candidate) =>
             DistributionStr(
               index2label,
               {
                 val p = nakClassifier.evalRaw(c).head
-                Seq(p, 1.0-p)
+                Seq(p, 1.0 - p)
               }
             )
         else
