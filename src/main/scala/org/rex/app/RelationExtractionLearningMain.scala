@@ -224,14 +224,14 @@ object RelationExtractionLearningMain extends App {
                 mkTrainData(candgen, labeledSentences, noRelation)
               else
                 mkPositiveTrainData(labeledSentences)
-            println(s"A total of ${labeledData.size} candidates, of which ${labeledData.count(_._2 == negrel)} are unlabeled.")
+            println(s"A total of ${labeledData.size} candidates, of which ${(labeledData.count(_._2 != noRelation) / labeledData.size.toDouble) * 100.0}% are labeled.")
 
             val relations =
               labeledData
                 .foldLeft(Set.empty[RelationLearner.Label]) {
                   case (rs, (_, rel)) => rs + rel
                 }
-            println(s"""There are ${relations.size} relations:\n${relations.mkString("\n\t")}""")
+            println(s"""There are ${relations.size} relations:\n\t${relations.mkString("\n\t")}""")
 
             val sourceRelationLearner = RelationLearner(
               LiblinearConfig(
