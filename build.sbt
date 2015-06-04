@@ -50,11 +50,13 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "2.2.1" % "test"
 )
 
-val customScalacOptions = Seq(
+scalacOptions ++= Seq(
   s"-target:jvm-$jvm",
+  "-optimize",
   "-deprecation",
   "-encoding", "UTF-8",
   "-feature",
+  "-language:postfixOps",
   "-language:existentials",
   "-language:higherKinds",
   "-language:implicitConversions",
@@ -68,8 +70,6 @@ val customScalacOptions = Seq(
   "-Xfuture",
   "-Yinline-warnings"
 )
-
-scalacOptions ++= (customScalacOptions :+ "-optimize")
 
 testOptions += Tests.Argument(TestFrameworks.JUnit, "-v")
 
