@@ -30,19 +30,17 @@ object Learning {
 
   def classifierFromEstimator[A, B](e: Learning[A, B]#Estimator): Learning[A, B]#Classifier =
     (instance: A) => {
-      // do estimation, get it as mapping
-      val dist = e(instance).asMap
       // classificaiton is the item with the maximum probability
-      dist.size match {
-        case 0 =>
-          throw emptyEstimation
+      val dist = e(instance)
 
-        case 1 =>
-          dist.head._1
+      if (dist.labels isEmpty)
+        throw emptyEstimation
 
-        case n =>
-          argmax(dist)(TupleVal2[B])._1
-      }
+      else if (dist.labels.size == 1)
+        dist.labels.head
+
+      else
+        argmax(dist.zip)(TupleVal2[B])._1
     }
 
   trait Val[-A] {
@@ -91,42 +89,45 @@ object Learning {
 
 }
 
-trait Distribution[A] {
-
-  def result: Array[Double]
+trait Distribution[A] { self =>
 
   type Item = A
 
   type Probability = Double
 
-  //  def map[B](f: (Item, Probability) => B): Distribution[B]
+  def labels: Seq[Item]
 
-  def apply(i: Item): Probability
+  def result: Seq[Probability]
 
-  def get(i: Item): Option[Probability]
+  def zip: Seq[(Item, Probability)] =
+    labels.zip(result)
+}
 
-  def asMap: Map[Item, Probability]
+case class DistributionStr(
+    override val labels: Seq[String],
+    override val result: Seq[Double]) extends Distribution[String] {
+
+  assert(
+    labels.size == result.size && labels.size > 0,
+    s"Labels and results sizes must be equal and positive, not: ${labels.size} and ${result.size}, respectively"
+  )
+
+  override lazy val zip = super.zip
 }
 
 object Distribution {
 
   def renormalize[A](dist: Distribution[A]): Distribution[A] = {
-    val m = dist.asMap
-    val total = m.foldLeft(0.0) { case (s, (_, v)) => s + v }
-    val newM = m.map { case (item, prob) => (item, prob / total) }
+
+    val total = dist.result.sum
+
     new Distribution[A] {
 
-      override def asMap: Map[Item, Probability] =
-        newM
+      override val result: Seq[Probability] =
+        dist.result.map(x => x / total)
 
-      override def result: Array[Probability] =
-        dist.result.map(_ / total)
-
-      override def get(i: Item): Option[Probability] =
-        newM.get(i)
-
-      override def apply(i: Item): Probability =
-        newM(i)
+      override val labels: Seq[Item] =
+        dist.labels
     }
   }
 

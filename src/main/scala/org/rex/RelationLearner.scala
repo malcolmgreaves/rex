@@ -81,25 +81,7 @@ object RelationLearner extends Learning[Candidate, String] {
 
       val estimator =
         (c: Candidate) =>
-          new Distribution[Label] {
-
-            override val result = nakClassifier.evalRaw(c)
-
-            override def apply(i: Item): Probability =
-              result(label2index(i))
-
-            override lazy val asMap: Map[Item, Probability] =
-              label2index.map { case (label, index) => (label, result(index)) }
-
-            override def get(i: Item): Option[Probability] =
-              label2index.get(i)
-                .flatMap(index =>
-                  if (index >= 0 && index < result.length)
-                    Some(result(index))
-                  else
-                    None
-                )
-          }
+          DistributionStr(index2label, nakClassifier.evalRaw(c).toSeq)
 
       val classifier =
         if (index2label.size < 2)
