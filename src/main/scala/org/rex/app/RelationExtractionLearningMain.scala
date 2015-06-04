@@ -290,9 +290,6 @@ object RelationExtractionLearningMain extends App {
                       mkCrossValid(labeledData, nFolds)
                     }
 
-                  println(s"dataTrainTest.head._1.size: ${dataTrainTest.head._1.size}")
-                  println(s"dataTrainTest.head._2.size: ${dataTrainTest.head._2.size}")
-
 //                  Await.result(
 //                    Future.sequence(
                       dataTrainTest
