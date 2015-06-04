@@ -293,12 +293,12 @@ object RelationExtractionLearningMain extends App {
                   println(s"dataTrainTest.head._1.size: ${dataTrainTest.head._1.size}")
                   println(s"dataTrainTest.head._2.size: ${dataTrainTest.head._2.size}")
 
-                  Await.result(
-                    Future.sequence(
+//                  Await.result(
+//                    Future.sequence(
                       dataTrainTest
                         .toSeq
                         .zipWithIndex
-                        .map {
+                        .foreach {
 
                           case ((train, test), fIndex) =>
                             Future {
@@ -333,9 +333,9 @@ object RelationExtractionLearningMain extends App {
                               )
                             }
                         }
-                    ),
-                    Duration.Inf
-                  )
+//                    ),
+//                    Duration.Inf
+//                  )
 
                 case None =>
                   throw new RuntimeException("ERROR: Evaluation from serialized model is not implemented.")
