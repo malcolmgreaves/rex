@@ -1,10 +1,12 @@
-package org.rex
+package org.rex.dl
+
+import org.rex.Candidate
 
 trait DistantLabeling[L] {
 
   type Label = L
 
-  type Labels = Seq[Label]
+  type Labels = Set[Label]
 
   type Fn = Candidate => Option[Labels]
 }
