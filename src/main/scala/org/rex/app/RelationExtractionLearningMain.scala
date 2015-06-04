@@ -293,15 +293,15 @@ object RelationExtractionLearningMain extends App {
                   println(s"dataTrainTest.head._1.size: ${dataTrainTest.head._1.size}")
                   println(s"dataTrainTest.head._2.size: ${dataTrainTest.head._2.size}")
 
-                  Await.result(
-                    Future.sequence(
+//                  Await.result(
+//                    Future.sequence(
                       dataTrainTest
                         .toSeq
                         .zipWithIndex
-                        .map {
+                        .foreach {
 
                           case ((train, test), fIndex) =>
-                            Future {
+//                            Future {
                               val fold = fIndex + 1
                               println(s"#$fold/$nFolds : Begin Training & testing")
                               val start = System.currentTimeMillis()
@@ -331,11 +331,11 @@ object RelationExtractionLearningMain extends App {
                                 s"#$fold/$nFolds : Completed in ${Duration(end - start, TimeUnit.MILLISECONDS).toMinutes} minutes (${end - start} ms)\n" +
                                 s"#$fold/$nFolds correct $numberCorrectPredictions out of ${test.size} : accuracy: ${(numberCorrectPredictions.toDouble / test.size) * 100.0}"
                               )
-                            }
+//                            }
                         }
-                    ),
-                    Duration.Inf
-                  )
+//                    ),
+//                    Duration.Inf
+//                  )
 
                 case None =>
                   throw new RuntimeException("ERROR: Evaluation from serialized model is not implemented.")
