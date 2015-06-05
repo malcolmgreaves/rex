@@ -253,26 +253,38 @@ object OutputSimplifiedTriples {
             fb2wd.get(subFb) match {
 
               case Some(subWd) =>
-                val subMentions = wikidataId2textMentions(subWd)
-                objFbRelMap
-                  .foreach {
-                    case (objFb, relation) =>
-                      fb2wd.get(objFb) match {
+                wikidataId2textMentions.get(subWd) match {
 
-                        case Some(objWd) =>
-                          val objMentions = wikidataId2textMentions(objWd)
-                          subMentions
-                            .foreach { sMention =>
-                              objMentions
-                                .foreach { oMention =>
-                                  w.write(s"$sMention\t$oMention\t$relation\n")
-                                }
-                            }
+                  case Some(subMentions) =>
+                    objFbRelMap
+                      .foreach {
+                        case (objFb, relation) =>
+                          fb2wd.get(objFb) match {
 
-                        case None =>
-                          println(s"[OutputSimplifiedTriples] *recovered, skip* ERROR, no Wikidata ID for Freebase ID (object): $objFb")
+                            case Some(objWd) =>
+                              wikidataId2textMentions.get(objWd) match {
+
+                                case Some(objMentions) =>
+                                  subMentions
+                                    .foreach { sMention =>
+                                      objMentions
+                                        .foreach { oMention =>
+                                          w.write(s"$sMention\t$oMention\t$relation\n")
+                                        }
+                                    }
+
+                                case None =>
+                                  println(s"[OutputSimplifiedTriples] *recovered, skip* ERROR, no text mentions for Wikidata ID (object) $objWd")
+                              }
+
+                            case None =>
+                              println(s"[OutputSimplifiedTriples] *recovered, skip* ERROR, no Wikidata ID for Freebase ID (object): $objFb")
+                          }
                       }
-                  }
+
+                  case None =>
+                    println(s"[OutputSimplifiedTriples] *recovered, skip* ERROR, no text mentions for Wikidata ID (subject) $subWd")
+                }
 
               case None =>
                 println(s"[OutputSimplifiedTriples] *recovered, skip* ERROR, no Wikidata ID for Freebase ID (subject): $subFb")
