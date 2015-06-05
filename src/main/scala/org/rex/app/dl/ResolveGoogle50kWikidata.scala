@@ -37,7 +37,7 @@ object ResolveGoogle50kWikidata extends App {
       )
     val endFbGKb = System.currentTimeMillis()
     LoadUtils.printTime("Finished loading Google KB in", startFbGKb, endFbGKb)
-    println(s"Sample of $k Google 50K Knowledgebase Entries")
+    println(s"Sample of $k Google 50K Knowledgebase Entries [out of ${Freebase2WikidataStuff.freebaseIdsOfInterest(freebaseIdGoogleKb).size}]")
     freebaseIdGoogleKb
       .take(k)
       .foreach(println)
@@ -52,7 +52,7 @@ object ResolveGoogle50kWikidata extends App {
       )
     val endFb2Wd = System.currentTimeMillis()
     LoadUtils.printTime("Finished loading Freebase ID -> Wikidata ID mapping in", startFb2Wd, endFb2Wd)
-    println(s"Sample of $k Freebase ID => WikidataID mappings")
+    println(s"Sample of $k Freebase ID => WikidataID mappings [out of ${fb2wd.size}}]")
     fb2wd
       .take(k)
       .foreach(println)
@@ -67,7 +67,7 @@ object ResolveGoogle50kWikidata extends App {
       )
     val endWText = System.currentTimeMillis()
     LoadUtils.printTime("Finished loading Wikidata Text Mentions in", startWText, endWText)
-    println(s"Sample of $k WikidataID text mentions")
+    println(s"Sample of $k WikidataID text mentions [out of ${wikidataId2textMentions.size}}]")
     wikidataId2textMentions
       .take(k)
       .foreach(println)
