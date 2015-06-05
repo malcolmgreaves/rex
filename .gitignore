@@ -8,6 +8,8 @@ projectFilesBackup
 .idea_modules/*
 *.iml
 
+report_*
+REPORT_*
 
 #### 	compiled source
 *.com
