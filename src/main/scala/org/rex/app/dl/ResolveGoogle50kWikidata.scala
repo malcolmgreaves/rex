@@ -204,26 +204,7 @@ object WikidataDumpStuff {
             Some((id, mentions))
           else
             None
-        } //          Try {
-        //            val labelMentions =
-        //              Seq(, )
-        //
-        //            val aliasMentions =
-        //
-        //
-        //            (id, labelMentions ++ aliasMentions)
-        //          } match {
-        //
-        //            case Success(x) =>
-        //              Some(x)
-        //
-        //            case Failure(e) =>
-        //              println(s"""[WikidataDumpStuff] *recovered, skipped* ERROR grabbing (.labels.{en, simple}.value or .aliaes.en), some of JSON parse ${val x = j.toString; x.substring(0, math.min(100, x.length))}""")
-        //              e.printStackTrace()
-        //              println("[WikidataDumpStuff] ////////////////////////////////////////////////////////////////////////////////")
-        //              None
-        //          }
-        else
+        } else
           None
 
       case Failure(e) =>
@@ -263,21 +244,19 @@ object OutputSimplifiedTriples {
     fb2wd: Freebase2WikidataMap,
     wikidataId2textMentions: WikidataTextMentions,
     triplesKbOut: File) = {
+    //
     val w = new BufferedWriter(new FileWriter(triplesKbOut))
     try {
       freebaseIdGoogleKb
         .foreach {
           case (subFb, objFbRelMap) =>
-
             fb2wd.get(subFb) match {
 
               case Some(subWd) =>
                 val subMentions = wikidataId2textMentions(subWd)
-
                 objFbRelMap
                   .foreach {
                     case (objFb, relation) =>
-
                       fb2wd.get(objFb) match {
 
                         case Some(objWd) =>
