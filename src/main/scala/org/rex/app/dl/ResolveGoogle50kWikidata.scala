@@ -7,7 +7,7 @@ import java.util.zip.GZIPInputStream
 import scala.collection.GenTraversableOnce
 import scala.concurrent.duration.Duration
 import scala.io.Source
-import scala.util.{ Failure, Success, Try }
+import scala.util.{ Try, Failure, Success }
 
 object ResolveGoogle50kWikidata extends App {
 
@@ -179,22 +179,50 @@ object WikidataDumpStuff {
   import rapture.json.jsonBackends.jackson._
   import rapture.json._
 
-  @inline def jsonParse(idsOfInterest: Set[WikidataId])(s: String): Option[(WikidataId, Seq[Mention])] =
+  @inline private[this] def obtain(attempts: Try[Seq[Mention]]*): Seq[Mention] =
+    attempts
+      .flatMap(_.toOption)
+      .foldLeft(Seq.empty[Mention])(_ ++ _)
+
+  def jsonParse(idsOfInterest: Set[WikidataId])(s: String): Option[(WikidataId, Seq[Mention])] =
     Try(Json.parse(s)) match {
 
       case Success(j) =>
-        val id = j.id.as[WikidataId]
-        if (idsOfInterest contains id)
-          Some {
-            val labelMentions =
-              Seq(j.labels.en.value.as[Mention], j.labels.simple.value.as[Mention])
+        val id: WikidataId = j.id.as[WikidataId]
+        if (idsOfInterest contains id) {
 
-            val aliasMentions =
-              j.aliases.en.as[Seq[String]]
-                .map(x => Json.parse(x).value.as[Mention])
-
-            (id, labelMentions ++ aliasMentions)
-          }
+          val mentions =
+            obtain(
+              Try(Seq(j.labels.en.value.as[Mention])),
+              Try(Seq(j.labels.simple.value.as[Mention])),
+              Try {
+                j.aliases.en.as[Seq[String]]
+                  .map(x => Json.parse(x).value.as[Mention])
+              }
+            )
+          if (mentions nonEmpty)
+            Some((id, mentions))
+          else
+            None
+        } //          Try {
+        //            val labelMentions =
+        //              Seq(, )
+        //
+        //            val aliasMentions =
+        //
+        //
+        //            (id, labelMentions ++ aliasMentions)
+        //          } match {
+        //
+        //            case Success(x) =>
+        //              Some(x)
+        //
+        //            case Failure(e) =>
+        //              println(s"""[WikidataDumpStuff] *recovered, skipped* ERROR grabbing (.labels.{en, simple}.value or .aliaes.en), some of JSON parse ${val x = j.toString; x.substring(0, math.min(100, x.length))}""")
+        //              e.printStackTrace()
+        //              println("[WikidataDumpStuff] ////////////////////////////////////////////////////////////////////////////////")
+        //              None
+        //          }
         else
           None
 
@@ -285,9 +313,6 @@ object Freebase2WikidataStuff {
     // get a set of all freebase IDs from the Google KB
     val interesting = freebaseIdsOfInterest(fbkb)
 
-    var i = 0
-    val k = 10
-
     // translate Freebase IDs into Wikidata IDs
     // only keep the ones we're interested in
     Source.fromInputStream(LoadUtils.asInputStream(fb2wdFi).get)
@@ -295,16 +320,6 @@ object Freebase2WikidataStuff {
       // ignore commments and empty lines
       .dropWhile(x => x.startsWith("#") || x.trim.isEmpty)
       .map(Freebase2WikidataStuff.extractBothIds)
-      .map {
-        case (f,w) =>
-
-          if(i < k){
-            i += 1
-            println(s"FreebaseID maps to WikidataID: $f --> $w")
-          }
-
-          (f,w)
-      }
       .filter { case (freebaseId, _) => interesting contains freebaseId }
       .toMap
   }
@@ -321,7 +336,10 @@ object Freebase2WikidataStuff {
 
   @inline def extractBothIds(s: String): (FreebaseId, WikidataId) = {
     val bits = s.replaceAll(" \\.", "").split("\\t")
-    (extractId(bits(0)), extractId(bits(2)))
+    (
+      s"/${extractId(bits(0)).replaceAll("\\.", "/")}",
+      extractId(bits(2))
+    )
   }
 
   @inline def extractId(s: String) =
