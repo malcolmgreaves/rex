@@ -285,6 +285,9 @@ object Freebase2WikidataStuff {
     // get a set of all freebase IDs from the Google KB
     val interesting = freebaseIdsOfInterest(fbkb)
 
+    var i = 0
+    val k = 10
+
     // translate Freebase IDs into Wikidata IDs
     // only keep the ones we're interested in
     Source.fromInputStream(LoadUtils.asInputStream(fb2wdFi).get)
@@ -292,6 +295,16 @@ object Freebase2WikidataStuff {
       // ignore commments and empty lines
       .dropWhile(x => x.startsWith("#") || x.trim.isEmpty)
       .map(Freebase2WikidataStuff.extractBothIds)
+      .map {
+        case (f,w) =>
+
+          if(i < k){
+            i += 1
+            println(s"FreebaseID maps to WikidataID: $f --> $w")
+          }
+
+          (f,w)
+      }
       .filter { case (freebaseId, _) => interesting contains freebaseId }
       .toMap
   }

@@ -8,6 +8,9 @@ projectFilesBackup
 .idea_modules/*
 *.iml
 
+
+LOG_*
+log_*
 report_*
 REPORT_*
 
