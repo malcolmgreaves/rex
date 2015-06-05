@@ -258,7 +258,7 @@ object OutputSimplifiedTriples {
                   case Some(subMentions) =>
                     objFbRelMap
                       .foreach {
-                        case (objFb, relation) =>
+                        case (objFb, relations) =>
                           fb2wd.get(objFb) match {
 
                             case Some(objWd) =>
@@ -269,7 +269,10 @@ object OutputSimplifiedTriples {
                                     .foreach { sMention =>
                                       objMentions
                                         .foreach { oMention =>
-                                          w.write(s"$sMention\t$oMention\t$relation\n")
+                                          relations
+                                            .foreach { relation =>
+                                              w.write(s"$sMention\t$oMention\t$relation\n")
+                                            }
                                         }
                                     }
 
