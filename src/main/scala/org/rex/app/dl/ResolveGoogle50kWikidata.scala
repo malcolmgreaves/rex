@@ -16,9 +16,9 @@ object ResolveGoogle50kWikidata extends App {
   type Relation = String
   type Mention = String
 
-  type FbKnowledgeBase = Map[FreebaseId, Map[FreebaseId, Set[Relation]]]
-  type Freebase2WikidataMap = Map[FreebaseId, WikidataId]
-  type WikidataTextMentions = Map[WikidataId, Seq[Mention]]
+  type KnowledgebaseByFreebaseId = Map[FreebaseId, Map[FreebaseId, Set[Relation]]]
+  type FreebaseId2WikidataId = Map[FreebaseId, WikidataId]
+  type WikidataId2TextMentions = Map[WikidataId, Seq[Mention]]
 
   private[this] def apply(config: Config, k: Int = 10): Unit = {
     println("" +
@@ -31,7 +31,7 @@ object ResolveGoogle50kWikidata extends App {
     // read and parse json of each Google 50K relation lines
     // get query & answer Freebase IDs, store everything into one Set[FreebaseId]
     val startFbGKb = System.currentTimeMillis()
-    val freebaseIdGoogleKb: FbKnowledgeBase =
+    val freebaseIdGoogleKb: KnowledgebaseByFreebaseId =
       GoogleStuff.loadFreebaseIdGoogleKb(
         config.googleDir
       )
@@ -45,7 +45,7 @@ object ResolveGoogle50kWikidata extends App {
     // read and parse the freebase -> wikidata ID file
     // construct a mapping of type Map[FreebaseId, WikidataId]
     val startFb2Wd = System.currentTimeMillis()
-    val fb2wd: Freebase2WikidataMap =
+    val fb2wd: FreebaseId2WikidataId =
       Freebase2WikidataStuff.loadFreebase2WikidataIdMap(
         freebaseIdGoogleKb,
         config.freebase2wikidataId
@@ -60,7 +60,7 @@ object ResolveGoogle50kWikidata extends App {
     // // read and parse the Wikidata dump file
     // extracting all text mentions for each Wikidata ID that we're interested in
     val startWText = System.currentTimeMillis()
-    val wikidataId2textMentions: WikidataTextMentions =
+    val wikidataId2textMentions: WikidataId2TextMentions =
       WikidataDumpStuff.loadWikidataTextMentions(
         fb2wd,
         config.wikidataDump
@@ -174,7 +174,7 @@ object LoadUtils {
 
 object WikidataDumpStuff {
 
-  import ResolveGoogle50kWikidata.{ FreebaseId, WikidataId, Mention, WikidataTextMentions }
+  import ResolveGoogle50kWikidata.{ FreebaseId, WikidataId, Mention, WikidataId2TextMentions }
 
   import rapture.json.jsonBackends.jackson._
   import rapture.json._
@@ -216,7 +216,7 @@ object WikidataDumpStuff {
 
   @inline def loadWikidataTextMentions(
     fb2wd: Map[FreebaseId, WikidataId],
-    wikdataDumpFi: File): WikidataTextMentions = {
+    wikdataDumpFi: File): WikidataId2TextMentions = {
 
     val parser: String => GenTraversableOnce[(String, Seq[String])] =
       WikidataDumpStuff.jsonParse(fb2wd.values.toSet) _
@@ -237,12 +237,12 @@ object WikidataDumpStuff {
 
 object OutputSimplifiedTriples {
 
-  import org.rex.app.dl.ResolveGoogle50kWikidata.{ Freebase2WikidataMap, FbKnowledgeBase, WikidataTextMentions }
+  import org.rex.app.dl.ResolveGoogle50kWikidata.{ FreebaseId2WikidataId, KnowledgebaseByFreebaseId, WikidataId2TextMentions }
 
   @inline def apply(
-    freebaseIdGoogleKb: FbKnowledgeBase,
-    fb2wd: Freebase2WikidataMap,
-    wikidataId2textMentions: WikidataTextMentions,
+    freebaseIdGoogleKb: KnowledgebaseByFreebaseId,
+    fb2wd: FreebaseId2WikidataId,
+    wikidataId2textMentions: WikidataId2TextMentions,
     triplesKbOut: File) = {
     //
     val w = new BufferedWriter(new FileWriter(triplesKbOut))
@@ -301,9 +301,9 @@ object OutputSimplifiedTriples {
 
 object Freebase2WikidataStuff {
 
-  import ResolveGoogle50kWikidata.{ FreebaseId, WikidataId, FbKnowledgeBase, Freebase2WikidataMap }
+  import ResolveGoogle50kWikidata.{ FreebaseId, WikidataId, KnowledgebaseByFreebaseId, FreebaseId2WikidataId }
 
-  @inline def loadFreebase2WikidataIdMap(fbkb: FbKnowledgeBase, fb2wdFi: File): Freebase2WikidataMap = {
+  @inline def loadFreebase2WikidataIdMap(fbkb: KnowledgebaseByFreebaseId, fb2wdFi: File): FreebaseId2WikidataId = {
     // get a set of all freebase IDs from the Google KB
     val interesting = freebaseIdsOfInterest(fbkb)
 
@@ -318,7 +318,7 @@ object Freebase2WikidataStuff {
       .toMap
   }
 
-  @inline def freebaseIdsOfInterest(fbkb: FbKnowledgeBase): Set[FreebaseId] =
+  @inline def freebaseIdsOfInterest(fbkb: KnowledgebaseByFreebaseId): Set[FreebaseId] =
     fbkb
       .foldLeft(Set.empty[FreebaseId]) {
         case (idSet, (sub, objMap)) =>
@@ -342,14 +342,21 @@ object Freebase2WikidataStuff {
 
 object GoogleStuff {
 
-  import ResolveGoogle50kWikidata.{ FreebaseId, Relation, FbKnowledgeBase }
+  import ResolveGoogle50kWikidata.{ FreebaseId, Relation, KnowledgebaseByFreebaseId }
 
   import rapture.json.jsonBackends.jackson._
   import rapture.json._
 
-  @inline def loadFreebaseIdGoogleKb(googleDir: File): FbKnowledgeBase =
-    googleDir
-      .listFiles
+  @inline def safeListFiles(f: File): Seq[File] = {
+    val files = f.listFiles()
+    if(files != null)
+      files.toSeq
+    else
+      Seq.empty[File]
+  }
+
+  @inline def loadFreebaseIdGoogleKb(googleDir: File): KnowledgebaseByFreebaseId =
+    safeListFiles(googleDir)
       .filter(_.getName.endsWith(".json"))
       .filter(_.getName.startsWith("fixed_"))
       .flatMap(f =>
