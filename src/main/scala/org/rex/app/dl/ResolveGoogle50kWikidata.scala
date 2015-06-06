@@ -237,7 +237,16 @@ object WikidataDumpStuff {
 
 object OutputSimplifiedTriples {
 
-  import org.rex.app.dl.ResolveGoogle50kWikidata.{ FreebaseId2WikidataId, KnowledgebaseByFreebaseId, WikidataId2TextMentions }
+  import org.rex.app.dl.ResolveGoogle50kWikidata.{ WikidataId, Mention, FreebaseId2WikidataId, KnowledgebaseByFreebaseId, WikidataId2TextMentions }
+
+  @inline def getPassThruIfNum(wikidataId2textMentions: WikidataId2TextMentions, k: WikidataId): Option[Seq[Mention]] =
+    Try(Integer.parseInt(k)) match {
+      case Success(_) =>
+        Some(Seq(k))
+
+      case Failure(_) =>
+        wikidataId2textMentions.get(k)
+    }
 
   @inline def apply(
     freebaseIdGoogleKb: KnowledgebaseByFreebaseId,
@@ -253,7 +262,7 @@ object OutputSimplifiedTriples {
             fb2wd.get(subFb) match {
 
               case Some(subWd) =>
-                wikidataId2textMentions.get(subWd) match {
+                getPassThruIfNum(wikidataId2textMentions, subWd) match {
 
                   case Some(subMentions) =>
                     objFbRelMap
@@ -262,7 +271,7 @@ object OutputSimplifiedTriples {
                           fb2wd.get(objFb) match {
 
                             case Some(objWd) =>
-                              wikidataId2textMentions.get(objWd) match {
+                              getPassThruIfNum(wikidataId2textMentions, objWd) match {
 
                                 case Some(objMentions) =>
                                   subMentions
@@ -349,7 +358,7 @@ object GoogleStuff {
 
   @inline def safeListFiles(f: File): Seq[File] = {
     val files = f.listFiles()
-    if(files != null)
+    if (files != null)
       files.toSeq
     else
       Seq.empty[File]
