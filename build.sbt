@@ -4,7 +4,7 @@ version := "0.0.1"
 
 organization := "io.malcolmgreaves"
 
-scalaVersion := "2.10.5"
+scalaVersion := "2.11.6"
 
 val jvm = "1.7"
 
@@ -16,30 +16,47 @@ resolvers ++= Seq(
   "Twitter Repository" at "http://maven.twttr.com/"
 )
 
+val breeze = "0.11.2"
+
+val rapture = "1.1.0"
+
+val nak = "1.3" // "1.1.3"
+
+val spire = "0.10.1" // "0.9.1"
+
+val spark = "1.3.0" // "1.2.0"
+
+val sista = "5.2"
+
 libraryDependencies ++= Seq(
-  // visualization
+  // Visualization
   "com.quantifind" %% "wisp" % "0.0.1",
   // NLP
-  "edu.arizona.sista" % "processors" % "3.3",
-  "edu.arizona.sista" % "processors" % "3.3" classifier "models",
-  // "org.scalanlp" % "chalk" % "1.2.0",
-  // Concurrent 
-  "org.apache.spark" %% "spark-core" % "1.2.0",
-  // math
-  "org.spire-math" %% "spire" % "0.9.1",
-  "org.apache.spark" %% "spark-mllib" % "1.2.0",
-  "org.scalanlp" % "breeze-core_2.10" % "0.4",
-  "org.scalanlp" % "breeze-math_2.10" % "0.4",
-  "org.scalanlp" % "nak" % "1.1.3",
+  "edu.arizona.sista" %% "processors" % sista,
+  "edu.arizona.sista" %% "processors" % sista classifier "models",
+  // Concurrent and Distributed 
+  "org.apache.spark" %% "spark-core" % spark,
+  // Math
+  "org.spire-math" %% "spire" % spire,
+  "org.scalanlp" %% "breeze" % breeze,
+  "org.scalanlp" %% "breeze-natives" % breeze,
+  // ML
+  "org.scalanlp" %% "nak" % nak,
+  // Util
+  "com.github.scopt" %% "scopt" % "3.3.0",
+  "com.propensive" %% "rapture-core" % rapture,
+  "com.propensive" %% "rapture-json-jackson" % rapture,
   // Testing
   "org.scalatest" %% "scalatest" % "2.2.1" % "test"
 )
 
-val customScalacOptions = Seq(
+scalacOptions ++= Seq(
   s"-target:jvm-$jvm",
+  "-optimize",
   "-deprecation",
   "-encoding", "UTF-8",
   "-feature",
+  "-language:postfixOps",
   "-language:existentials",
   "-language:higherKinds",
   "-language:implicitConversions",
@@ -54,15 +71,9 @@ val customScalacOptions = Seq(
   "-Yinline-warnings"
 )
 
-scalacOptions ++= (customScalacOptions :+ "-optimize")
-
 testOptions += Tests.Argument(TestFrameworks.JUnit, "-v")
 
 testOptions in Test += Tests.Argument("-oF")
-
-instrumentSettings
-
-CoverallsPlugin.coverallsSettings
 
 packAutoSettings
 
@@ -71,4 +82,6 @@ defaultScalariformSettings
 fork in Test := false
 
 parallelExecution in Test := false
+
+ScoverageSbtPlugin.ScoverageKeys.coverageExcludedPackages := "\\*\\.app\\.\\*"
 

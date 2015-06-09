@@ -2,15 +2,14 @@ package org.rex.spark
 
 import org.rex._
 
-class SparkDataPipelineTest extends SparkTestSuite {
+class SparkPipelineTest extends SparkTestSuite {
 
-  import DataPipelineTest._
-  import TextProcessorTest.makeProcessor
+  import PipelineTest._
   import org.rex.TextFeatuerizerTest.featuerizer2skip2gram2gram
 
   sparkTest("spark data pipeline test") {
 
-    val pipeline = SparkDataPipeline(makeProcessor())(IdentityDocChunker)(sentCGNoKnownPunct)(featuerizer2skip2gram2gram)
+    val pipeline = SparkDataPipeline(TextProcessorTest)(IdentityDocChunker)(sentCGNoKnownPunct)(featuerizer2skip2gram2gram)
 
     val errors =
       checkPipelineOutput(
@@ -19,7 +18,7 @@ class SparkDataPipelineTest extends SparkTestSuite {
             case (id, x) =>
               (
                 id,
-                DataPipeline.aggregateFeatureObservations(
+                Pipeline.aggregateFeatureObservations(
                   x.map(_._2).flatten
                 )
               )

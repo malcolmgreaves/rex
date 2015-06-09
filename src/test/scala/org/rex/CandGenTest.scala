@@ -8,7 +8,7 @@ class CandGenTest extends FunSuite {
 
   test("Simple Sentence Candidate Generation") {
 
-    val createdCandidates = sentenceCandGenAllWord.candidates(insurgentsDoc).toSet
+    val createdCandidates = sentenceCandGenAllWord(insurgentsDoc).toSet
 
     val diff = insurgentsCandidatesSentence.toSet.diff(createdCandidates)
     val intersection = insurgentsCandidatesSentence.toSet.intersect(createdCandidates)
@@ -22,16 +22,11 @@ class CandGenTest extends FunSuite {
 
   test("Coreference-based Candidate Generation") {
 
-    val doc = {
-      val es = NamedEntitySet.Default4Class.entSet
-      NerDocChunker(es)(
-        TextProcessorTest.makeProcessor(es).process("JohnJudy", johnJudyText)
-      )
-    }
+    val doc = TextProcessorTest.process("JohnJudy", johnJudyText)
 
     val mentions = doc.corefMentions.getOrElse(Seq.empty[Coref])
 
-    val candidates = CorefCandGen(WordFilter.noKnownPunct, candidateFilter).candidates(doc)
+    val candidates = CorefCandGen(WordFilter.noKnownPunct, candidateFilter)(doc)
 
     val actual = candidates.map(c => (c.queryW, c.answerW, c.inner)).toSet
 
@@ -46,22 +41,19 @@ object CandGenTest {
 
   val sentenceCandGenAllWord = SentenceCandGen(WordFilter.permitAll)
 
-  val candidateFilter = new WordFilter {
-    override def apply(s: Sentence)(i: Int): Boolean =
+  lazy val candidateFilter: WordFilter.Fn =
+    (s: Sentence) => (i: Int) =>
       WordFilter.noKnownPunct(s)(i) && (pronounOnlyFilter(s)(i) || nounOnlyfilter(s)(i))
-  }
 
-  val nounOnlyfilter = new WordFilter {
-    override def apply(s: Sentence)(i: Int): Boolean =
+  lazy val nounOnlyfilter: WordFilter.Fn =
+    (s: Sentence) => (i: Int) =>
       s.tags.exists(tags => tags(i) == "NN" || tags(i) == "NNS" || tags(i) == "NNP" || tags(i) == "NNPS")
-  }
 
-  val pronounOnlyFilter = new WordFilter {
-    override def apply(s: Sentence)(i: Int): Boolean =
+  lazy val pronounOnlyFilter: WordFilter.Fn =
+    (s: Sentence) => (i: Int) =>
       s.tags.exists(tags => tags(i) == "PRP")
-  }
 
-  val sentenceCandGenNoKnownPunct = SentenceCandGen(WordFilter.noKnownPunct)
+  lazy val sentenceCandGenNoKnownPunct = SentenceCandGen(WordFilter.noKnownPunct)
 
   import TextFeatuerizerTest._
 

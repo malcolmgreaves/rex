@@ -11,9 +11,9 @@ object SparkModules {
     type Id = String
     type Text = String
 
-    type Type = RDD[(Id, Text)] => RDD[Document]
+    type Fn = RDD[(Id, Text)] => RDD[Document]
 
-    def apply(serialized: KryoSerializationWrapper[TextProcessor]): Type =
+    def apply(serialized: KryoSerializationWrapper[TextProcessor]): Fn =
       (data: RDD[(Id, Text)]) =>
         data
           .mapPartitions(partition => {
@@ -29,9 +29,10 @@ object SparkModules {
   object SparkCandGen {
 
     type Id = String
-    type Type = RDD[Document] => RDD[(Id, Seq[Candidate])]
 
-    def apply(serialized: KryoSerializationWrapper[CandGen]): Type =
+    type Fn = RDD[Document] => RDD[(Id, Seq[Candidate])]
+
+    def apply(serialized: KryoSerializationWrapper[CandGen.Fn]): Fn =
       (data: RDD[Document]) =>
         data
           .mapPartitions(
@@ -39,7 +40,7 @@ object SparkModules {
               val candGen = serialized.getValue
               partition.map(
                 doc =>
-                  (doc.id, candGen.candidates(doc))
+                  (doc.id, candGen(doc))
               )
             }
           )

@@ -1,24 +1,15 @@
 package org.rex
 
+import edu.arizona.sista.processors.fastnlp.FastNLPProcessor
 import org.scalatest.{ BeforeAndAfterAll, FunSuite }
 import edu.arizona.sista.processors.corenlp.CoreNLPProcessor
 
-class TextProcessorTest extends FunSuite with BeforeAndAfterAll {
+class TextProcessorTest extends FunSuite {
 
   import TextProcessorTest._
   import NPChunkingTest._
 
-  private var textProcessor: TextProcessor = null
-
-  override protected def beforeAll() = {
-    System.gc()
-    textProcessor = makeProcessor()
-  }
-
-  override protected def afterAll() = {
-    textProcessor = null
-    System.gc()
-  }
+  private val textProcessor = TextProcessorTest
 
   test("text processing insurgents sentence") {
     val insurgentsDoc = textProcessor.process("", insurgentsText)
@@ -47,25 +38,27 @@ class TextProcessorTest extends FunSuite with BeforeAndAfterAll {
           s"[John Smith sentence $index] expecting part-of-speech tags to match up")
     })
 
-    import NamedEntitySet.Default4Class._
+    import NeTagSet.Default4Class._
     testChunk(johnSmithDoc.sentences.zipWithIndex.map(x => (x._1, Some(johnSmithChunked(x._2)))))
   }
 
   test("NP chunking") {
-    import NamedEntitySet.Default4Class._
+    import NeTagSet.Default4Class._
     testChunk(johnSmithSentences.zipWithIndex.map(x => (x._1, Some(johnSmithChunked(x._2)))))
   }
 
 }
 
-object TextProcessorTest {
+object TextProcessorTest extends TextProcessor {
 
-  /** Loads up a Core NLP processor from the attached jar. */
-  def makeProcessor(entSet: NamedEntitySet = NamedEntitySet.Default4Class.entSet): TextProcessor =
-    TextProcessor(
-      ProcessingConf(Some(entSet), None),
-      new CoreNLPProcessor(withDiscourse = false)
-    )
+  override val conf = ProcessingConf.DefaultProcConf.procConf
+
+  private lazy val sharedCoreNlpProcessor = CoreNlpTextProcessor(conf)
+
+  override def process(id: String, text: String): Document =
+    synchronized {
+      sharedCoreNlpProcessor.process(id, text)
+    }
 
   /**
    * Relies upon testing assertions.

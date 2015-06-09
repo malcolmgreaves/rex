@@ -16,12 +16,12 @@ object SparkDataPipeline {
     override def apply(data: RDD[(String, String)]) = f(data)
   }
 
-  import org.rex.DataPipeline.aggregateFeatureObservations
+  import org.rex.Pipeline.aggregateFeatureObservations
 
-  def apply(tp: TextProcessor)(dk: DocumentChunker)(cg: CandGen)(tf: TextFeatuerizer): SparkDataPipeline =
+  def apply(tp: TextProcessor)(dk: DocumentChunker.Fn)(cg: CandGen.Fn)(tf: CandidateFeatuerizer.Fn): SparkDataPipeline =
     apply(SparkTextProcessor(KryoSerializationWrapper(tp)))(dk)(SparkCandGen(KryoSerializationWrapper(cg)))(tf)
 
-  @inline private def apply(stp: SparkTextProcessor.Type)(dk: DocumentChunker)(scg: SparkCandGen.Type)(tf: TextFeatuerizer): SparkDataPipeline =
+  @inline private def apply(stp: SparkTextProcessor.Fn)(dk: DocumentChunker.Fn)(scg: SparkCandGen.Fn)(tf: CandidateFeatuerizer.Fn): SparkDataPipeline =
     (data: RDD[(String, String)]) =>
       scg(stp(data).map(dk))
         .map({

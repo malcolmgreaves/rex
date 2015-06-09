@@ -9,6 +9,11 @@ projectFilesBackup
 *.iml
 
 
+LOG_*
+log_*
+report_*
+REPORT_*
+
 #### 	compiled source
 *.com
 *.class

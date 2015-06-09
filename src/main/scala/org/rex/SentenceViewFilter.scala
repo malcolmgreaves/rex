@@ -3,24 +3,22 @@ package org.rex
 import spire.syntax.cfor._
 
 import scala.language.implicitConversions
+import scala.xml.parsing.TokenTests
 
 /**
  * Turns a sentence into a sequence of it's viewable words along
  * with whether or not the viewable word should be filtered.
  */
-trait SentenceViewFilter extends (Sentence => Seq[(String, Boolean)]) with Serializable
-
 object SentenceViewFilter {
 
-  implicit def fn2sentView(f: Sentence => Seq[(String, Boolean)]): SentenceViewFilter =
-    new SentenceViewFilter {
-      override def apply(v1: Sentence): Seq[(String, Boolean)] = f(v1)
-    }
+  type TokenTest = (String, Boolean)
 
-  def apply(wordView: WordView, wordFilter: WordFilter): SentenceViewFilter =
+  type Fn = Sentence => Seq[TokenTest]
+
+  def apply(wordView: WordView.Fn, wordFilter: WordFilter.Fn): SentenceViewFilter.Fn =
     (s: Sentence) => {
-      val wv = wordView(s) _
-      val wf = wordFilter(s) _
+      val wv = wordView(s)
+      val wf = wordFilter(s)
 
       // local mutability for efficicency
       val buff = new Array[(String, Boolean)](s.tokens.size)

@@ -2,13 +2,15 @@ package org.rex
 
 import scala.language.implicitConversions
 
-trait DocumentChunker extends (Document => Document)
+object DocumentChunker {
+  type Fn = Document => Document
+}
 
-case object IdentityDocChunker extends DocumentChunker {
+case object IdentityDocChunker extends DocumentChunker.Fn {
   override def apply(d: Document) = d
 }
 
-case class NerDocChunker(entitySet: NamedEntitySet) extends DocumentChunker {
+case class NerDocChunker(entitySet: NeTagSet) extends DocumentChunker.Fn {
 
   private val sentChunker = NerSentChunker(entitySet)
 

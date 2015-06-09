@@ -3,14 +3,18 @@ package org.rex
 import nak.data.FeatureObservation
 import org.scalatest.FunSuite
 
-class DataPipelineTest extends FunSuite {
+class PipelineTest extends FunSuite {
 
-  import TextProcessorTest.makeProcessor
-  import DataPipelineTest._
+  import PipelineTest._
   import TextFeatuerizerTest.featuerizer2skip2gram2gram
 
   test("data pipeline test") {
-    val pipeline = DataPipeline(makeProcessor())(IdentityDocChunker)(sentCGNoKnownPunct)(featuerizer2skip2gram2gram)
+    val pipeline = Pipeline(
+      TextProcessorTest,
+      IdentityDocChunker,
+      sentCGNoKnownPunct,
+      featuerizer2skip2gram2gram
+    )
     val errors =
       checkPipelineOutput(
         idTextData
@@ -18,7 +22,7 @@ class DataPipelineTest extends FunSuite {
             case (id, text) =>
               (
                 id,
-                DataPipeline.aggregateFeatureObservations(
+                Pipeline.aggregateFeatureObservations(
                   pipeline(id, text)
                     .map(_._2)
                     .flatten
@@ -36,7 +40,7 @@ class DataPipelineTest extends FunSuite {
   }
 }
 
-object DataPipelineTest {
+object PipelineTest {
 
   import TextFeatuerizerTest._
 
@@ -48,7 +52,7 @@ object DataPipelineTest {
 
   val idFeatureObs = Seq(
     "1" ->
-      DataPipeline.aggregateFeatureObservations(
+      Pipeline.aggregateFeatureObservations(
         expectedFeaturesForCandGenTestInsurgentCandidatesSentence
           .toSeq
           .flatMap({

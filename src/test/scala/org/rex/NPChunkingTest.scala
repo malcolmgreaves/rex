@@ -10,7 +10,7 @@ class NPChunkingTest extends FunSuite {
   import TextProcessorTest._
 
   test("NP chunking from text") {
-    import NamedEntitySet.Default4Class._
+    import NeTagSet.Default4Class._
     testChunk(johnSmithSentences.zipWithIndex.map(x => (x._1, Some(johnSmithChunked(x._2)))))
   }
 
@@ -23,7 +23,7 @@ object NPChunkingTest {
    * If it successeds, then it return Unit.
    * Otherwise it will fail the test
    */
-  def testChunk(testPairs: Seq[(Sentence, Option[Seq[String]])])(implicit entSet: NamedEntitySet): Unit = {
+  def testChunk(testPairs: Seq[(Sentence, Option[Seq[String]])])(implicit entSet: NeTagSet): Unit = {
 
     val chunker = NerSentChunker(entSet)
 

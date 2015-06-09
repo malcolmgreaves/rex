@@ -186,12 +186,12 @@ object TextFeatuerizerTest {
   val wordFilter = WordFilter.noKnownPunct
   val wordView = WordView.lowercase
 
-  val featuerizer2skip2gram2gram = TextFeatuerizer(
+  val featuerizer2skip2gram2gram = CandidateFeatuerizer(
     Some((adjacentConf2gram, SentenceViewFilter.noKnownPunctLowercase)),
     Some((insideConf2skip2gram, wordFilter, wordView))
   )
 
-  val featuerizer4skip2gram2gram = TextFeatuerizer(
+  val featuerizer4skip2gram2gram = CandidateFeatuerizer(
     Some((adjacentConf2gram, SentenceViewFilter.noKnownPunctLowercase)),
     Some((insideConf4skip2gram, wordFilter, wordView))
   )
