@@ -8,15 +8,49 @@ import scala.io.Source
 import scala.language.{ existentials, implicitConversions, postfixOps }
 import scala.util.Try
 
-object Connl04FormatProcessor extends App {
+object ConnlFormatProcessor extends App {
 
+  // 1       The     the     DT      O       _       _
+
+  def onlyLowerWord(conllLine: String): String = 
+    conllLine.trim().split("\t")(2)
+
+  def group(
+    lineParser: String => String,
+    lines: Iterable[String]
+  ): Iterable[Seq[String]] = {
+
+    val (global, last) = lines
+      .foldLeft((Seq.empty[Seq[String]], Seq.empty[String])) { 
+        case ((globalAccum, current), line) =>
+          if(line.trim().isEmpty)
+            (globalAccum :+ current, Seq.empty[String])
+          else
+            (globalAccum, current :+ lineParser(line))
+      }
+
+    if(last.nonEmpty)
+      global :+ last
+    else
+      global
+  }
+
+  val inFi = new File(args(0))
   val outFi = new File(args(1))
-  val grouped = Connl04Format.read(new File(args.head))
+  println(s"Reading CONLL format:             $inFi")
+  println(s"Writing sentences, \\n separated: $outFi")
 
-  println(s"Writing ${grouped.size} sentences to: $outFi")
+  val asSentences = 
+    group(
+      onlyLowerWord _,
+      Source
+        .fromFile(outFi)
+        .getLines()
+        .toIterable
+    )
+
   val w = new BufferedWriter(new FileWriter(outFi))
-  grouped.foreach { 
-    case (sent @ Sentence(tokens,_, _), _) => 
+  asSentences.foreach { tokens => 
       val s = tokens.mkString(" ")
       w.write(s)
       w.newLine()
