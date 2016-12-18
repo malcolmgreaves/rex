@@ -16,7 +16,7 @@ object Connl04FormatProcessor extends App {
   println(s"Writing ${grouped.size} sentences to: $outFi")
   val w = new BufferedWriter(new FileWriter(outFi))
   grouped.foreach { 
-    case (Sentence(tokens,_, _), _) => 
+    case (sent @ Sentence(tokens,_, _), _) => 
       val s = tokens.mkString(" ")
       w.write(s)
       w.newLine()
