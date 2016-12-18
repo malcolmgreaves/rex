@@ -4,9 +4,9 @@ version := "0.0.1"
 
 organization := "io.malcolmgreaves"
 
-scalaVersion := "2.11.6"
+scalaVersion := "2.11.8"
 
-val jvm = "1.7"
+val jvm = "1.8"
 
 resolvers ++= Seq(
   "Sonatype Releases" at "https://oss.sonatype.org/content/repositories/releases/",
