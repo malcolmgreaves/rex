@@ -5,7 +5,7 @@ import java.io.File
 import org.rex.Sentence
 
 import scala.io.Source
-import scala.language.{ existentials, implicitConversions, postfixOps }
+import scala.language.{existentials, implicitConversions, postfixOps}
 import scala.util.Try
 
 object Connl04Format {
@@ -18,7 +18,12 @@ object Connl04Format {
 
   case object Break extends Line
 
-  case class TokenLine(sentence: Int, neTag: String, token: Int, posTag: String, word: String) extends Line
+  case class TokenLine(sentence: Int,
+                       neTag: String,
+                       token: Int,
+                       posTag: String,
+                       word: String)
+      extends Line
 
   case class RelationLine(arg1: Int, arg2: Int, relation: String) extends Line
 
@@ -79,27 +84,33 @@ object Connl04Format {
 
   def lineAggregate(lines: Traversable[Line]): Seq[LabeledLines] =
     lines
-      .foldLeft((Seq.empty[LabeledLines], Seq.empty[TokenLine], Seq.empty[RelationLine], false)) {
-        case ((labeled, workingToks, workingRels, brokenBefore), l) => l match {
+      .foldLeft(
+        (Seq.empty[LabeledLines],
+         Seq.empty[TokenLine],
+         Seq.empty[RelationLine],
+         false)) {
+        case ((labeled, workingToks, workingRels, brokenBefore), l) =>
+          l match {
 
-          case Break =>
-            if (!brokenBefore)
-              (labeled, workingToks, workingRels, true)
-            else
-              (
-                labeled :+ ((workingToks, workingRels)),
-                Seq.empty[TokenLine],
-                Seq.empty[RelationLine],
-                false
-              )
+            case Break =>
+              if (!brokenBefore)
+                (labeled, workingToks, workingRels, true)
+              else
+                (
+                  labeled :+ ((workingToks, workingRels)),
+                  Seq.empty[TokenLine],
+                  Seq.empty[RelationLine],
+                  false
+                )
 
-          case tl: TokenLine =>
-            (labeled, workingToks :+ tl, workingRels, brokenBefore)
+            case tl: TokenLine =>
+              (labeled, workingToks :+ tl, workingRels, brokenBefore)
 
-          case rl: RelationLine =>
-            (labeled, workingToks, workingRels :+ rl, brokenBefore)
-        }
-      }._1
+            case rl: RelationLine =>
+              (labeled, workingToks, workingRels :+ rl, brokenBefore)
+          }
+      }
+      ._1
 
   def sentenceFrom(tls: Seq[TokenLine]): Sentence =
     Sentence(
@@ -109,4 +120,3 @@ object Connl04Format {
     )
 
 }
-

@@ -11,12 +11,16 @@ object InsideFeatures {
       nothing
     } else {
       val end = inner.size - inside.ngramWidth + 2
-      (0 until end).flatMap(sliceStart =>
-        selectKSkipGram(inner.slice(sliceStart, inner.size), inside.ngramWidth, inside.skipSize)
-      )
+      (0 until end).flatMap(
+        sliceStart =>
+          selectKSkipGram(inner.slice(sliceStart, inner.size),
+                          inside.ngramWidth,
+                          inside.skipSize))
     }
 
-  @inline private def selectKSkipGram(s: Seq[String], n: Int, k: Int): Seq[String] = {
+  @inline private def selectKSkipGram(s: Seq[String],
+                                      n: Int,
+                                      k: Int): Seq[String] = {
     val first = s.head
     if (n <= 1)
       Seq(first)

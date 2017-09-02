@@ -1,8 +1,8 @@
 package org.rex.spark
 
-import nak.data.{ FeatureObservation, Featurizer }
+import nak.data.{FeatureObservation, Featurizer}
 import org.apache.spark.rdd.RDD
-import org.rex.{ Candidate, CandGen, TextProcessor, Document }
+import org.rex.{Candidate, CandGen, TextProcessor, Document}
 
 object SparkModules {
 
@@ -39,11 +39,10 @@ object SparkModules {
             partition => {
               val candGen = serialized.getValue
               partition.map(
-                doc =>
-                  (doc.id, candGen(doc))
+                doc => (doc.id, candGen(doc))
               )
             }
-          )
+        )
   }
 
 }
