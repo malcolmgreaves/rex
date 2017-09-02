@@ -1,11 +1,8 @@
-name := "rex"
-
-version := "0.0.1"
-
 organization := "io.malcolmgreaves"
+name         := "rex"
+version      := "0.0.1"
 
-scalaVersion := "2.11.6"
-
+scalaVersion := "2.11.8"
 val jvm = "1.7"
 
 resolvers ++= Seq(
@@ -16,17 +13,12 @@ resolvers ++= Seq(
   "Twitter Repository" at "http://maven.twttr.com/"
 )
 
-val breeze = "0.11.2"
-
+val breeze  = "0.11.2"
 val rapture = "1.1.0"
-
-val nak = "1.3" // "1.1.3"
-
-val spire = "0.10.1" // "0.9.1"
-
-val spark = "1.3.0" // "1.2.0"
-
-val sista = "5.2"
+val nak     = "1.3" // "1.1.3"
+val spire   = "0.10.1" // "0.9.1"
+val spark   = "1.3.0" // "1.2.0"
+val sista   = "5.2"
 
 libraryDependencies ++= Seq(
   // Visualization
@@ -47,7 +39,7 @@ libraryDependencies ++= Seq(
   "com.propensive" %% "rapture-core" % rapture,
   "com.propensive" %% "rapture-json-jackson" % rapture,
   // Testing
-  "org.scalatest" %% "scalatest" % "2.2.1" % "test"
+  "org.scalatest" %% "scalatest" % "2.2.5" % Test
 )
 
 scalacOptions ++= Seq(
@@ -71,17 +63,8 @@ scalacOptions ++= Seq(
   "-Yinline-warnings"
 )
 
-testOptions += Tests.Argument(TestFrameworks.JUnit, "-v")
-
+testOptions         += Tests.Argument(TestFrameworks.JUnit, "-v")
 testOptions in Test += Tests.Argument("-oF")
 
-packAutoSettings
-
-defaultScalariformSettings
-
-fork in Test := false
-
+fork in Test              := false
 parallelExecution in Test := false
-
-ScoverageSbtPlugin.ScoverageKeys.coverageExcludedPackages := "\\*\\.app\\.\\*"
-
