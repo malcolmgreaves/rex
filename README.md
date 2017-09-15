@@ -32,7 +32,7 @@ These files are large and are stored using [`git-lfs`](https://git-lfs.github.co
 instructions and ensure that you've set up this `git` plugin (i.e. have performed `git lfs install` once).
 
 
-## LICENSE
+## License
 Everything within this repository is copyright (2015-) by Malcolm Greaves.
 
 Use of this code is permitted according to the stipulations of the 
