@@ -21,6 +21,15 @@ Moreover, to see code coverage, first run `coverage`, then `test`. The coverage 
 To produce bash scripts that will execute each individual command-line application within this codebase, execute `sbt pack`.
 
 
+## Data
+
+This project includes data that allows one to distantly supervise relation mentions in text. The files are located under
+`data/`: a local `README` further explains the data content, format, and purpose.  
+
+These files are large and are stored using [`git-lfs`](https://git-lfs.github.com/). Be sure to follow the appropriate
+instructions and ensure that you've set up this `git` plugin (i.e. have performed `git lfs install` once).
+
+
 ## LICENSE
 Everything within this repository is copyright (2015-) by Malcolm Greaves.
 
