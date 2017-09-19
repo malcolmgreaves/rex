@@ -3,10 +3,13 @@ LOG_*
 log_*
 report_*
 REPORT_*
+here
+sample
 
 ####	sbt
 target
-project
+project/project
+project/target
 projectFilesBackup
 
 ####  IDE
