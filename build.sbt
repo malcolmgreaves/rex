@@ -3,7 +3,7 @@ name         := "rex"
 version      := "0.0.1"
 
 scalaVersion := "2.11.8"
-val jvm = "1.7"
+val jvm = "1.8"
 
 resolvers ++= Seq(
   "Sonatype Releases" at "https://oss.sonatype.org/content/repositories/releases/",
@@ -15,9 +15,9 @@ resolvers ++= Seq(
 
 val breeze  = "0.11.2"
 val rapture = "1.1.0"
-val nak     = "1.3" // "1.1.3"
-val spire   = "0.10.1" // "0.9.1"
-val spark   = "1.3.0" // "1.2.0"
+val nak     = "1.3"
+val spire   = "0.10.1"
+val spark   = "2.0.2"
 val sista   = "5.2"
 
 libraryDependencies ++= Seq(
