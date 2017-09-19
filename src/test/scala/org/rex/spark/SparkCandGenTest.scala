@@ -23,21 +23,22 @@ class SparkCandGenTest extends SparkTestSuite {
     val createdCandidates = createdCandidatesRDD.collect().head.toSet
 
     val diff = insurgentsCandidatesSentence.toSet.diff(createdCandidates)
-    val intersection = insurgentsCandidatesSentence.toSet.intersect(createdCandidates)
+    val intersection =
+      insurgentsCandidatesSentence.toSet.intersect(createdCandidates)
 
     val test =
       diff.size == 0 &&
         intersection.size == insurgentsCandidatesSentence.size &&
         intersection.size == createdCandidates.size
 
-    assert(test,
+    assert(
+      test,
       s"""Candidates did not match. Expecting ${insurgentsCandidatesSentence.size} actually have ${createdCandidates.size} candidates.\n""" +
-        s"""Difference: "${diff.mkString(" : ")}"\nIntersection: "${intersection.mkString(" : ")}""""
+        s"""Difference: "${diff.mkString(" : ")}"\nIntersection: "${intersection
+          .mkString(" : ")}""""
     )
   }
 
-  ignoreSparkTest("Spark Coreference-based Candidate Generation") {
-
-  }
+  ignoreSparkTest("Spark Coreference-based Candidate Generation") {}
 
 }

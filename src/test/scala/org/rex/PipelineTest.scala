@@ -53,16 +53,13 @@ object PipelineTest {
   val idFeatureObs = Seq(
     "1" ->
       Pipeline.aggregateFeatureObservations(
-        expectedFeaturesForCandGenTestInsurgentCandidatesSentence
-          .toSeq
+        expectedFeaturesForCandGenTestInsurgentCandidatesSentence.toSeq
           .flatMap({
             case (_, answerMap) =>
-              answerMap
-                .toSeq
+              answerMap.toSeq
                 .flatMap({
                   case (_, features) =>
-                    features
-                      .toSeq
+                    features.toSeq
                       .map(feature => FeatureObservation(feature, 1.0))
                 })
           })
@@ -75,7 +72,8 @@ object PipelineTest {
 
   def checkPipelineOutput(actual: TestData, expected: TestData): List[Error] =
     if (actual.size == expected.size)
-      actual.zip(expected)
+      actual
+        .zip(expected)
         .foldLeft(List.empty[Error])({
 
           case (errors, (a, e)) =>
@@ -83,12 +81,15 @@ object PipelineTest {
               if (a._2 == e._2)
                 errors
               else
-                errors :+ s"""Content mis-match on id: ${e._1},\nexpecting (${e._2.size}):\n${e._2.mkString("\n")}\nactual (${a._2.size}):\n${a._2.mkString("\n")}"""
+                errors :+ s"""Content mis-match on id: ${e._1},\nexpecting (${e._2.size}):\n${e._2
+                  .mkString("\n")}\nactual (${a._2.size}):\n${a._2.mkString(
+                  "\n")}"""
             else
               errors :+ s"Id mis-match, expecting: ${e._1} actual: ${a._1}"
 
         })
     else
-      List(s"size mis-match, expecting: ${expected.size} actual: ${actual.size}")
+      List(
+        s"size mis-match, expecting: ${expected.size} actual: ${actual.size}")
 
 }

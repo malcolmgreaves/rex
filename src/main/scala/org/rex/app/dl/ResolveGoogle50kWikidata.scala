@@ -7,7 +7,7 @@ import java.util.zip.GZIPInputStream
 import scala.collection.GenTraversableOnce
 import scala.concurrent.duration.Duration
 import scala.io.Source
-import scala.util.{ Try, Failure, Success }
+import scala.util.{Try, Failure, Success}
 
 object ResolveGoogle50kWikidata extends App {
 
@@ -16,17 +16,18 @@ object ResolveGoogle50kWikidata extends App {
   type Relation = String
   type Mention = String
 
-  type KnowledgebaseByFreebaseId = Map[FreebaseId, Map[FreebaseId, Set[Relation]]]
+  type KnowledgebaseByFreebaseId =
+    Map[FreebaseId, Map[FreebaseId, Set[Relation]]]
   type FreebaseId2WikidataId = Map[FreebaseId, WikidataId]
   type WikidataId2TextMentions = Map[WikidataId, Seq[Mention]]
 
   private[this] def apply(config: Config, k: Int = 10): Unit = {
-    println("" +
-      s"Google 50k Relations KB:    ${config.googleDir}\n" +
-      s"Freebase2Wikidata ID map:   ${config.freebase2wikidataId}\n" +
-      s"Wikidata KB dump:           ${config.wikidataDump}\n" +
-      s"Output, simplified triples: ${config.triplesKbOut}\n"
-    )
+    println(
+      "" +
+        s"Google 50k Relations KB:    ${config.googleDir}\n" +
+        s"Freebase2Wikidata ID map:   ${config.freebase2wikidataId}\n" +
+        s"Wikidata KB dump:           ${config.wikidataDump}\n" +
+        s"Output, simplified triples: ${config.triplesKbOut}\n")
 
     // read and parse json of each Google 50K relation lines
     // get query & answer Freebase IDs, store everything into one Set[FreebaseId]
@@ -37,7 +38,8 @@ object ResolveGoogle50kWikidata extends App {
       )
     val endFbGKb = System.currentTimeMillis()
     LoadUtils.printTime("Finished loading Google KB in", startFbGKb, endFbGKb)
-    println(s"Sample of $k Google 50K Knowledgebase Entries [out of ${Freebase2WikidataStuff.freebaseIdsOfInterest(freebaseIdGoogleKb).size}]")
+    println(
+      s"Sample of $k Google 50K Knowledgebase Entries [out of ${Freebase2WikidataStuff.freebaseIdsOfInterest(freebaseIdGoogleKb).size}]")
     freebaseIdGoogleKb
       .take(k)
       .foreach(println)
@@ -51,8 +53,12 @@ object ResolveGoogle50kWikidata extends App {
         config.freebase2wikidataId
       )
     val endFb2Wd = System.currentTimeMillis()
-    LoadUtils.printTime("Finished loading Freebase ID -> Wikidata ID mapping in", startFb2Wd, endFb2Wd)
-    println(s"Sample of $k Freebase ID => WikidataID mappings [out of ${fb2wd.size}}]")
+    LoadUtils.printTime(
+      "Finished loading Freebase ID -> Wikidata ID mapping in",
+      startFb2Wd,
+      endFb2Wd)
+    println(
+      s"Sample of $k Freebase ID => WikidataID mappings [out of ${fb2wd.size}}]")
     fb2wd
       .take(k)
       .foreach(println)
@@ -66,8 +72,11 @@ object ResolveGoogle50kWikidata extends App {
         config.wikidataDump
       )
     val endWText = System.currentTimeMillis()
-    LoadUtils.printTime("Finished loading Wikidata Text Mentions in", startWText, endWText)
-    println(s"Sample of $k WikidataID text mentions [out of ${wikidataId2textMentions.size}}]")
+    LoadUtils.printTime("Finished loading Wikidata Text Mentions in",
+                        startWText,
+                        endWText)
+    println(
+      s"Sample of $k WikidataID text mentions [out of ${wikidataId2textMentions.size}}]")
     wikidataId2textMentions
       .take(k)
       .foreach(println)
@@ -82,14 +91,15 @@ object ResolveGoogle50kWikidata extends App {
       config.triplesKbOut
     )
     val endTOut = System.currentTimeMillis()
-    LoadUtils.printTime("Finished writing simplified relation triples in", startTOut, endTOut)
+    LoadUtils.printTime("Finished writing simplified relation triples in",
+                        startTOut,
+                        endTOut)
   }
 
-  case class Config(
-    googleDir: File,
-    freebase2wikidataId: File,
-    wikidataDump: File,
-    triplesKbOut: File)
+  case class Config(googleDir: File,
+                    freebase2wikidataId: File,
+                    wikidataDump: File,
+                    triplesKbOut: File)
 
   new scopt.OptionParser[Config]("relation-extraction-learning-main") {
     head("Make KB from Google 50k relations and Wikidata names")
@@ -101,28 +111,36 @@ object ResolveGoogle50kWikidata extends App {
       .required()
       .abbr("g")
       .valueName("<directory>")
-      .action { (g, c) => c.copy(googleDir = g) }
+      .action { (g, c) =>
+        c.copy(googleDir = g)
+      }
       .text("The Google 50k Relation Knowledge Base Directory")
 
     opt[File]("freebase2wikidata")
       .required()
       .abbr("f")
       .valueName("<file>")
-      .action { (f2w, c) => c.copy(freebase2wikidataId = f2w) }
+      .action { (f2w, c) =>
+        c.copy(freebase2wikidataId = f2w)
+      }
       .text("The Mapping from Freebase to Wikidata IDs")
 
     opt[File]("wikidata")
       .required()
       .abbr("w")
       .valueName("<file>")
-      .action { (w, c) => c.copy(wikidataDump = w) }
+      .action { (w, c) =>
+        c.copy(wikidataDump = w)
+      }
       .text("The Complete Wikidata Dump")
 
     opt[File]("triplesOut")
       .required()
       .abbr("t")
       .valueName("<file>")
-      .action { (t, c) => c.copy(triplesKbOut = t) }
+      .action { (t, c) =>
+        c.copy(triplesKbOut = t)
+      }
       .text("Output: where to write the simplified KB triples")
 
     checkConfig { c =>
@@ -139,7 +157,8 @@ object ResolveGoogle50kWikidata extends App {
           else
             failure(s"Google directory doesn't exist: ${c.googleDir}")
         else
-          failure(s"Freebase -> Wikidata ID mapping file doesn't exist: ${c.freebase2wikidataId}")
+          failure(
+            s"Freebase -> Wikidata ID mapping file doesn't exist: ${c.freebase2wikidataId}")
       else
         failure("Not all arguments supplied.")
     }
@@ -158,7 +177,8 @@ object ResolveGoogle50kWikidata extends App {
 object LoadUtils {
 
   @inline def printTime(msg: String, start: Long, end: Long): Unit =
-    println(s"$msg ${Duration(end - start, TimeUnit.MILLISECONDS).toSeconds} seconds (${end - start} ms)")
+    println(
+      s"$msg ${Duration(end - start, TimeUnit.MILLISECONDS).toSeconds} seconds (${end - start} ms)")
 
   @inline def asInputStream(f: File): Option[InputStream] =
     if (f.isFile)
@@ -174,7 +194,12 @@ object LoadUtils {
 
 object WikidataDumpStuff {
 
-  import ResolveGoogle50kWikidata.{ FreebaseId, WikidataId, Mention, WikidataId2TextMentions }
+  import ResolveGoogle50kWikidata.{
+    FreebaseId,
+    WikidataId,
+    Mention,
+    WikidataId2TextMentions
+  }
 
   import rapture.json.jsonBackends.jackson._
   import rapture.json._
@@ -184,7 +209,8 @@ object WikidataDumpStuff {
       .flatMap(_.toOption)
       .foldLeft(Seq.empty[Mention])(_ ++ _)
 
-  def jsonParse(idsOfInterest: Set[WikidataId])(s: String): Option[(WikidataId, Seq[Mention])] =
+  def jsonParse(idsOfInterest: Set[WikidataId])(
+      s: String): Option[(WikidataId, Seq[Mention])] =
     Try(Json.parse(s)) match {
 
       case Success(j) =>
@@ -196,7 +222,8 @@ object WikidataDumpStuff {
               Try(Seq(j.labels.en.value.as[Mention])),
               Try(Seq(j.labels.simple.value.as[Mention])),
               Try {
-                j.aliases.en.as[Seq[String]]
+                j.aliases.en
+                  .as[Seq[String]]
                   .map(x => Json.parse(x).value.as[Mention])
               }
             )
@@ -208,20 +235,22 @@ object WikidataDumpStuff {
           None
 
       case Failure(e) =>
-        println(s"[WikidataDumpStuff] *recovered, skip* ERROR parsing:\n\n$s\n\n")
+        println(
+          s"[WikidataDumpStuff] *recovered, skip* ERROR parsing:\n\n$s\n\n")
         e.printStackTrace()
         println("[WikidataDumpStuff] /////////////////////////////////")
         None
     }
 
   @inline def loadWikidataTextMentions(
-    fb2wd: Map[FreebaseId, WikidataId],
-    wikdataDumpFi: File): WikidataId2TextMentions = {
+      fb2wd: Map[FreebaseId, WikidataId],
+      wikdataDumpFi: File): WikidataId2TextMentions = {
 
     val parser: String => GenTraversableOnce[(String, Seq[String])] =
       WikidataDumpStuff.jsonParse(fb2wd.values.toSet) _
 
-    Source.fromInputStream(LoadUtils.asInputStream(wikdataDumpFi).get)
+    Source
+      .fromInputStream(LoadUtils.asInputStream(wikdataDumpFi).get)
       .getLines()
       // don't care about array nature of the file, only processing
       // each element individually
@@ -237,9 +266,16 @@ object WikidataDumpStuff {
 
 object OutputSimplifiedTriples {
 
-  import org.rex.app.dl.ResolveGoogle50kWikidata.{ WikidataId, Mention, FreebaseId2WikidataId, KnowledgebaseByFreebaseId, WikidataId2TextMentions }
+  import org.rex.app.dl.ResolveGoogle50kWikidata.{
+    WikidataId,
+    Mention,
+    FreebaseId2WikidataId,
+    KnowledgebaseByFreebaseId,
+    WikidataId2TextMentions
+  }
 
-  @inline def getPassThruIfNum(wikidataId2textMentions: WikidataId2TextMentions, k: WikidataId): Option[Seq[Mention]] =
+  @inline def getPassThruIfNum(wikidataId2textMentions: WikidataId2TextMentions,
+                               k: WikidataId): Option[Seq[Mention]] =
     Try(Integer.parseInt(k)) match {
       case Success(_) =>
         Some(Seq(k))
@@ -248,11 +284,10 @@ object OutputSimplifiedTriples {
         wikidataId2textMentions.get(k)
     }
 
-  @inline def apply(
-    freebaseIdGoogleKb: KnowledgebaseByFreebaseId,
-    fb2wd: FreebaseId2WikidataId,
-    wikidataId2textMentions: WikidataId2TextMentions,
-    triplesKbOut: File) = {
+  @inline def apply(freebaseIdGoogleKb: KnowledgebaseByFreebaseId,
+                    fb2wd: FreebaseId2WikidataId,
+                    wikidataId2textMentions: WikidataId2TextMentions,
+                    triplesKbOut: File) = {
     //
     val w = new BufferedWriter(new FileWriter(triplesKbOut))
     try {
@@ -280,26 +315,31 @@ object OutputSimplifiedTriples {
                                         .foreach { oMention =>
                                           relations
                                             .foreach { relation =>
-                                              w.write(s"$sMention\t$oMention\t$relation\n")
+                                              w.write(
+                                                s"$sMention\t$oMention\t$relation\n")
                                             }
                                         }
                                     }
 
                                 case None =>
-                                  println(s"[OutputSimplifiedTriples] *recovered, skip* ERROR, no text mentions for Wikidata ID (object) $objWd")
+                                  println(
+                                    s"[OutputSimplifiedTriples] *recovered, skip* ERROR, no text mentions for Wikidata ID (object) $objWd")
                               }
 
                             case None =>
-                              println(s"[OutputSimplifiedTriples] *recovered, skip* ERROR, no Wikidata ID for Freebase ID (object): $objFb")
+                              println(
+                                s"[OutputSimplifiedTriples] *recovered, skip* ERROR, no Wikidata ID for Freebase ID (object): $objFb")
                           }
                       }
 
                   case None =>
-                    println(s"[OutputSimplifiedTriples] *recovered, skip* ERROR, no text mentions for Wikidata ID (subject) $subWd")
+                    println(
+                      s"[OutputSimplifiedTriples] *recovered, skip* ERROR, no text mentions for Wikidata ID (subject) $subWd")
                 }
 
               case None =>
-                println(s"[OutputSimplifiedTriples] *recovered, skip* ERROR, no Wikidata ID for Freebase ID (subject): $subFb")
+                println(
+                  s"[OutputSimplifiedTriples] *recovered, skip* ERROR, no Wikidata ID for Freebase ID (subject): $subFb")
             }
         }
     } finally {
@@ -310,15 +350,23 @@ object OutputSimplifiedTriples {
 
 object Freebase2WikidataStuff {
 
-  import ResolveGoogle50kWikidata.{ FreebaseId, WikidataId, KnowledgebaseByFreebaseId, FreebaseId2WikidataId }
+  import ResolveGoogle50kWikidata.{
+    FreebaseId,
+    WikidataId,
+    KnowledgebaseByFreebaseId,
+    FreebaseId2WikidataId
+  }
 
-  @inline def loadFreebase2WikidataIdMap(fbkb: KnowledgebaseByFreebaseId, fb2wdFi: File): FreebaseId2WikidataId = {
+  @inline def loadFreebase2WikidataIdMap(
+      fbkb: KnowledgebaseByFreebaseId,
+      fb2wdFi: File): FreebaseId2WikidataId = {
     // get a set of all freebase IDs from the Google KB
     val interesting = freebaseIdsOfInterest(fbkb)
 
     // translate Freebase IDs into Wikidata IDs
     // only keep the ones we're interested in
-    Source.fromInputStream(LoadUtils.asInputStream(fb2wdFi).get)
+    Source
+      .fromInputStream(LoadUtils.asInputStream(fb2wdFi).get)
       .getLines()
       // ignore commments and empty lines
       .dropWhile(x => x.startsWith("#") || x.trim.isEmpty)
@@ -327,7 +375,8 @@ object Freebase2WikidataStuff {
       .toMap
   }
 
-  @inline def freebaseIdsOfInterest(fbkb: KnowledgebaseByFreebaseId): Set[FreebaseId] =
+  @inline def freebaseIdsOfInterest(
+      fbkb: KnowledgebaseByFreebaseId): Set[FreebaseId] =
     fbkb
       .foldLeft(Set.empty[FreebaseId]) {
         case (idSet, (sub, objMap)) =>
@@ -351,7 +400,11 @@ object Freebase2WikidataStuff {
 
 object GoogleStuff {
 
-  import ResolveGoogle50kWikidata.{ FreebaseId, Relation, KnowledgebaseByFreebaseId }
+  import ResolveGoogle50kWikidata.{
+    FreebaseId,
+    Relation,
+    KnowledgebaseByFreebaseId
+  }
 
   import rapture.json.jsonBackends.jackson._
   import rapture.json._
@@ -364,37 +417,40 @@ object GoogleStuff {
       Seq.empty[File]
   }
 
-  @inline def loadFreebaseIdGoogleKb(googleDir: File): KnowledgebaseByFreebaseId =
+  @inline def loadFreebaseIdGoogleKb(
+      googleDir: File): KnowledgebaseByFreebaseId =
     safeListFiles(googleDir)
       .filter(_.getName.endsWith(".json"))
       .filter(_.getName.startsWith("fixed_"))
-      .flatMap(f =>
-        LoadUtils.asInputStream(f)
-          .map(is => {
-            val name = GoogleStuff.relationFromName(f)
-            println(s"Reading relation KB: $name")
-            (name, is)
-          })
-      )
+      .flatMap(
+        f =>
+          LoadUtils
+            .asInputStream(f)
+            .map(is => {
+              val name = GoogleStuff.relationFromName(f)
+              println(s"Reading relation KB: $name")
+              (name, is)
+            }))
       .foldLeft(Map.empty[FreebaseId, Map[FreebaseId, Set[Relation]]]) {
         case (knowledgebase, (relation, is)) =>
-          Source.fromInputStream(is)
+          Source
+            .fromInputStream(is)
             .getLines()
             .flatMap(l =>
               GoogleStuff.idsFromJsonLine(l) match {
                 case Success(x) =>
                   Some(x)
                 case Failure(e) =>
-                  println(s"[loadFreebaseIdGoogleKb] *recovered, skipped* ERROR, offending line\n\n$l\n\n")
+                  println(
+                    s"[loadFreebaseIdGoogleKb] *recovered, skipped* ERROR, offending line\n\n$l\n\n")
                   e.printStackTrace()
-                  println("[loadFreebaseIdGoogleKb] ///////////////////////////////////////////")
+                  println(
+                    "[loadFreebaseIdGoogleKb] ///////////////////////////////////////////")
                   None
-              }
-            )
+            })
             .foldLeft(knowledgebase) {
 
               case (kb, (sub, obj)) =>
-
                 if (kb contains sub) {
                   (kb - sub) + (sub -> (
                     if (kb(sub) contains obj) {

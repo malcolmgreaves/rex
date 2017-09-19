@@ -1,6 +1,6 @@
 package org.rex
 
-import nak.data.{ FeatureObservation, Featurizer }
+import nak.data.{FeatureObservation, Featurizer}
 import org.rex.AdjacentFeatures._
 import spire.syntax.cfor._
 
@@ -19,27 +19,26 @@ object CandidateFeatuerizer extends TextFeatuerizer[Candidate] {
     }
 
   /**
-   * Creates a Featuerizer[Candidate,String] instance that creates ngram and skip-ngram
-   * based features using information within the document that the Candidate comes from.
-   *
-   * The AdjacentFeatures and InsideFeatures configurations determine the evaluated
-   * Featuerizer's behavior. Settings a configuration value to None implies to
-   * not perform that type of featuerization. E.g. if insideConf is None, then skip-ngram
-   * features will not be created. Similarily for adjacentConf and ngram features. The
-   * default is to use bigrams for adjacent features and 4-skip bigrams for inside features.
-   *
-   * The wordView function determines how to interpret each element of a sentence. The default
-   * is to only use the lower-cased version of the token. Alternatives include POS or NE tags,
-   * or combinations thereof.
-   */
+    * Creates a Featuerizer[Candidate,String] instance that creates ngram and skip-ngram
+    * based features using information within the document that the Candidate comes from.
+    *
+    * The AdjacentFeatures and InsideFeatures configurations determine the evaluated
+    * Featuerizer's behavior. Settings a configuration value to None implies to
+    * not perform that type of featuerization. E.g. if insideConf is None, then skip-ngram
+    * features will not be created. Similarily for adjacentConf and ngram features. The
+    * default is to use bigrams for adjacent features and 4-skip bigrams for inside features.
+    *
+    * The wordView function determines how to interpret each element of a sentence. The default
+    * is to only use the lower-cased version of the token. Alternatives include POS or NE tags,
+    * or combinations thereof.
+    */
   def apply(
-    adjacentConf: Option[(AdjacentFeatures, SentenceViewFilter.Fn)],
-    insideConf: Option[(InsideFeatures, WordFilter.Fn, WordView.Fn)]): Fn = {
+      adjacentConf: Option[(AdjacentFeatures, SentenceViewFilter.Fn)],
+      insideConf: Option[(InsideFeatures, WordFilter.Fn, WordView.Fn)]): Fn = {
 
-    @inline def filterAndRecomputeIndices(
-      w: Seq[(String, Boolean)],
-      qi: Int,
-      ai: Int): (Seq[String], Int, Int) = {
+    @inline def filterAndRecomputeIndices(w: Seq[(String, Boolean)],
+                                          qi: Int,
+                                          ai: Int): (Seq[String], Int, Int) = {
 
       @inline def updateIndex(removingIndex: Int, indexToUpdate: Int): Int =
         if (removingIndex < indexToUpdate)
@@ -47,11 +46,10 @@ object CandidateFeatuerizer extends TextFeatuerizer[Candidate] {
         else
           indexToUpdate
 
-      @tailrec def f(
-        words: List[(String, Boolean, Int)],
-        q: Int,
-        a: Int,
-        filtered: Seq[String]): (Seq[String], Int, Int) =
+      @tailrec def f(words: List[(String, Boolean, Int)],
+                     q: Int,
+                     a: Int,
+                     filtered: Seq[String]): (Seq[String], Int, Int) =
         words match {
 
           case (word, shouldKeep, index) :: rest =>
@@ -74,12 +72,12 @@ object CandidateFeatuerizer extends TextFeatuerizer[Candidate] {
       )
     }
 
-    def adjFeats1Sent(
-      wordfilts: Seq[(String, Boolean)],
-      origQIdx: Int,
-      origAIdx: Int): Int => Seq[Seq[String]] = {
+    def adjFeats1Sent(wordfilts: Seq[(String, Boolean)],
+                      origQIdx: Int,
+                      origAIdx: Int): Int => Seq[Seq[String]] = {
 
-      val (words, qIdx, aIdx) = filterAndRecomputeIndices(wordfilts.toList, origQIdx, origAIdx)
+      val (words, qIdx, aIdx) =
+        filterAndRecomputeIndices(wordfilts.toList, origQIdx, origAIdx)
 
       val (lIndex, rIndex) =
         if (qIdx < aIdx)
@@ -87,16 +85,17 @@ object CandidateFeatuerizer extends TextFeatuerizer[Candidate] {
         else
           (aIdx, qIdx)
 
-      (ngramSize: Int) => Seq(
-        if (lIndex - ngramSize < 0)
-          nothingStr
-        else
-          left(words, lIndex)(ngramSize),
-        if (rIndex + ngramSize >= words.size)
-          nothingStr
-        else
-          right(words, rIndex)(ngramSize)
-      )
+      (ngramSize: Int) =>
+        Seq(
+          if (lIndex - ngramSize < 0)
+            nothingStr
+          else
+            left(words, lIndex)(ngramSize),
+          if (rIndex + ngramSize >= words.size)
+            nothingStr
+          else
+            right(words, rIndex)(ngramSize)
+        )
     }
 
     val makeAdjacentFeatures: Candidate => Seq[String] =
@@ -107,67 +106,78 @@ object CandidateFeatuerizer extends TextFeatuerizer[Candidate] {
           (cand: Candidate) =>
             {
 
-              val createAdjacentFeaturesAtSize: Int => Seq[Seq[String]] = cand match {
+              val createAdjacentFeaturesAtSize: Int => Seq[Seq[String]] =
+                cand match {
 
-                case CandidateSentence(sentence, queryIndex, answerIndex) => {
+                  case CandidateSentence(sentence, queryIndex, answerIndex) => {
 
-                  val sentenceFeatures =
-                    adjFeats1Sent(
-                      sentViewFilt(sentence),
-                      queryIndex,
-                      answerIndex
-                    )
+                    val sentenceFeatures =
+                      adjFeats1Sent(
+                        sentViewFilt(sentence),
+                        queryIndex,
+                        answerIndex
+                      )
 
-                  (ngramSize: Int) =>
-                    sentenceFeatures(ngramSize)
+                    (ngramSize: Int) =>
+                      sentenceFeatures(ngramSize)
                       //                      .map(_.filter(_._2).map(_._1))
-                      .filter(_.nonEmpty)
-                }
+                        .filter(_.nonEmpty)
+                  }
 
-                case CandidateCorefQuery(doc, query, shared, queryCoref, answer) => {
+                  case CandidateCorefQuery(doc,
+                                           query,
+                                           shared,
+                                           queryCoref,
+                                           answer) => {
 
-                  val sharedFeatures =
-                    adjFeats1Sent(
-                      sentViewFilt(doc.sentences(shared)),
-                      queryCoref,
-                      answer
-                    )
+                    val sharedFeatures =
+                      adjFeats1Sent(
+                        sentViewFilt(doc.sentences(shared)),
+                        queryCoref,
+                        answer
+                      )
 
-                  val featuresAroundQuery =
-                    adjFeats1Sent(
-                      sentViewFilt(doc.sentences(query.sentNum)),
-                      query.wordIndex,
-                      query.wordIndex
-                    )
+                    val featuresAroundQuery =
+                      adjFeats1Sent(
+                        sentViewFilt(doc.sentences(query.sentNum)),
+                        query.wordIndex,
+                        query.wordIndex
+                      )
 
-                  (ngramSize: Int) =>
-                    (sharedFeatures(ngramSize) ++ featuresAroundQuery(ngramSize))
+                    (ngramSize: Int) =>
+                      (sharedFeatures(ngramSize) ++ featuresAroundQuery(
+                        ngramSize))
                       //                      .map(_.filter(_._2).map(_._1))
-                      .filter(_.nonEmpty)
-                }
+                        .filter(_.nonEmpty)
+                  }
 
-                case CandidateCorefAnswer(doc, query, shared, answerCoref, answer) => {
+                  case CandidateCorefAnswer(doc,
+                                            query,
+                                            shared,
+                                            answerCoref,
+                                            answer) => {
 
-                  val sharedFeatures =
-                    adjFeats1Sent(
-                      sentViewFilt(doc.sentences(shared)),
-                      query,
-                      answerCoref
-                    )
+                    val sharedFeatures =
+                      adjFeats1Sent(
+                        sentViewFilt(doc.sentences(shared)),
+                        query,
+                        answerCoref
+                      )
 
-                  val featuresAroundAnswer =
-                    adjFeats1Sent(
-                      sentViewFilt(doc.sentences(answer.sentNum)),
-                      answer.wordIndex,
-                      answer.wordIndex
-                    )
+                    val featuresAroundAnswer =
+                      adjFeats1Sent(
+                        sentViewFilt(doc.sentences(answer.sentNum)),
+                        answer.wordIndex,
+                        answer.wordIndex
+                      )
 
-                  (ngramSize: Int) =>
-                    (sharedFeatures(ngramSize) ++ featuresAroundAnswer(ngramSize))
+                    (ngramSize: Int) =>
+                      (sharedFeatures(ngramSize) ++ featuresAroundAnswer(
+                        ngramSize))
                       //                      .map(_.filter(_._2).map(_._1))
-                      .filter(_.nonEmpty)
+                        .filter(_.nonEmpty)
+                  }
                 }
-              }
 
               // the rest of code inside the next block {...} is all equivalent to:
               //                        (1 until width + 1)
@@ -178,7 +188,6 @@ object CandidateFeatuerizer extends TextFeatuerizer[Candidate] {
                 val buff = new ArrayBuffer[String](width * 2)
 
                 cfor(0)(_ < width + 1, _ + 1) { i =>
-
                   val featuresForI = createAdjacentFeaturesAtSize(i)
 
                   cfor(0)(_ < featuresForI.size, _ + 1) { j =>
@@ -193,8 +202,8 @@ object CandidateFeatuerizer extends TextFeatuerizer[Candidate] {
             }
         }
 
-        case None => {
-          (ignore: Candidate) => nothingStr
+        case None => { (ignore: Candidate) =>
+          nothingStr
         }
       }
 
@@ -202,54 +211,58 @@ object CandidateFeatuerizer extends TextFeatuerizer[Candidate] {
       insideConf match {
 
         case Some((inside, wordFilter, wordView)) =>
-          (cand: Candidate) => {
+          (cand: Candidate) =>
+            {
 
-            val wf = wordFilter(cand.innerFromSentence)
-            val wv = wordView(cand.innerFromSentence)
+              val wf = wordFilter(cand.innerFromSentence)
+              val wv = wordView(cand.innerFromSentence)
 
-            // the following code to compute innerFiltered is equivalent to:
-            //              val innerFiltered =
-            //                (cand.startInnerIndex until cand.endInnerIndex)
-            //                   .flatMap(i =>
-            //                    if (wf(i))
-            //                      Some(cand.innerFromSentence.tokens(i))
-            //                    else
-            //                      None
-            //                  )
-            // use encapsulated mutability for performance
-            val innerFiltered = {
-              val buff = new ArrayBuffer[String](cand.endInnerIndex - cand.startInnerIndex)
+              // the following code to compute innerFiltered is equivalent to:
+              //              val innerFiltered =
+              //                (cand.startInnerIndex until cand.endInnerIndex)
+              //                   .flatMap(i =>
+              //                    if (wf(i))
+              //                      Some(cand.innerFromSentence.tokens(i))
+              //                    else
+              //                      None
+              //                  )
+              // use encapsulated mutability for performance
+              val innerFiltered = {
+                val buff = new ArrayBuffer[String](
+                  cand.endInnerIndex - cand.startInnerIndex)
 
-              cfor(cand.startInnerIndex)(_ < cand.endInnerIndex, _ + 1) { i =>
-                if (wf(i)) {
-                  buff.append(wv(i))
+                cfor(cand.startInnerIndex)(_ < cand.endInnerIndex, _ + 1) { i =>
+                  if (wf(i)) {
+                    buff.append(wv(i))
+                  }
                 }
+
+                buff.toSeq
               }
 
-              buff.toSeq
+              if (innerFiltered.nonEmpty)
+                InsideFeatures(inside)(innerFiltered.toSeq)
+              else
+                nothingStr
             }
 
-            if (innerFiltered.nonEmpty)
-              InsideFeatures(inside)(innerFiltered.toSeq)
-            else
-              nothingStr
-          }
-
-          case None =>
-          (ignore: Candidate) => nothingStr
+        case None =>
+          (ignore: Candidate) =>
+            nothingStr
       }
 
     // the candidate featurization function at last!
     (cand: Candidate) =>
       (makeAdjacentFeatures(cand) ++ makeInsideFeatures(cand))
         .foldLeft(Map.empty[String, Double])(
-          (fmap, feature) => fmap.get(feature) match {
+          (fmap, feature) =>
+            fmap.get(feature) match {
 
-            case Some(value) =>
-              (fmap - feature) + (feature -> (value + 1.0))
+              case Some(value) =>
+                (fmap - feature) + (feature -> (value + 1.0))
 
-            case None =>
-              fmap + (feature -> 1.0)
+              case None =>
+                fmap + (feature -> 1.0)
           }
         )
         .map({

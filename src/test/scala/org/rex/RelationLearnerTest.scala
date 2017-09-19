@@ -42,14 +42,18 @@ class RelationLearnerTest extends FunSuite {
     val startC = System.currentTimeMillis()
     val candidates = candidatePipeln("bernie", bernieText)
     val endC = System.currentTimeMillis()
-    println(s"Took ${Duration.ofMillis(endC - startC).getSeconds} seconds (${endC - startC} ms) to generate ${candidates.size} candidates from ${bernieSentences.size} sentences.")
+    println(
+      s"Took ${Duration.ofMillis(endC - startC).getSeconds} seconds (${endC - startC} ms) to generate ${candidates.size} candidates from ${bernieSentences.size} sentences.")
 
     def clean(s: String) = s.replaceAll(" ", "")
 
     val candLabelMap =
       stupidTrainingData
         .filter(_._2 != nothingLabel)
-        .flatMap { case (c, r) => List(((c.queryW, c.answerW), r), ((c.answerW, c.queryW), r)) }
+        .flatMap {
+          case (c, r) =>
+            List(((c.queryW, c.answerW), r), ((c.answerW, c.queryW), r))
+        }
         .map { case ((q, a), r) => ((clean(q), clean(a)), r) }
         .toMap[(String, String), String]
 
@@ -87,21 +91,21 @@ class RelationLearnerTest extends FunSuite {
   }
 
   def checkInstanceLabelClassifiations(
-    classifier: Learning[Candidate, String]#Classifier,
-    d: Learning[Candidate, String]#TrainingData)(tf: Option[CandidateFeatuerizer.Fn]): Unit = {
+      classifier: Learning[Candidate, String]#Classifier,
+      d: Learning[Candidate, String]#TrainingData)(
+      tf: Option[CandidateFeatuerizer.Fn]): Unit = {
 
     val errors =
-      d
-        .foldLeft(Seq.empty[String]) {
-          case (errs, (instance, label)) =>
-            val clazz = classifier(instance)
-            if (clazz == label)
-              errs
-            else {
-              val features = tf.map(f => f(instance))
-              errs :+ s"classifying (${instance.queryW} , ${instance.answerW}) as $clazz actually a $label\n$features"
-            }
-        }
+      d.foldLeft(Seq.empty[String]) {
+        case (errs, (instance, label)) =>
+          val clazz = classifier(instance)
+          if (clazz == label)
+            errs
+          else {
+            val features = tf.map(f => f(instance))
+            errs :+ s"classifying (${instance.queryW} , ${instance.answerW}) as $clazz actually a $label\n$features"
+          }
+      }
 
     if (errors.nonEmpty)
       fail(s"""Errors in simple classification:\n${errors.mkString("\n")}\n""")
@@ -123,10 +127,12 @@ object RelationLearnerTest {
     (w: String) => noun(w) || pronoun(w)
 
   val relWordFilter: WordFilter.Fn =
-    (s: Sentence) => (i: Int) => Try(nounOrPronoun(s.tags.get(i))).toOption.getOrElse(false)
+    (s: Sentence) =>
+      (i: Int) => Try(nounOrPronoun(s.tags.get(i))).toOption.getOrElse(false)
 
   val notPunct: WordFilter.Fn =
-    (s: Sentence) => (i: Int) => Try(!ts.punctuation(s.tags.get(i))).toOption.getOrElse(false)
+    (s: Sentence) =>
+      (i: Int) => Try(!ts.punctuation(s.tags.get(i))).toOption.getOrElse(false)
 
   val sentenceViewFilter: SentenceViewFilter.Fn =
     SentenceViewFilter(
@@ -134,13 +140,42 @@ object RelationLearnerTest {
       notPunct
     )
 
-  val bernieText = "Sanders is an American politician. He was born on September 8, 1941. An independent politician since 1979, Sanders is associated with the Vermont Progressive Party and was a member of the Liberty Union Party from 1971 to 1979."
+  val bernieText =
+    "Sanders is an American politician. He was born on September 8, 1941. An independent politician since 1979, Sanders is associated with the Vermont Progressive Party and was a member of the Liberty Union Party from 1971 to 1979."
 
   val bernieSentences =
     Seq(
       Sentence(Seq("Sanders", "is", "an", "American", "politician", ".")),
       Sentence(Seq("He", "was", "born", "on", "September 8, 1941", ".")),
-      Sentence(Seq("An", "independent", "politician", "since", "1979", ",", "Sanders", "is", "associated", "with", "the", "Vermont", "Progressive", "Party", "and", "was", "a", "member", "of", "the", "Liberty Union Party", "from", "1971", "to", "1979", "."))
+      Sentence(
+        Seq(
+          "An",
+          "independent",
+          "politician",
+          "since",
+          "1979",
+          ",",
+          "Sanders",
+          "is",
+          "associated",
+          "with",
+          "the",
+          "Vermont",
+          "Progressive",
+          "Party",
+          "and",
+          "was",
+          "a",
+          "member",
+          "of",
+          "the",
+          "Liberty Union Party",
+          "from",
+          "1971",
+          "to",
+          "1979",
+          "."
+        ))
     )
 
   val bernieDoc = Document("bernie", bernieSentences)
@@ -160,7 +195,7 @@ object RelationLearnerTest {
         queryCorefWordIndex = 0,
         answerWordIndex = 4
       ),
-        bornInLabel
+      bornInLabel
     )
   )
 

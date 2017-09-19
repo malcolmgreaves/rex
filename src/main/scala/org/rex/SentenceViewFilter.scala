@@ -6,16 +6,17 @@ import scala.language.implicitConversions
 import scala.xml.parsing.TokenTests
 
 /**
- * Turns a sentence into a sequence of it's viewable words along
- * with whether or not the viewable word should be filtered.
- */
+  * Turns a sentence into a sequence of it's viewable words along
+  * with whether or not the viewable word should be filtered.
+  */
 object SentenceViewFilter {
 
   type TokenTest = (String, Boolean)
 
   type Fn = Sentence => Seq[TokenTest]
 
-  def apply(wordView: WordView.Fn, wordFilter: WordFilter.Fn): SentenceViewFilter.Fn =
+  def apply(wordView: WordView.Fn,
+            wordFilter: WordFilter.Fn): SentenceViewFilter.Fn =
     (s: Sentence) => {
       val wv = wordView(s)
       val wf = wordFilter(s)

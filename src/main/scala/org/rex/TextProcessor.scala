@@ -5,13 +5,14 @@ import edu.arizona.sista.processors.corenlp.CoreNLPProcessor
 import edu.arizona.sista.processors.fastnlp.FastNLPProcessor
 
 /**
- * Adds structure to text.
- *
- * Is able to turn unstructured text into a logically organized Document,
- * where individual Sentences, with descrete, individual tokens and optional additional
- * syntactic and semantic information, are all easily accessible.
- */
+  * Adds structure to text.
+  *
+  * Is able to turn unstructured text into a logically organized Document,
+  * where individual Sentences, with descrete, individual tokens and optional additional
+  * syntactic and semantic information, are all easily accessible.
+  */
 trait TextProcessor extends Serializable {
+
   /** Context for text processing. Can include information about NER and POS tags. */
   def conf: ProcessingConf
 

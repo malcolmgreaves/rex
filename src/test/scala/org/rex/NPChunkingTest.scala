@@ -11,7 +11,8 @@ class NPChunkingTest extends FunSuite {
 
   test("NP chunking from text") {
     import NeTagSet.Default4Class._
-    testChunk(johnSmithSentences.zipWithIndex.map(x => (x._1, Some(johnSmithChunked(x._2)))))
+    testChunk(johnSmithSentences.zipWithIndex.map(x =>
+      (x._1, Some(johnSmithChunked(x._2)))))
   }
 
 }
@@ -19,11 +20,12 @@ class NPChunkingTest extends FunSuite {
 object NPChunkingTest {
 
   /**
-   * Relies upon testing assertions.
-   * If it successeds, then it return Unit.
-   * Otherwise it will fail the test
-   */
-  def testChunk(testPairs: Seq[(Sentence, Option[Seq[String]])])(implicit entSet: NeTagSet): Unit = {
+    * Relies upon testing assertions.
+    * If it successeds, then it return Unit.
+    * Otherwise it will fail the test
+    */
+  def testChunk(testPairs: Seq[(Sentence, Option[Seq[String]])])(
+      implicit entSet: NeTagSet): Unit = {
 
     val chunker = NerSentChunker(entSet)
 
@@ -32,7 +34,8 @@ object NPChunkingTest {
         case (agg, (sentence, correctResponse)) =>
           val result = chunker(sentence)._1.tokens
           if (result != correctResponse)
-            agg :+ s"""Sentence failed, (Chunked: ${result.mkString(" ")}) (Actual: ${correctResponse.mkString(" ")})"""
+            agg :+ s"""Sentence failed, (Chunked: ${result
+              .mkString(" ")}) (Actual: ${correctResponse.mkString(" ")})"""
           else
             agg
       })

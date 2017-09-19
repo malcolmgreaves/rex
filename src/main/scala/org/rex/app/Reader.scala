@@ -2,7 +2,7 @@ package org.rex.app
 
 import java.io.File
 
-import scala.language.{ existentials, implicitConversions, postfixOps }
+import scala.language.{existentials, implicitConversions, postfixOps}
 import scala.reflect.ClassTag
 
 trait Reader[I, T] {
@@ -24,11 +24,12 @@ object ReaderMap {
 
     s.trim.toLowerCase match {
       case "conll" =>
-
-        if (inputClz.equals(classOf[File]) && outputClz.equals(classOf[Connl04Format.LabeledSentence]))
+        if (inputClz.equals(classOf[File]) && outputClz.equals(
+              classOf[Connl04Format.LabeledSentence]))
           Some(Connl04Format.read.asInstanceOf[Reader[I, T]#Fn])
         else
-          throw new RuntimeException(s"Expecting an input for a Reader Fn of type ")
+          throw new RuntimeException(
+            s"Expecting an input for a Reader Fn of type ")
 
       case _ =>
         None

@@ -34,7 +34,7 @@ libraryDependencies ++= Seq(
   // NLP
   "edu.arizona.sista" %% "processors" % sista,
   "edu.arizona.sista" %% "processors" % sista classifier "models",
-  // Concurrent and Distributed 
+  // Concurrent and Distributed
   "org.apache.spark" %% "spark-core" % spark,
   // Math
   "org.spire-math" %% "spire" % spire,
@@ -54,7 +54,8 @@ scalacOptions ++= Seq(
   s"-target:jvm-$jvm",
   "-optimize",
   "-deprecation",
-  "-encoding", "UTF-8",
+  "-encoding",
+  "UTF-8",
   "-feature",
   "-language:postfixOps",
   "-language:existentials",
@@ -84,4 +85,3 @@ fork in Test := false
 parallelExecution in Test := false
 
 ScoverageSbtPlugin.ScoverageKeys.coverageExcludedPackages := "\\*\\.app\\.\\*"
-

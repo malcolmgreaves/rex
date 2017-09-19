@@ -11,12 +11,15 @@ class CandGenTest extends FunSuite {
     val createdCandidates = sentenceCandGenAllWord(insurgentsDoc).toSet
 
     val diff = insurgentsCandidatesSentence.toSet.diff(createdCandidates)
-    val intersection = insurgentsCandidatesSentence.toSet.intersect(createdCandidates)
+    val intersection =
+      insurgentsCandidatesSentence.toSet.intersect(createdCandidates)
 
     val test = diff.size == 0 && intersection.size == insurgentsCandidatesSentence.size && intersection.size == createdCandidates.size
-    assert(test,
+    assert(
+      test,
       s"""Candidates did not match. Expecting ${insurgentsCandidatesSentence.size} actually have ${createdCandidates.size} candidates.\n""" +
-        s"""Difference: ${diff.mkString(" : ")}\nIntersection: ${intersection.mkString(" : ")}"""
+        s"""Difference: ${diff.mkString(" : ")}\nIntersection: ${intersection
+          .mkString(" : ")}"""
     )
   }
 
@@ -42,18 +45,22 @@ object CandGenTest {
   val sentenceCandGenAllWord = SentenceCandGen(WordFilter.permitAll)
 
   lazy val candidateFilter: WordFilter.Fn =
-    (s: Sentence) => (i: Int) =>
-      WordFilter.noKnownPunct(s)(i) && (pronounOnlyFilter(s)(i) || nounOnlyfilter(s)(i))
+    (s: Sentence) =>
+      (i: Int) =>
+        WordFilter.noKnownPunct(s)(i) && (pronounOnlyFilter(s)(i) || nounOnlyfilter(
+          s)(i))
 
   lazy val nounOnlyfilter: WordFilter.Fn =
-    (s: Sentence) => (i: Int) =>
-      s.tags.exists(tags => tags(i) == "NN" || tags(i) == "NNS" || tags(i) == "NNP" || tags(i) == "NNPS")
+    (s: Sentence) =>
+      (i: Int) =>
+        s.tags.exists(tags =>
+          tags(i) == "NN" || tags(i) == "NNS" || tags(i) == "NNP" || tags(i) == "NNPS")
 
   lazy val pronounOnlyFilter: WordFilter.Fn =
-    (s: Sentence) => (i: Int) =>
-      s.tags.exists(tags => tags(i) == "PRP")
+    (s: Sentence) => (i: Int) => s.tags.exists(tags => tags(i) == "PRP")
 
-  lazy val sentenceCandGenNoKnownPunct = SentenceCandGen(WordFilter.noKnownPunct)
+  lazy val sentenceCandGenNoKnownPunct = SentenceCandGen(
+    WordFilter.noKnownPunct)
 
   import TextFeatuerizerTest._
 
@@ -99,7 +106,8 @@ object CandGenTest {
 
   type Error = String
 
-  def checkCandidates(actual: SimpleCandSet, expected: SimpleCandSet): List[Error] = {
+  def checkCandidates(actual: SimpleCandSet,
+                      expected: SimpleCandSet): List[Error] = {
 
     val diff = actual.diff(expected)
     val inter = actual.intersect(expected)

@@ -1,6 +1,6 @@
 package org.rex
 
-import scala.language.{ postfixOps, implicitConversions }
+import scala.language.{postfixOps, implicitConversions}
 import scala.util.Try
 
 trait Learning[A, B] {
@@ -23,22 +23,22 @@ trait Learning[A, B] {
 object Learning {
 
   private val emptyEstimation =
-    new IllegalStateException("Unexpected state: Estimator evalauted to empty Map.")
+    new IllegalStateException(
+      "Unexpected state: Estimator evalauted to empty Map.")
 
   private val empty =
     new IllegalStateException("Cannot call argmax on an empty sequence.")
 
-  def classifierFromEstimator[A, B](e: Learning[A, B]#Estimator): Learning[A, B]#Classifier =
+  def classifierFromEstimator[A, B](
+      e: Learning[A, B]#Estimator): Learning[A, B]#Classifier =
     (instance: A) => {
       // classificaiton is the item with the maximum probability
       val dist = e(instance)
 
       if (dist.labels isEmpty)
         throw emptyEstimation
-
       else if (dist.labels.size == 1)
         dist.labels.head
-
       else
         argmax(dist.zip)(TupleVal2[B])._1
     }
@@ -68,20 +68,17 @@ object Learning {
   def argmax[B: Val](xs: Traversable[B]): B =
     if (xs isEmpty)
       throw empty
-
     else if (xs.size == 1)
       xs.head
-
     else {
       val ev = implicitly[Val[B]]
-      xs
-        .foldLeft(xs.head) {
-          case (max, next) =>
-            if (ev.valueOf(next) > ev.valueOf(max))
-              next
-            else
-              max
-        }
+      xs.foldLeft(xs.head) {
+        case (max, next) =>
+          if (ev.valueOf(next) > ev.valueOf(max))
+            next
+          else
+            max
+      }
     }
 
   def someArgmax[B: Val](xs: Traversable[B]): Option[B] =
@@ -103,13 +100,14 @@ trait Distribution[A] { self =>
     labels.zip(result)
 }
 
-case class DistributionStr(
-    override val labels: Seq[String],
-    override val result: Seq[Double]) extends Distribution[String] {
+case class DistributionStr(override val labels: Seq[String],
+                           override val result: Seq[Double])
+    extends Distribution[String] {
 
   assert(
     labels.size == result.size && labels.size > 0,
-    s"""Labels and results sizes must be equal and positive, not: ${labels.size} and ${result.size}, respectively\nLABELS\n\t${labels.mkString("\n\t")}"""
+    s"""Labels and results sizes must be equal and positive, not: ${labels.size} and ${result.size}, respectively\nLABELS\n\t${labels
+      .mkString("\n\t")}"""
   )
 
   override lazy val zip = super.zip
