@@ -73,7 +73,7 @@ object RelationExtractionLearningMain extends App {
         .optional()
         .action { (_, c) =>
           (
-            if (!c.lr.isDefined)
+            if (c.lr.isEmpty)
               c.copy(lr = Some(LearningCmd.emptyUnsafe))
             else
               c
@@ -84,7 +84,7 @@ object RelationExtractionLearningMain extends App {
         .optional()
         .action { (_, c) =>
           (
-            if (!c.ev.isDefined)
+            if (c.ev.isEmpty)
               c.copy(ev = Some(Evaluation.emptyUnsafe))
             else
               c
@@ -95,7 +95,7 @@ object RelationExtractionLearningMain extends App {
         .optional()
         .action { (_, c) =>
           (
-            if (!c.ex.isDefined)
+            if (c.ex.isEmpty)
               c.copy(ex = Some(Extraction.emptyUnsafe))
             else
               c
@@ -115,10 +115,11 @@ object RelationExtractionLearningMain extends App {
         }
         .text("Input of labeled relation data.")
 
-      opt[String]("learnReader")
+      opt[String]("input_text_conll")
         .optional()
-        .abbr("lr")
-        .valueName("typeOf[Reader]")
+        .abbr("input")
+        .valueName("<filepath>")
+        .text("Input (training) data file format reader type (conll)")
         .action { (readerStrInput, c) =>
           ReaderMap[File, LabeledSentence](readerStrInput) match {
             case Some(r) =>
@@ -132,12 +133,12 @@ object RelationExtractionLearningMain extends App {
               c
           }
         }
-        .text("Input (training) data file format reader type (conll)")
 
-      opt[File]("modelOut")
+      opt[File]("model_output")
         .optional()
-        .abbr("mo")
-        .valueName("<file>")
+        .abbr("output")
+        .valueName("<filepath>")
+        .text("Path to where the trained relation classifier and pipeline config should be saved to.")
         .action { (mo, c) =>
           c.copy(
             lr = Some(
@@ -145,11 +146,12 @@ object RelationExtractionLearningMain extends App {
                 .getOrElse(LearningCmd.emptyUnsafe)
                 .copy(modelOut = Some(mo))))
         }
-        .text("Path to where the trained relation classifier and pipeline config should be saved to.")
 
-      opt[Boolean]("candgen")
+      opt[Boolean]("candidate_generation_train")
         .optional()
         .abbr("cg")
+        .valueName("<boolean>")
+        .text("Perform sentence-based candidate generation during training? False means only use positively labeled things.")
         .action { (cg, c) =>
           c.copy(
             lr = Some(
@@ -157,11 +159,12 @@ object RelationExtractionLearningMain extends App {
                 .getOrElse(LearningCmd.emptyUnsafe)
                 .copy(doCandGen = cg)))
         }
-        .text("Perform sentence-based candidate generation during training? False means only use positively labeled things.")
 
       opt[Double]("cost")
         .optional()
         .abbr("c")
+        .valueName("<float>")
+        .text("Positive mis-classification cost for cost-sensitive learning.")
         .action { (cost, c) =>
           c.copy(
             lr = Some(
@@ -169,11 +172,12 @@ object RelationExtractionLearningMain extends App {
                 .getOrElse(LearningCmd.emptyUnsafe)
                 .copy(cost = Some(cost))))
         }
-        .text("Positive mis-classificaiton cost for cost-sensative learning.")
 
       opt[Double]("eps")
         .optional()
         .abbr("e")
+        .valueName("<float>")
+        .text("Stopping criterion for learning: when the parameter change between iterations is less than eps, learning stops.")
         .action { (eps, c) =>
           c.copy(
             lr = Some(
@@ -181,11 +185,12 @@ object RelationExtractionLearningMain extends App {
                 .getOrElse(LearningCmd.emptyUnsafe)
                 .copy(eps = Some(eps))))
         }
-        .text("Stopping criterion for learning: when the parameter change between iterations is less than eps, learning stops.")
 
-      opt[Int]("nfolds")
+      opt[Int]("n_cv_folds")
         .optional()
-        .abbr("nf")
+        .abbr("cv")
+        .valueName("<int>")
+        .text("Number of cross validation folds: must be >= 2")
         .action { (nFolds, c) =>
           c.copy(
             ev = Some(
@@ -193,7 +198,6 @@ object RelationExtractionLearningMain extends App {
                 .getOrElse(Evaluation.emptyUnsafe)
                 .copy(maybeNFolds = Some(nFolds))))
         }
-        .text("# Folds for cross validation")
 
     }
 
@@ -230,7 +234,7 @@ object RelationExtractionLearningMain extends App {
             ))
         )
 
-      implicit val rand = new Random()
+      implicit val rand: Random = new Random()
 
       import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -302,89 +306,83 @@ object RelationExtractionLearningMain extends App {
             (rlearners, labeledData, trainModel)
         }
 
-      val maybeEvaluation =
-        config.ev.foreach {
-          case Evaluation(labeledInput,
-                          reader,
-                          modelIn,
-                          evalOut,
-                          maybeNFolds) =>
-            val eval =
-              maybeModelTrainData match {
+      config.ev.foreach {
+        case Evaluation(labeledInput, reader, modelIn, evalOut, maybeNFolds) =>
+          val eval =
+            maybeModelTrainData match {
 
-                case Some((rlearners, labeledData, completeEstimators)) =>
-                  println(
-                    s"Ignoring Evaluation's labeledInput in favor of LearningCmd's labeledInput\n(ignored: $labeledInput)")
+              case Some((rlearners, labeledData, completeEstimators)) =>
+                println(
+                  s"Ignoring Evaluation's labeledInput in favor of LearningCmd's labeledInput\n(ignored: $labeledInput)")
 
-                  val nFolds = maybeNFolds.getOrElse(4)
-                  val dataTrainTest =
-                    if (nFolds == 1) {
-                      println(s"Performing train-test with 75% train")
-                      trainTestSplit(labeledData, 0.75)
+                val nFolds = maybeNFolds.getOrElse(4)
+                val dataTrainTest =
+                  if (nFolds == 1) {
+                    println(s"Performing train-test with 75% train")
+                    trainTestSplit(labeledData, 0.75)
 
-                    } else {
-                      println(s"Performing $nFolds-fold cross validation")
-                      mkCrossValid(labeledData, nFolds)
-                    }
+                  } else {
+                    println(s"Performing $nFolds-fold cross validation")
+                    mkCrossValid(labeledData, nFolds)
+                  }
 
-                  //                  Await.result(
-                  //                    Future.sequence(
-                  dataTrainTest.toSeq.zipWithIndex
-                    .foreach {
+                //                  Await.result(
+                //                    Future.sequence(
+                dataTrainTest.toSeq.zipWithIndex
+                  .foreach {
 
-                      case ((train, test), fIndex) =>
-                        //                            Future {
-                        val fold = fIndex + 1
-                        println(s"#$fold/$nFolds : Begin Training & testing")
-                        val start = System.currentTimeMillis()
+                    case ((train, test), fIndex) =>
+                      //                            Future {
+                      val fold = fIndex + 1
+                      println(s"#$fold/$nFolds : Begin Training & testing")
+                      val start = System.currentTimeMillis()
 
-                        val estimators = trainLearners(rlearners, train)
+                      val estimators = trainLearners(rlearners, train)
 
-                        val numberCorrectPredictions =
-                          test
-                            .foldLeft(0) {
-                              case (nCorrect, (instance, label)) =>
-                                val predicted =
-                                  Learning
-                                    .argmax(
-                                      estimators
-                                        .map {
-                                          case (r, estimator) =>
-                                            (r,
-                                             estimator(instance).result.head)
-                                        }
-                                    )(Learning.TupleVal2[String])
-                                    ._1
+                      val numberCorrectPredictions =
+                        test
+                          .foldLeft(0) {
+                            case (nCorrect, (instance, label)) =>
+                              val predicted =
+                                Learning
+                                  .argmax(
+                                    estimators
+                                      .map {
+                                        case (r, estimator) =>
+                                          (r, estimator(instance).result.head)
+                                      }
+                                  )(Learning.TupleVal2[String])
+                                  ._1
 
-                                if (predicted == label)
-                                  nCorrect + 1
-                                else
-                                  nCorrect
-                            }
+                              if (predicted == label)
+                                nCorrect + 1
+                              else
+                                nCorrect
+                          }
 
-                        val end = System.currentTimeMillis()
+                      val end = System.currentTimeMillis()
 
-                        println("" +
-                          s"#$fold/$nFolds : Completed in ${Duration(end - start, TimeUnit.MILLISECONDS).toMinutes} minutes (${end - start} ms)\n" +
-                          s"#$fold/$nFolds correct $numberCorrectPredictions out of ${test.size} : accuracy: ${(numberCorrectPredictions.toDouble / test.size) * 100.0}")
-                      //                            }
-                    }
-                //                    ),
-                //                    Duration.Inf
-                //                  )
+                      println("" +
+                        s"#$fold/$nFolds : Completed in ${Duration(end - start, TimeUnit.MILLISECONDS).toMinutes} minutes (${end - start} ms)\n" +
+                        s"#$fold/$nFolds correct $numberCorrectPredictions out of ${test.size} : accuracy: ${(numberCorrectPredictions.toDouble / test.size) * 100.0}")
+                    //                            }
+                  }
+              //                    ),
+              //                    Duration.Inf
+              //                  )
 
-                case None =>
-                  throw new RuntimeException(
-                    "ERROR: Evaluation from serialized model is not implemented.")
-              }
-
-            evalOut.foreach { eo =>
-              println(
-                s"WARNING: Evaluation output is not implemented. NOT writing evaluation to: $eo")
+              case None =>
+                throw new RuntimeException(
+                  "ERROR: Evaluation from serialized model is not implemented.")
             }
 
-            eval
-        }
+          evalOut.foreach { eo =>
+            println(
+              s"WARNING: Evaluation output is not implemented. NOT writing evaluation to: $eo")
+          }
+
+          eval
+      }
 
       config.ex.foreach {
         case Extraction(rawInput, reader, modelIn, extractOut) =>
