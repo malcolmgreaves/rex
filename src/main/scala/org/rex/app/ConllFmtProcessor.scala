@@ -1,11 +1,11 @@
 package org.rex.app
 
-import java.io.{ File, FileWriter, BufferedWriter }
+import java.io.{File, FileWriter, BufferedWriter}
 
 import org.rex.Sentence
 
 import scala.io.Source
-import scala.language.{ existentials, implicitConversions, postfixOps }
+import scala.language.{existentials, implicitConversions, postfixOps}
 import scala.util.Try
 
 object ConnlFormatProcessor extends App {
@@ -14,33 +14,35 @@ object ConnlFormatProcessor extends App {
 
   def onlyLowerWord(conllLine: String): Option[String] = {
     val word = conllLine.trim().toLowerCase().split("\t")(2)
-    if(stopWords contains word)
+    if (stopWords contains word)
       None
     else
       Some(word)
   }
 
   def group(
-    lineParser: String => Option[String],
-    lines: Iterable[String]
+      lineParser: String => Option[String],
+      lines: Iterable[String]
   ): Iterable[Seq[String]] = {
 
     val (global, last) = lines
-      .foldLeft((Seq.empty[Seq[String]], Seq.empty[String])) { 
+      .foldLeft((Seq.empty[Seq[String]], Seq.empty[String])) {
         case ((globalAccum, current), line) =>
-          if(line.trim().isEmpty)
+          if (line.trim().isEmpty)
             (
-              globalAccum :+ current, 
+              globalAccum :+ current,
               Seq.empty[String]
             )
           else
             (
-              globalAccum, 
-              lineParser(line).fold(current) { w => current :+ w }
+              globalAccum,
+              lineParser(line).fold(current) { w =>
+                current :+ w
+              }
             )
       }
 
-    if(last.nonEmpty)
+    if (last.nonEmpty)
       global :+ last
     else
       global
@@ -51,7 +53,7 @@ object ConnlFormatProcessor extends App {
   println(s"Reading CONLL format:             $inFi")
   println(s"Writing sentences, \\n separated: $outFi")
 
-  val asSentences = 
+  val asSentences =
     group(
       onlyLowerWord _,
       Source
@@ -61,15 +63,14 @@ object ConnlFormatProcessor extends App {
     )
 
   val w = new BufferedWriter(new FileWriter(outFi))
-  asSentences.foreach { tokens => 
-      val s = tokens.mkString(" ")
-      w.write(s)
-      w.newLine()
+  asSentences.foreach { tokens =>
+    val s = tokens.mkString(" ")
+    w.write(s)
+    w.newLine()
   }
   w.close()
 
-
-  lazy val stopWords: Set[String] = 
+  lazy val stopWords: Set[String] =
     """,
 's
 .

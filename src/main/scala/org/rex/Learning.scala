@@ -73,12 +73,12 @@ object Learning {
     else {
       val ev = implicitly[Val[B]]
       xs.foldLeft(xs.head) {
-          case (max, next) =>
-            if (ev.valueOf(next) > ev.valueOf(max))
-              next
-            else
-              max
-        }
+        case (max, next) =>
+          if (ev.valueOf(next) > ev.valueOf(max))
+            next
+          else
+            max
+      }
     }
 
   def someArgmax[B: Val](xs: Traversable[B]): Option[B] =
