@@ -8,3 +8,10 @@ data/text/sanitized_all_docs_sorted_subpart-0.malt.gz filter=lfs diff=lfs merge=
 data/text/sanitized_all_docs_sorted_subpart-11.malt.gz filter=lfs diff=lfs merge=lfs -text
 data/text/sanitized_all_docs_sorted_subpart-13.malt.gz filter=lfs diff=lfs merge=lfs -text
 data/text/sanitized_all_docs_sorted_subpart-15.malt.gz filter=lfs diff=lfs merge=lfs -text
+data/uiuc_cog_comp_group-entity_and_relation_recognition_corpora/kill.corp filter=lfs diff=lfs merge=lfs -text
+data/uiuc_cog_comp_group-entity_and_relation_recognition_corpora/m-birthplace.corp filter=lfs diff=lfs merge=lfs -text
+data/uiuc_cog_comp_group-entity_and_relation_recognition_corpora/m-kill.corp filter=lfs diff=lfs merge=lfs -text
+data/uiuc_cog_comp_group-entity_and_relation_recognition_corpora/negative.corp filter=lfs diff=lfs merge=lfs -text
+data/uiuc_cog_comp_group-entity_and_relation_recognition_corpora/all.corp filter=lfs diff=lfs merge=lfs -text
+data/uiuc_cog_comp_group-entity_and_relation_recognition_corpora/birthplace.corp filter=lfs diff=lfs merge=lfs -text
+data/uiuc_cog_comp_group-entity_and_relation_recognition_corpora/conll04.corp filter=lfs diff=lfs merge=lfs -text
