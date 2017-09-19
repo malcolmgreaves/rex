@@ -1,6 +1,6 @@
 package org.rex
 
-import nak.data.{ FeatureObservation, Featurizer }
+import nak.data.{FeatureObservation, Featurizer}
 import org.rex.AdjacentFeatures._
 
 import scala.annotation.tailrec

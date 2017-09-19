@@ -1,5 +1,11 @@
+####  misc
+LOG_*
+log_*
+report_*
+REPORT_*
 here
 sample
+
 
 ####	sbt
 target
@@ -7,16 +13,10 @@ project/project
 project/target
 projectFilesBackup
 
-####    IDE
+####  IDE
 .idea/*
 .idea_modules/*
 *.iml
-
-
-LOG_*
-log_*
-report_*
-REPORT_*
 
 #### 	compiled source
 *.com
@@ -31,7 +31,7 @@ REPORT_*
 *~
 
 ####	packages
-# it's better to unpack these files and commit the raw source
+# git's better to unpack these files and commit the raw source
 # git has its own built in compression methods
 *.7z
 *.dmg

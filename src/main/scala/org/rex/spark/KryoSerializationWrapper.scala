@@ -4,21 +4,21 @@ import scala.reflect.ClassTag
 
 import java.nio.ByteBuffer
 
-import org.apache.spark.serializer.{ KryoSerializer => SparkKryoSerializer }
-import org.apache.spark.{ SparkConf, SparkEnv }
+import org.apache.spark.serializer.{KryoSerializer => SparkKryoSerializer}
+import org.apache.spark.{SparkConf, SparkEnv}
 
 /**
- * Wraps a value of an unserialized type T in a KryoSerializationWrapper[T],
- * which gives one a way to serialize T.
- *
- *
- * NOTE:
- *  The vast majority of this code is copied / based off of the classes with the same
- *  name in the Apache Shark project.
- *
- *  Original file is here:
- *  https://github.com/amplab/shark/blob/master/src/main/scala/shark/execution/serialization/KryoSerializationWrapper.scala
- */
+  * Wraps a value of an unserialized type T in a KryoSerializationWrapper[T],
+  * which gives one a way to serialize T.
+  *
+  *
+  * NOTE:
+  *  The vast majority of this code is copied / based off of the classes with the same
+  *  name in the Apache Shark project.
+  *
+  *  Original file is here:
+  *  https://github.com/amplab/shark/blob/master/src/main/scala/shark/execution/serialization/KryoSerializationWrapper.scala
+  */
 object KryoSerializationWrapper {
 
   def apply[T: ClassTag](value: T): KryoSerializationWrapper[T] =
@@ -26,25 +26,26 @@ object KryoSerializationWrapper {
 }
 
 /**
- * A wrapper around some unserializable objects that make them both Java
- * serializable. Internally, Kryo is used for serialization.
- *
- * Use KryoSerializationWrapper(value) to create a wrapper.
- *
- * Note that the value contained in the wrapper is mutable. It must be
- * initialized using Java Serialization (which calls a private readObject
- * method that does the byte-by-byte deserialization).
- *
- * Also note that this class is both abstract and sealed. The only valid place
- * to create such a wrapper is the companion object's apply method.
- */
-sealed abstract class KryoSerializationWrapper[T: ClassTag] extends Serializable {
+  * A wrapper around some unserializable objects that make them both Java
+  * serializable. Internally, Kryo is used for serialization.
+  *
+  * Use KryoSerializationWrapper(value) to create a wrapper.
+  *
+  * Note that the value contained in the wrapper is mutable. It must be
+  * initialized using Java Serialization (which calls a private readObject
+  * method that does the byte-by-byte deserialization).
+  *
+  * Also note that this class is both abstract and sealed. The only valid place
+  * to create such a wrapper is the companion object's apply method.
+  */
+sealed abstract class KryoSerializationWrapper[T: ClassTag]
+    extends Serializable {
   // initialValue
   // MUST BE TRANSIENT SO THAT IT IS NOT SERIALIZED
 
   /**
-   * The only valid constructor. For safety, do not use the no-arg constructor.
-   */
+    * The only valid constructor. For safety, do not use the no-arg constructor.
+    */
   def this(initialValue: T, serializeImmediately: Boolean = true) = {
     this()
     setValue(initialValue, serializeImmediately)
@@ -83,11 +84,11 @@ sealed abstract class KryoSerializationWrapper[T: ClassTag] extends Serializable
   }
 
   /**
-   * Gets the currently serialized value as a Sequence of bytes.
-   *
-   * If the sequence is empty, then it means that one has not called doSerializeValue().
-   * Or the internal value may be null.
-   */
+    * Gets the currently serialized value as a Sequence of bytes.
+    *
+    * If the sequence is empty, then it means that one has not called doSerializeValue().
+    * Or the internal value may be null.
+    */
   def getValueSerialized: Seq[Byte] =
     if (!doneSerialization || valueSerialized == null) {
       Seq.empty[Byte]
@@ -111,18 +112,18 @@ sealed abstract class KryoSerializationWrapper[T: ClassTag] extends Serializable
 }
 
 /**
- * Java object serialization using Kryo. This is much more efficient, but Kryo
- * sometimes is buggy to use. We use this mainly to serialize the object
- * inspectors.
- *
- *
- * NOTE:
- *  The vast majority of this code is copied / based off of the classes with the same
- *  name in the Apache Shark project.
- *
- *  Original file is here:
- *  https://github.com/amplab/shark/blob/master/src/main/scala/shark/execution/serialization/KryoSerializationWrapper.scala
- */
+  * Java object serialization using Kryo. This is much more efficient, but Kryo
+  * sometimes is buggy to use. We use this mainly to serialize the object
+  * inspectors.
+  *
+  *
+  * NOTE:
+  *  The vast majority of this code is copied / based off of the classes with the same
+  *  name in the Apache Shark project.
+  *
+  *  Original file is here:
+  *  https://github.com/amplab/shark/blob/master/src/main/scala/shark/execution/serialization/KryoSerializationWrapper.scala
+  */
 object KryoSerializer {
 
   @transient lazy val ser: SparkKryoSerializer = {

@@ -26,7 +26,7 @@ object DistLabelStr extends DistantLabeling[String] {
         labels <- amap.get(normalize(c.answerW))
       } yield {
         labels
-      }
+    }
 
   def relationsOf(kb: KnowledgeBase): Set[Label] =
     kb.foldLeft(Set.empty[Label]) {
@@ -38,16 +38,19 @@ object DistLabelStr extends DistantLabeling[String] {
     }
 
   /**
-   * Removes: ', ", _ , (, ), [, ], {, }
-   * and replaces all multi-whitespace with a single one
-   */
+    * Removes: ', ", _ , (, ), [, ], {, }
+    * and replaces all multi-whitespace with a single one
+    */
   @inline def normalize(s: String) =
     s.trim.toLowerCase
       .replaceAll("'", "")
       .replaceAll("\"", "")
       .replaceAll("_", "")
       .replaceAll(" +", " ")
-      .replaceAll("\\(", "").replaceAll("\\)", "")
-      .replaceAll("\\[", "").replaceAll("\\]", "")
-      .replaceAll("\\{", "").replaceAll("\\}", "")
+      .replaceAll("\\(", "")
+      .replaceAll("\\)", "")
+      .replaceAll("\\[", "")
+      .replaceAll("\\]", "")
+      .replaceAll("\\{", "")
+      .replaceAll("\\}", "")
 }

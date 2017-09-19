@@ -1,6 +1,6 @@
 package org.rex.dl
 
-import java.io.{ BufferedWriter, File, FileWriter }
+import java.io.{BufferedWriter, File, FileWriter}
 
 import scala.io.Source
 import scala.util.Try
@@ -18,7 +18,8 @@ object LoadDistLabelKb {
 
   def apply(f: File): Try[KnowledgeBase] =
     Try {
-      Source.fromFile(f)
+      Source
+        .fromFile(f)
         .getLines()
         .map(parseTripleFromLine)
         .foldLeft(Map.empty[Query, Map[Answer, Labels]]) {

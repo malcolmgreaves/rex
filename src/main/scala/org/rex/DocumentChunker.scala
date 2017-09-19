@@ -23,15 +23,15 @@ case class NerDocChunker(entitySet: NeTagSet) extends DocumentChunker.Fn {
     d.corefMentions match {
 
       case Some(coreferentMentions) =>
-
         val newCoreferentMentions =
           coreferentMentions
-            .map(coref =>
-              coref.copy(mentions =
-                coref.mentions
+            .map(
+              coref =>
+                coref.copy(mentions = coref.mentions
                   .map(mention => {
 
-                    val (_, chunkedIndices) = sentsAndChunkedIndices(mention.sentenceNum)
+                    val (_, chunkedIndices) =
+                      sentsAndChunkedIndices(mention.sentenceNum)
 
                     val newIndexMapping = old2newIndices(chunkedIndices)
 
@@ -39,9 +39,7 @@ case class NerDocChunker(entitySet: NeTagSet) extends DocumentChunker.Fn {
                       from = newIndexMapping(mention.from),
                       until = newIndexMapping(mention.until)
                     )
-                  })
-              )
-            )
+                  })))
 
         d.copy(
           sentences = sentsAndChunkedIndices.map(_._1),
@@ -67,4 +65,3 @@ private object NerDocChunker {
       .toMap
 
 }
-
