@@ -1,6 +1,8 @@
 package org.rex.spark
 
 import org.rex._
+import org.rex.relation_extract.Pipeline
+import org.rex.text.IdentityDocChunker
 
 class SparkPipelineTest extends SparkTestSuite {
 

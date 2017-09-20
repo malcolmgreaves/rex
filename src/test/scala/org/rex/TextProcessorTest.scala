@@ -1,8 +1,10 @@
 package org.rex
 
 import edu.arizona.sista.processors.fastnlp.FastNLPProcessor
-import org.scalatest.{ BeforeAndAfterAll, FunSuite }
+import org.scalatest.{BeforeAndAfterAll, FunSuite}
 import edu.arizona.sista.processors.corenlp.CoreNLPProcessor
+import org.rex.relation_extract.ProcessingConf
+import org.rex.text.TextProcessor
 
 class TextProcessorTest extends FunSuite {
 
@@ -38,12 +40,12 @@ class TextProcessorTest extends FunSuite {
           s"[John Smith sentence $index] expecting part-of-speech tags to match up")
     })
 
-    import NeTagSet.Default4Class._
+    import org.rex.relation_extract.NeTagSet.Default4Class._
     testChunk(johnSmithDoc.sentences.zipWithIndex.map(x => (x._1, Some(johnSmithChunked(x._2)))))
   }
 
   test("NP chunking") {
-    import NeTagSet.Default4Class._
+    import org.rex.relation_extract.NeTagSet.Default4Class._
     testChunk(johnSmithSentences.zipWithIndex.map(x => (x._1, Some(johnSmithChunked(x._2)))))
   }
 

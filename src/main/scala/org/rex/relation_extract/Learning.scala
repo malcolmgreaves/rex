@@ -1,6 +1,6 @@
-package org.rex
+package org.rex.relation_extract
 
-import scala.language.{postfixOps, implicitConversions}
+import scala.language.{implicitConversions, postfixOps}
 import scala.util.Try
 
 trait Learning[A, B] {

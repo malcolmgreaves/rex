@@ -1,4 +1,7 @@
-package org.rex
+package org.rex.text
+
+import org.rex.Sentence
+import org.rex.relation_extract.NeTagSet
 
 import scala.language.implicitConversions
 

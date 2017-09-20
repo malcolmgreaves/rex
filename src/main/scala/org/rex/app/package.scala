@@ -2,10 +2,13 @@ package org.rex
 
 import java.util.Random
 
-import org.rex.app.UiucRelationFmt._
+import org.rex.io.UiucRelationFmt._
+import org.rex.io.Reader
+import org.rex.relation_extract._
+import org.rex.text.WordFilter
 
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Future, Await, ExecutionContext}
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.language.existentials
 
 package object app {
@@ -46,10 +49,10 @@ package object app {
       case (sentence, relz) =>
         val labeled =
           relz.map { r =>
-            (CandidateSentence(sentence, r.arg1, r.arg2), r.relation)
+            (CandidateSentence(sentence, r.arg1TokenIndex, r.arg2TokenIndex), r.relation)
           }
 
-        val anyIndexPairs = relz.map(r => (r.arg1, r.arg2)).toSet
+        val anyIndexPairs = relz.map(r => (r.arg1TokenIndex, r.arg2TokenIndex)).toSet
 
         val unlabeled =
           candgen(Document("", Seq(sentence)))
@@ -69,7 +72,7 @@ package object app {
       .flatMap {
         case (sentence, relz) =>
           relz.map { r =>
-            (CandidateSentence(sentence, r.arg1, r.arg2), r.relation)
+            (CandidateSentence(sentence, r.arg1TokenIndex, r.arg2TokenIndex), r.relation)
           }
       }
 

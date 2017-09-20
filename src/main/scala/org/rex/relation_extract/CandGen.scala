@@ -1,4 +1,7 @@
-package org.rex
+package org.rex.relation_extract
+
+import org.rex._
+import org.rex.text.WordFilter
 
 object CandGen {
   type Fn = Document => Seq[Candidate]

@@ -2,7 +2,9 @@ package org.rex.spark
 
 import nak.data.{FeatureObservation, Featurizer}
 import org.apache.spark.rdd.RDD
-import org.rex.{Candidate, CandGen, TextProcessor, Document}
+import org.rex.relation_extract.{CandGen, Candidate}
+import org.rex.text.TextProcessor
+import org.rex.Document
 
 object SparkModules {
 

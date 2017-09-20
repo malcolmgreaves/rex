@@ -5,10 +5,13 @@ import java.util.Random
 import java.util.concurrent.TimeUnit
 
 import nak.liblinear.{LiblinearConfig, SolverType}
-import org.rex.app.UiucRelationFmt._
+import org.rex.io.UiucRelationFmt._
 import scopt.OptionParser
 import org.rex._
-import org.rex.RelationLearner.{TrainingData => RelLearnTrainingData}
+import org.rex.relation_extract.RelationLearner.{TrainingData => RelLearnTrainingData}
+import org.rex.io.{Reader, ReaderMap}
+import org.rex.relation_extract._
+import org.rex.text.{SentenceViewFilter, WordFilter, WordView}
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.Duration

@@ -1,10 +1,10 @@
-package org.rex
+package org.rex.relation_extract
 
 import nak.NakContext._
-import nak.core.{FeaturizedClassifier, LiblinearClassifier, Classifier}
+import nak.core.{Classifier, FeaturizedClassifier, LiblinearClassifier}
 import nak.data._
 import nak.liblinear._
-import org.rex.Learning.TupleVal1
+import org.rex.relation_extract.Learning.TupleVal1
 
 import scala.language.implicitConversions
 import scala.util.Try
@@ -15,7 +15,7 @@ object RelationLearner extends Learning[Candidate, String] {
   def toNakExample(inst: Instance, label: Label): Example[Label, Instance] =
     Example(label, inst)
 
-  import CandidateFeatuerizer._
+  import org.rex.relation_extract.CandidateFeatuerizer._
 
   def apply(conf: LiblinearConfig,
             tfeat: CandidateFeatuerizer.Fn,

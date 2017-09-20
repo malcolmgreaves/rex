@@ -1,8 +1,6 @@
-package org.rex
+package org.rex.text
 
-import edu.arizona.sista.processors._
-import edu.arizona.sista.processors.corenlp.CoreNLPProcessor
-import edu.arizona.sista.processors.fastnlp.FastNLPProcessor
+import org.rex.relation_extract.ProcessingConf
 
 /**
   * Adds structure to text.

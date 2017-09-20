@@ -1,4 +1,4 @@
-package org.rex
+package org.rex.relation_extract
 
 import scala.language.implicitConversions
 

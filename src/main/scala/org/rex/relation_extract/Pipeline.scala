@@ -1,6 +1,7 @@
-package org.rex
+package org.rex.relation_extract
 
 import nak.data.FeatureObservation
+import org.rex.text.{DocumentChunker, TextProcessor}
 
 import scala.language.implicitConversions
 

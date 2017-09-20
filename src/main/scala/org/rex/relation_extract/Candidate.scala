@@ -1,4 +1,4 @@
-package org.rex
+package org.rex.relation_extract
 
 /**
   * Type that representes a candidate answer to a given query.

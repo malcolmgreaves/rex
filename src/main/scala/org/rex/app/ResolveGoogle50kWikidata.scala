@@ -1,4 +1,4 @@
-package org.rex.app.dl
+package org.rex.app
 
 import java.io._
 import java.util.concurrent.TimeUnit
@@ -7,7 +7,7 @@ import java.util.zip.GZIPInputStream
 import scala.collection.GenTraversableOnce
 import scala.concurrent.duration.Duration
 import scala.io.Source
-import scala.util.{Try, Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 object ResolveGoogle50kWikidata extends App {
 
@@ -186,10 +186,9 @@ object LoadUtils {
 
 object WikidataDumpStuff {
 
-  import ResolveGoogle50kWikidata.{FreebaseId, WikidataId, Mention, WikidataId2TextMentions}
-
-  import rapture.json.jsonBackends.jackson._
+  import ResolveGoogle50kWikidata.{FreebaseId, Mention, WikidataId, WikidataId2TextMentions}
   import rapture.json._
+  import rapture.json.jsonBackends.jackson._
 
   @inline private[this] def obtain(attempts: Try[Seq[Mention]]*): Seq[Mention] =
     attempts
@@ -251,13 +250,7 @@ object WikidataDumpStuff {
 
 object OutputSimplifiedTriples {
 
-  import org.rex.app.dl.ResolveGoogle50kWikidata.{
-    WikidataId,
-    Mention,
-    FreebaseId2WikidataId,
-    KnowledgebaseByFreebaseId,
-    WikidataId2TextMentions
-  }
+  import ResolveGoogle50kWikidata._
 
   @inline
   def getPassThruIfNum(wikidataId2textMentions: WikidataId2TextMentions,
@@ -336,12 +329,7 @@ object OutputSimplifiedTriples {
 
 object Freebase2WikidataStuff {
 
-  import ResolveGoogle50kWikidata.{
-    FreebaseId,
-    WikidataId,
-    KnowledgebaseByFreebaseId,
-    FreebaseId2WikidataId
-  }
+  import ResolveGoogle50kWikidata.{FreebaseId, FreebaseId2WikidataId, KnowledgebaseByFreebaseId, WikidataId}
 
   @inline
   def loadFreebase2WikidataIdMap(fbkb: KnowledgebaseByFreebaseId,
@@ -386,10 +374,9 @@ object Freebase2WikidataStuff {
 
 object GoogleStuff {
 
-  import ResolveGoogle50kWikidata.{FreebaseId, Relation, KnowledgebaseByFreebaseId}
-
-  import rapture.json.jsonBackends.jackson._
+  import ResolveGoogle50kWikidata.{FreebaseId, KnowledgebaseByFreebaseId, Relation}
   import rapture.json._
+  import rapture.json.jsonBackends.jackson._
 
   @inline def safeListFiles(f: File): Seq[File] = {
     val files = f.listFiles()

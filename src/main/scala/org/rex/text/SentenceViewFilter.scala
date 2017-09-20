@@ -1,9 +1,9 @@
-package org.rex
+package org.rex.text
 
+import org.rex.Sentence
 import spire.syntax.cfor._
 
 import scala.language.implicitConversions
-import scala.xml.parsing.TokenTests
 
 /**
   * Turns a sentence into a sequence of it's viewable words along

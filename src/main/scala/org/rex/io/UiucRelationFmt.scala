@@ -1,4 +1,4 @@
-package org.rex.app
+package org.rex.io
 
 import java.io.File
 
@@ -21,11 +21,11 @@ object UiucRelationFmt {
   case object Break extends Line
 
   /** A line that contains token information, including results from text processing. */
-  case class TokenLine(sentence: Int, neTag: String, token: Int, posTag: String, word: String)
+  case class TokenLine(neTag: String, tokenIndex: Int, posTag: String, word: String)
       extends Line
 
   /** A line that contains the labeled relation that is present in the preceeding sentence. */
-  case class RelationLine(arg1: Int, arg2: Int, relation: String) extends Line
+  case class RelationLine(arg1TokenIndex: Int, arg2TokenIndex: Int, relation: String) extends Line
 
   /** A labeled example: a sentence along with all applicable, positive relations. */
   type LabeledSentence = (Sentence, Seq[RelationLine])
@@ -64,18 +64,17 @@ object UiucRelationFmt {
 
         case 9 =>
           TokenLine(
-            bits(0).toInt,
-            bits(1).toUpperCase,
-            bits(2).toInt,
-            bits(4),
-            bits(5)
+            neTag = bits(1),
+            tokenIndex = bits(2).toInt,
+            posTag = bits(4),
+            word = bits(5)
           )
 
         case 3 =>
           RelationLine(
-            bits(0).toInt,
-            bits(1).toInt,
-            bits(2)
+            arg1TokenIndex =  bits(0).toInt,
+            arg2TokenIndex = bits(1).toInt,
+            relation = bits(2)
           )
 
         case unknownFieldNumber =>

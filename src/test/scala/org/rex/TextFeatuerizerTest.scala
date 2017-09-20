@@ -1,6 +1,8 @@
 package org.rex
 
 import nak.data.FeatureObservation
+import org.rex.relation_extract.{AdjacentFeatures, CandidateFeatuerizer, InsideFeatures}
+import org.rex.text.{SentenceViewFilter, WordFilter, WordView}
 import org.scalatest.FunSuite
 
 class TextFeatuerizerTest extends FunSuite {

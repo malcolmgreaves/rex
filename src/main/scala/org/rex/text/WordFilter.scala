@@ -1,4 +1,6 @@
-package org.rex
+package org.rex.text
+
+import org.rex.Sentence
 
 import scala.language.implicitConversions
 

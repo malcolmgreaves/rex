@@ -1,4 +1,4 @@
-package org.rex
+package org.rex.relation_extract
 
 /**
   * Information about the configuration of a natural language parser.

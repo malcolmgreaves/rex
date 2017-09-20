@@ -1,8 +1,4 @@
-package org.rex
-
-import edu.arizona.sista.processors._
-import edu.arizona.sista.processors.corenlp.CoreNLPProcessor
-import edu.arizona.sista.processors.fastnlp.FastNLPProcessor
+package org.rex.text
 
 object CoreNlpTextProcessor {
 

@@ -1,8 +1,8 @@
 package org.rex.spark
 
 import org.rex._
-
 import SparkModules._
+import org.rex.relation_extract.CandidateSentence
 
 class SparkCandGenTest extends SparkTestSuite {
 

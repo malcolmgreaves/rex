@@ -1,7 +1,7 @@
-package org.rex
+package org.rex.relation_extract
 
 import nak.data.{FeatureObservation, Featurizer}
-import org.rex.AdjacentFeatures._
+import org.rex.text.{SentenceViewFilter, WordFilter, WordView}
 import spire.syntax.cfor._
 
 import scala.annotation.tailrec

@@ -3,6 +3,8 @@ package org.rex
 import java.time.Duration
 
 import nak.liblinear.LiblinearConfig
+import org.rex.relation_extract._
+import org.rex.text.{NerDocChunker, SentenceViewFilter, WordFilter, WordView}
 import org.scalatest.FunSuite
 
 import scala.util.Try

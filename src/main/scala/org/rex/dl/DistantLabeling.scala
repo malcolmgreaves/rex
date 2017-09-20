@@ -1,6 +1,6 @@
 package org.rex.dl
 
-import org.rex.Candidate
+import org.rex.relation_extract.Candidate
 
 trait DistantLabeling[L] {
 
