@@ -79,6 +79,8 @@ object RelationExtractionLearningMain extends App {
               c
           ).copy(cmd = LearningCmd)
         }
+        .text("\tApp will learn a relation extraction model. \n" +
+          "\tOne of three possible commands.")
 
       cmd("evaluation")
         .optional()
@@ -90,6 +92,8 @@ object RelationExtractionLearningMain extends App {
               c
           ).copy(cmd = Evaluation)
         }
+        .text("\tApp will evaluate a relation extraction model on gold-standard, labeled relations.\n" +
+          "\tOne of three possible commands.")
 
       cmd("extraction")
         .optional()
@@ -101,6 +105,8 @@ object RelationExtractionLearningMain extends App {
               c
           ).copy(cmd = Extraction)
         }
+        .text("\tApp will perform relation extraction using a previously learned model.\n" +
+          "\tOne of three possible commands.")
 
       opt[File]("labeledInput")
         .optional()
@@ -151,7 +157,8 @@ object RelationExtractionLearningMain extends App {
         .optional()
         .abbr("cg")
         .valueName("<boolean>")
-        .text("Perform sentence-based candidate generation during training? False means only use positively labeled things.")
+        .text("Perform sentence-based candidate generation during training?\n" +
+          "\tFalse means only use positively labeled things.")
         .action { (cg, c) =>
           c.copy(
             lr = Some(
@@ -177,7 +184,8 @@ object RelationExtractionLearningMain extends App {
         .optional()
         .abbr("e")
         .valueName("<float>")
-        .text("Stopping criterion for learning: when the parameter change between iterations is less than eps, learning stops.")
+        .text("Stopping criterion for learning: when the parameter change between iterations\n" +
+          "\tis less than eps, learning stops.")
         .action { (eps, c) =>
           c.copy(
             lr = Some(
