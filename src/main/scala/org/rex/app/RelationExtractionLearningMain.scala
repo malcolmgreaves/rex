@@ -48,6 +48,22 @@ case class ExtractionCmd(rawInput: File,
                          extractOut: Option[File])
     extends Command
 
+case class DistSupExperimentCmd(
+    processedTextDir: File,
+    relations: File,
+    distant_label_reader: DistSupExperimentCmd.RelationKb => Reader[File, LabeledSentence]#Fn,
+    doCandGen: Boolean = true,
+    maybeNFolds: Option[Int],
+    cost: Option[Double],
+    eps: Option[Double]) // extends Command
+
+object DistSupExperimentCmd {
+  type ArgumentPair = (String, String)
+  type Positive = Seq[ArgumentPair]
+  type Negative = Seq[ArgumentPair]
+  type RelationKb = Map[RelationLearner.Label, (Positive, Negative)]
+}
+
 object RelationExtractionLearningMain {
 
   /** The app's command line option parser. */
@@ -124,11 +140,10 @@ object RelationExtractionLearningMain {
         }
         .text("Input of labeled relation data.")
 
-      opt[String]("input_text_conll")
+      opt[String]("input_format")
         .optional()
-        .abbr("input")
-        .valueName("<filepath>")
-        .text("Input (training) data file format reader type (conll)")
+        .valueName("<special>")
+        .text("Format of labeled input (e.g. conll)")
         .action { (readerStrInput, c) =>
           ReaderMap[File, LabeledSentence](readerStrInput) match {
             case Some(r) =>
@@ -302,9 +317,13 @@ object RelationExtractionLearningMain {
           System.exit(1)
         }
 
-      case _ =>
-        print(s"ERROR: unknown command type: ${config.cmd}")
+      case unk =>
+        if (unk == null)
+          parser.showUsage
+        else
+          print(s"ERROR: unknown command type: ${config.cmd}")
         System.exit(1)
+
     }
   }
 
