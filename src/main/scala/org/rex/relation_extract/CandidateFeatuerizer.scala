@@ -48,9 +48,9 @@ object CandidateFeatuerizer extends TextFeatuerizer[Candidate] {
 
       @tailrec
       def helper_fun(words: List[(String, Boolean, Int)],
-            q: Int,
-            a: Int,
-            filtered: Seq[String]): (Seq[String], Int, Int) =
+                     q: Int,
+                     a: Int,
+                     filtered: Seq[String]): (Seq[String], Int, Int) =
         words match {
 
           case (word, shouldKeep, index) :: rest =>
@@ -191,7 +191,9 @@ object CandidateFeatuerizer extends TextFeatuerizer[Candidate] {
           }
         }
 
-        case None =>  (_: Candidate) => nothingStr
+        case None =>
+          (_: Candidate) =>
+            nothingStr
       }
 
     val makeInsideFeatures: Candidate => Seq[String] =
@@ -233,7 +235,8 @@ object CandidateFeatuerizer extends TextFeatuerizer[Candidate] {
             }
 
         case None =>
-          (_: Candidate) => nothingStr
+          (_: Candidate) =>
+            nothingStr
       }
 
     // the candidate featurization function at last!

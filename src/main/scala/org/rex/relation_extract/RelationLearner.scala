@@ -65,8 +65,9 @@ object RelationLearner extends Learning[Candidate, String] {
           __nakClassifier.featurizer
 
         override def apply(context: Array[(Int, Double)]): Array[Double] = {
-          val ctxt =
-            context.map(c => new FeatureNode(c._1, c._2).asInstanceOf[nak.liblinear.Feature])
+          val ctxt = context.map { c =>
+            new FeatureNode(c._1, c._2).asInstanceOf[nak.liblinear.Feature]
+          }
           Try {
             val labelScores = Array.fill(numLabels)(0.0)
             Linear.predictProbability(model, ctxt, labelScores)
@@ -80,7 +81,11 @@ object RelationLearner extends Learning[Candidate, String] {
       }
 
       val label2index = nakClassifier.lmap
-      val index2label = label2index.toList.sortBy(_._2).map(_._1).toSeq
+      val index2label = label2index.toList.sortBy { _._2 }.map { _._1 }
+      if (index2label.size < 2) {
+        throw new IllegalStateException(
+          s"Must have >= 2 labels present in training, not ${index2label.size}")
+      }
 
       val estimator =
         if (index2label.size == 2)
@@ -94,18 +99,12 @@ object RelationLearner extends Learning[Candidate, String] {
         else
           (c: Candidate) => DistributionStr(index2label, nakClassifier.evalRaw(c).toSeq)
 
-      val classifier =
-        if (index2label.size < 2)
-          (c: Candidate) =>
-            throw new IllegalStateException(
-              s"Must have >= 2 labels present in training, not ${index2label.size}")
-        else
-          (c: Candidate) =>
-            index2label(
-              Learning
-                .argmax(nakClassifier.evalRaw(c).zipWithIndex)(Int1TupleVal)
-                ._2
-          )
+      val classifier = (c: Candidate) =>
+        index2label(
+          Learning
+            .argmax(nakClassifier.evalRaw(c).zipWithIndex)(Int1TupleVal)
+            ._2
+      )
 
       (classifier, estimator)
     }

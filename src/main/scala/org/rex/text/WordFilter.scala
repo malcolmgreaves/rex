@@ -1,7 +1,5 @@
 package org.rex.text
 
-import org.rex.Sentence
-
 import scala.language.implicitConversions
 
 object WordFilter {
