@@ -89,8 +89,9 @@ object UiucRelationFmt {
 
         case unknownFieldNumber =>
           throw new IllegalArgumentException(
-            s"Expedcting either 3 or 9 tab-separated parts, " +
-              s"not $unknownFieldNumber")
+            s"Expecting either 3 or 9 tab-separated parts, " +
+              s"not $unknownFieldNumber.\n" +
+              s"""Offending line: "$line"""")
       }
     }
 

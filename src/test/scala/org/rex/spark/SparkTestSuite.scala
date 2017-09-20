@@ -2,12 +2,10 @@ package org.rex.spark
 
 import java.io.File
 
-import org.apache.log4j.helpers.LogLog
-import org.apache.log4j.{LogManager, Logger, Level}
 import org.apache.spark.{SparkConf, SparkContext}
 import org.scalatest.FunSuite
 
-object SparkTest extends org.scalatest.Tag("com.rex.spark.SparkTest")
+object SparkTest extends org.scalatest.Tag("org.rex.spark.SparkTest")
 
 trait SparkTestSuite extends FunSuite {
 
@@ -18,13 +16,13 @@ trait SparkTestSuite extends FunSuite {
     * it up even if your test fails.  Also marks the test with the tag SparkTest, so you can
     * turn it off
     *
-    * By default, it turn off spark logging, b/c it just clutters up the test output.  However,
-    * when you are actively debugging one test, you may want to turn the logs on
+    * By default, it turn off spark logging, b/c it just clutters up the test output.
+    * However, when you are actively debugging one test, you may want to turn the logs on.
     *
     * @param name the name of the test
     * @param silenceSpark true to turn off spark logging
     */
-  def sparkTest(name: String, silenceSpark: Boolean = true)(body: => Unit) =
+  def sparkTest(name: String, silenceSpark: Boolean = true)(body: => Unit): Unit =
     test(name, SparkTest) {
 
       SparkUtil.silenceLogging()
@@ -49,16 +47,16 @@ trait SparkTestSuite extends FunSuite {
       }
     }
 
-  def ignoreSparkTest(name: String, logIgnored: Boolean = true)(bodyIgnored: => Unit) =
+  def ignoreSparkTest(name: String, logIgnored: Boolean = true)(bodyIgnored: => Unit): Unit =
     ignore(name, SparkTest) { /* test is ignored, so doesn't matter what we do! */ }
 
 }
 
 object SparkUtil {
 
-  lazy val logFileCompletePath =
+  lazy val logFileCompletePath: String =
     Seq("src", "main", "resources", "log4j.properties")
-      .foldLeft(new File("."))({ case (fi, part) => new File(fi, part) })
+      .foldLeft(new File(".")) { case (fi, part) => new File(fi, part) }
       .getCanonicalPath
 
   def silenceLogging(): Unit = {
