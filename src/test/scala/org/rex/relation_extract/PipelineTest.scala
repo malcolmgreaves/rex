@@ -4,10 +4,15 @@ import nak.data.FeatureObservation
 import org.rex.text.{IdentityDocChunker, TextProcessorTest, WordFilter}
 import org.scalatest.FunSuite
 
+import org.rex.SharedTestingData._
+import org.rex.relation_extract.PipelineTest.{
+  sentCGNoKnownPunct,
+  checkPipelineOutput,
+  idTextData,
+  idFeatureObs
+}
+import org.rex.relation_extract.TextFeatuerizerTest.featuerizer2skip2gram2gram
 class PipelineTest extends FunSuite {
-
-  import PipelineTest._
-  import TextFeatuerizerTest.featuerizer2skip2gram2gram
 
   test("data pipeline test") {
     val pipeline = Pipeline(
@@ -19,18 +24,16 @@ class PipelineTest extends FunSuite {
     val errors =
       checkPipelineOutput(
         idTextData
-          .map({
+          .map {
             case (id, text) =>
               (
                 id,
                 Pipeline.aggregateFeatureObservations(
-                  pipeline(id, text)
-                    .map(_._2)
-                    .flatten
+                  pipeline(id, text).flatMap { _._2 }
                 )
               )
-          })
-          .filter(_._2.nonEmpty),
+          }
+          .filter { _._2.nonEmpty },
         idFeatureObs
       )
     val noErrorsTest = errors.isEmpty
@@ -55,27 +58,27 @@ object PipelineTest {
     "1" ->
       Pipeline.aggregateFeatureObservations(
         expectedFeaturesForCandGenTestInsurgentCandidatesSentence.toSeq
-          .flatMap({
+          .flatMap {
             case (_, answerMap) =>
               answerMap.toSeq
-                .flatMap({
+                .flatMap {
                   case (_, features) =>
-                    features.toSeq
-                      .map(feature => FeatureObservation(feature, 1.0))
-                })
-          })
+                    features
+                      .map { feature =>
+                        FeatureObservation(feature, 1.0)
+                      }
+                }
+          }
       )
   )
 
   type TestData = Seq[(String, Seq[FeatureObservation[String]])]
 
-  type Error = String
-
-  def checkPipelineOutput(actual: TestData, expected: TestData): List[Error] =
-    if (actual.size == expected.size)
+  def checkPipelineOutput(actual: TestData, expected: TestData): Seq[Error] =
+    if (actual.size == expected.size) {
       actual
         .zip(expected)
-        .foldLeft(List.empty[Error])({
+        .foldLeft(Seq.empty[Error]) {
 
           case (errors, (a, e)) =>
             if (a._1 == e._1)
@@ -86,9 +89,9 @@ object PipelineTest {
                   .mkString("\n")}\nactual (${a._2.size}):\n${a._2.mkString("\n")}"""
             else
               errors :+ s"Id mis-match, expecting: ${e._1} actual: ${a._1}"
-
-        })
-    else
-      List(s"size mis-match, expecting: ${expected.size} actual: ${actual.size}")
+        }
+    } else {
+      Seq(s"size mis-match, expecting: ${expected.size} actual: ${actual.size}")
+    }
 
 }

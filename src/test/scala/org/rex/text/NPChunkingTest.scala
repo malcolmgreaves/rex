@@ -1,6 +1,7 @@
 package org.rex.text
 
 import org.scalatest.FunSuite
+import org.rex.SharedTestingData._
 
 class NPChunkingTest extends FunSuite {
 
@@ -26,7 +27,7 @@ object NPChunkingTest {
     val chunker = NerSentChunker(entSet)
 
     val errors =
-      testPairs.foldLeft(List.empty[String])({
+      testPairs.foldLeft(List.empty[Error])({
         case (agg, (sentence, correctResponse)) =>
           val result = chunker(sentence)._1.tokens
           if (result != correctResponse)

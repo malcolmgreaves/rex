@@ -1,11 +1,10 @@
 package org.rex.spark
 
 import SparkModules._
+import org.rex.SharedTestingData._
 import org.rex.text.TextProcessorTest
 
 class SparkTextProcessorTest extends SparkTestSuite {
-
-  import TextProcessorTest._
 
   sparkTest("Spark Text Processing") {
 
@@ -15,7 +14,7 @@ class SparkTextProcessorTest extends SparkTestSuite {
 
     assert(processedRdd.count == data.count)
 
-    testDocument(johnSmithDoc, processedRdd.collect().head)
+    TextProcessorTest.testDocument(johnSmithDoc, processedRdd.collect().head)
   }
 
 }
