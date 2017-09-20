@@ -1,6 +1,5 @@
 package org.rex.text
 
-import org.rex.Sentence
 import org.rex.relation_extract.NeTagSet
 
 import scala.language.implicitConversions
@@ -13,19 +12,20 @@ object SentenceChunker {
 }
 
 case object IdentitySentChunker extends SentenceChunker.Fn {
-  override def apply(s: Sentence) = (s, Seq.empty[Seq[Int]])
+  override def apply(s: Sentence): (Sentence, Seq[Seq[Int]]) =
+    (s, Seq.empty[Seq[Int]])
 }
 
 case class NerSentChunker(entSet: NeTagSet) extends SentenceChunker.Fn {
 
   import NerSentChunker._
 
-  val isNonEntity =
-    (entity: String) => entity == entSet.nonEntityTag
+  val isNonEntity: (String) => Boolean =
+    _ == entSet.nonEntityTag
 
-  override def apply(s: Sentence) =
+  override def apply(s: Sentence): (Sentence, Seq[Seq[Int]]) =
     s.entities
-      .map(ents =>
+      .map { ents =>
         if (ents.size <= 1) {
           (s, Seq.empty[Seq[Int]])
 
@@ -36,7 +36,7 @@ case class NerSentChunker(entSet: NeTagSet) extends SentenceChunker.Fn {
               .slice(1, ents.size)
               .zip(s.tokens.slice(1, s.tokens.size))
               .zipWithIndex
-              .map({ case ((e, t), indexMinus1) => (e, t, indexMinus1 + 1) })
+              .map { case ((e, t), indexMinus1) => (e, t, indexMinus1 + 1) }
               .foldLeft((Seq.empty[Seq[Int]], ents.head, Seq(0)))({
 
                 case ((indicesChunked, previousEnt, workingIndices), (entity, token, index)) =>
@@ -50,7 +50,7 @@ case class NerSentChunker(entSet: NeTagSet) extends SentenceChunker.Fn {
 
                   val updatedIndices =
                     if (!continueToChunk)
-                      if (workingIndices.size > 0)
+                      if (workingIndices.nonEmpty)
                         indicesChunked :+ workingIndices
                       else
                         indicesChunked
@@ -76,22 +76,23 @@ case class NerSentChunker(entSet: NeTagSet) extends SentenceChunker.Fn {
             ),
             allChunkedIndices
           )
-      })
+        }
+      }
       .getOrElse((s, Seq.empty[Seq[Int]]))
 }
 
 private object NerSentChunker {
 
   // for the token case
-  def tokenToStr(tokens: Seq[String])(indices: Seq[Int]) =
+  def tokenToStr(tokens: Seq[String])(indices: Seq[Int]): String =
     indices
-      .map(tokens.apply)
+      .map { tokens.apply }
       .mkString(" ")
 
   // for the POS tag & NE tag cases
-  def firstToStr(tokens: Seq[String])(indices: Seq[Int]) =
+  def firstToStr(tokens: Seq[String])(indices: Seq[Int]): String =
     indices
-      .map(tokens.apply)
+      .map { tokens.apply }
       .headOption
       .getOrElse("")
 
@@ -107,5 +108,4 @@ private object NerSentChunker {
           newChunked :+ select(indices)
       })
   }
-
 }

@@ -16,8 +16,7 @@ object ResolveGoogle50kWikidata extends App {
   type Relation = String
   type Mention = String
 
-  type KnowledgebaseByFreebaseId =
-    Map[FreebaseId, Map[FreebaseId, Set[Relation]]]
+  type KnowledgebaseByFreebaseId = Map[FreebaseId, Map[FreebaseId, Set[Relation]]]
   type FreebaseId2WikidataId = Map[FreebaseId, WikidataId]
   type WikidataId2TextMentions = Map[WikidataId, Seq[Mention]]
 
@@ -39,7 +38,8 @@ object ResolveGoogle50kWikidata extends App {
     val endFbGKb = System.currentTimeMillis()
     LoadUtils.printTime("Finished loading Google KB in", startFbGKb, endFbGKb)
     println(
-      s"Sample of $k Google 50K Knowledgebase Entries [out of ${Freebase2WikidataStuff.freebaseIdsOfInterest(freebaseIdGoogleKb).size}]")
+      s"Sample of $k Google 50K Knowledgebase Entries [out of " +
+        s"${Freebase2WikidataStuff.freebaseIdsOfInterest(freebaseIdGoogleKb).size}]")
     freebaseIdGoogleKb
       .take(k)
       .foreach(println)
@@ -192,7 +192,7 @@ object WikidataDumpStuff {
 
   @inline private[this] def obtain(attempts: Try[Seq[Mention]]*): Seq[Mention] =
     attempts
-      .flatMap(_.toOption)
+      .flatMap { _.toOption }
       .foldLeft(Seq.empty[Mention])(_ ++ _)
 
   def jsonParse(idsOfInterest: Set[WikidataId])(s: String): Option[(WikidataId, Seq[Mention])] =
@@ -209,7 +209,9 @@ object WikidataDumpStuff {
               Try {
                 j.aliases.en
                   .as[Seq[String]]
-                  .map(x => Json.parse(x).value.as[Mention])
+                  .map { x =>
+                    Json.parse(x).value.as[Mention]
+                  }
               }
             )
           if (mentions nonEmpty)
@@ -231,18 +233,22 @@ object WikidataDumpStuff {
                                wikdataDumpFi: File): WikidataId2TextMentions = {
 
     val parser: String => GenTraversableOnce[(String, Seq[String])] =
-      WikidataDumpStuff.jsonParse(fb2wd.values.toSet) _
+      WikidataDumpStuff.jsonParse(fb2wd.values.toSet)
 
     Source
       .fromInputStream(LoadUtils.asInputStream(wikdataDumpFi).get)
       .getLines()
       // don't care about array nature of the file, only processing
       // each element individually
-      .dropWhile(x => x == "[" || x == "]")
+      .dropWhile { x =>
+        x == "[" || x == "]"
+      }
       // remove the ending ",", otherwise JSON parsing will choke
       // (don't want to parse json as one big old array)
-      .map(x => x.substring(0, x.length - 1))
-      .flatMap(parser)
+      .map { x =>
+        x.substring(0, x.length - 1)
+      }
+      .flatMap { parser }
       .toMap
   }
 
@@ -268,7 +274,6 @@ object OutputSimplifiedTriples {
             fb2wd: FreebaseId2WikidataId,
             wikidataId2textMentions: WikidataId2TextMentions,
             triplesKbOut: File) = {
-    //
     val w = new BufferedWriter(new FileWriter(triplesKbOut))
     try {
       freebaseIdGoogleKb
@@ -394,33 +399,34 @@ object GoogleStuff {
   @inline
   def loadFreebaseIdGoogleKb(googleDir: File): KnowledgebaseByFreebaseId =
     safeListFiles(googleDir)
-      .filter(_.getName.endsWith(".json"))
-      .filter(_.getName.startsWith("fixed_"))
-      .flatMap(
-        f =>
-          LoadUtils
-            .asInputStream(f)
-            .map(is => {
-              val name = GoogleStuff.relationFromName(f)
-              println(s"Reading relation KB: $name")
-              (name, is)
-            }))
+      .filter { _.getName.endsWith(".json") }
+      .filter { _.getName.startsWith("fixed_") }
+      .flatMap { f =>
+        LoadUtils
+          .asInputStream(f)
+          .map { is =>
+            val name = GoogleStuff.relationFromName(f)
+            println(s"Reading relation KB: $name")
+            (name, is)
+          }
+      }
       .foldLeft(Map.empty[FreebaseId, Map[FreebaseId, Set[Relation]]]) {
         case (knowledgebase, (relation, is)) =>
           Source
             .fromInputStream(is)
             .getLines()
-            .flatMap(l =>
+            .flatMap { l =>
               GoogleStuff.idsFromJsonLine(l) match {
                 case Success(x) =>
                   Some(x)
                 case Failure(e) =>
-                  println(
-                    s"[loadFreebaseIdGoogleKb] *recovered, skipped* ERROR, offending line\n\n$l\n\n")
+                  println(s"[loadFreebaseIdGoogleKb] *recovered, skipped* ERROR, offending line" +
+                    s"\n\n$l\n\n")
                   e.printStackTrace()
                   println("[loadFreebaseIdGoogleKb] ///////////////////////////////////////////")
                   None
-            })
+              }
+            }
             .foldLeft(knowledgebase) {
 
               case (kb, (sub, obj)) =>

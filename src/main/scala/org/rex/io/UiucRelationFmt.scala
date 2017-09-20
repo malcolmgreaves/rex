@@ -2,7 +2,7 @@ package org.rex.io
 
 import java.io.File
 
-import org.rex.Sentence
+import org.rex.text.Sentence
 
 import scala.collection.mutable.ArrayBuffer
 import scala.io.Source

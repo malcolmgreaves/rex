@@ -1,6 +1,5 @@
 package org.rex.text
 
-import org.rex.Sentence
 import spire.syntax.cfor._
 
 import scala.language.implicitConversions
