@@ -7,8 +7,7 @@ import java.util.concurrent.TimeUnit
 import nak.liblinear.{LiblinearConfig, SolverType}
 import org.rex.io.UiucRelationFmt._
 import scopt.OptionParser
-import org.rex._
-import org.rex.relation_extract.RelationLearner.{TrainingData => RelLearnTrainingData}
+import org.rex.relation_extract.RelationLearner.{TrainingData, Label, Instance}
 import org.rex.io.{Reader, ReaderMap}
 import org.rex.relation_extract._
 import org.rex.text.{SentenceViewFilter, WordFilter, WordView}
@@ -375,7 +374,15 @@ object RelationExtractionLearningMain {
 
               val fold = fIndex + 1
               if (verbose) {
-                println(s"#$fold/$nFolds : Begin Training & testing")
+                val labelPropInfo =
+                  labelCount(train)
+                    .map {
+                      case (label, count) =>
+                        s"$count instances of $label (${formatDecimalPoint(count / train.size)}%)"
+                    }
+                    .mkString("\n")
+
+                println(s"#$fold/$nFolds : Begin Training & testing :\n$labelPropInfo\n")
               }
 
               val estimators = trainEstimator(rlearners, labeledData = train, verbose = verbose)
@@ -397,13 +404,12 @@ object RelationExtractionLearningMain {
                   }
 
               val end_fold = System.currentTimeMillis()
-              println(
-                s"#$fold/$nFolds : Completed in " +
-                  s"${Duration(end_fold - start_fold, TimeUnit.MILLISECONDS).toMinutes} minutes " +
-                  s"(${end_fold - start_fold} ms)" +
-                  "\n" +
-                  s"#$fold/$nFolds correct $numberCorrectPredictions out of ${test.size} : " +
-                  s"accuracy: ${(numberCorrectPredictions.toDouble / test.size) * 100.0}")
+              println(s"#$fold/$nFolds : Completed in " +
+                s"${Duration(end_fold - start_fold, TimeUnit.MILLISECONDS).toMinutes} minutes " +
+                s"(${end_fold - start_fold} ms)" +
+                "\n" +
+                s"#$fold/$nFolds correct $numberCorrectPredictions out of ${test.size} : " +
+                s"accuracy: ${formatDecimalPoint((numberCorrectPredictions.toDouble / test.size) * 100.0)} %")
           }
 
       case _: EvaluationCmd =>
@@ -416,10 +422,25 @@ object RelationExtractionLearningMain {
         throw new IllegalStateException(s"ERROR: unknown command ${cmd.getClass}")
     }
 
+  def formatDecimalPoint(value: Double): String =
+    f"$value%3.2f"
+
+  def labelCount(labeledData: Traversable[(Any, Label)]): Seq[(Label, Double)] =
+    labeledData
+      .foldLeft(Map.empty[Label, Double]) {
+        case (accum, (_, label)) =>
+          if (accum.contains(label)) {
+            (accum - label) + (label -> (accum(label) + 1))
+          } else {
+            accum + (label -> 1)
+          }
+      }
+      .toSeq
+
   def createLabeledData(labeledInput: File,
                         reader: Reader[File, LabeledSentence]#Fn,
                         doCG: Boolean,
-                        verbose: Boolean = true): RelLearnTrainingData = {
+                        verbose: Boolean = true): TrainingData = {
 
     val labeledSentences = reader(labeledInput)
     if (verbose) {
@@ -460,7 +481,7 @@ object RelationExtractionLearningMain {
     labeledData
   }
 
-  def createRelations(labeledData: RelLearnTrainingData,
+  def createRelations(labeledData: TrainingData,
                       verbose: Boolean = true): Set[RelationLearner.Label] = {
     val relations = labeledData.foldLeft(Set.empty[RelationLearner.Label]) {
       case (rs, (_, rel)) => rs + rel
@@ -496,9 +517,8 @@ object RelationExtractionLearningMain {
     rlearners
   }
 
-  def trainEstimator(rlearners: MultiLearner,
-                     labeledData: RelLearnTrainingData,
-                     verbose: Boolean = true)(implicit ec: ExecutionContext): MultiEstimator = {
+  def trainEstimator(rlearners: MultiLearner, labeledData: TrainingData, verbose: Boolean = true)(
+      implicit ec: ExecutionContext): MultiEstimator = {
     val start = System.currentTimeMillis()
     val estimators = trainLearners(rlearners, labeledData)
     val end = System.currentTimeMillis()
