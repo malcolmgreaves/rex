@@ -17,20 +17,13 @@ import scala.language.{existentials, implicitConversions, postfixOps}
 
 sealed trait Command
 
-sealed trait CommandT
-
-case class LearningCmd(labeledInput: File,
-                       reader: Reader[File, LabeledSentence]#Fn,
-                       doCandGen: Boolean = true,
-                       modelOut: Option[File],
-                       cost: Option[Double],
-                       eps: Option[Double])
+case class Learning(labeledInput: File,
+                    reader: Reader[File, LabeledSentence]#Fn,
+                    doCandGen: Boolean = true,
+                    modelOut: Option[File],
+                    cost: Option[Double],
+                    eps: Option[Double])
     extends Command
-
-case object LearningCmd extends CommandT {
-  val emptyUnsafe =
-    LearningCmd(null, null, doCandGen = true, None, None, None)
-}
 
 case class Evaluation(labeledInput: File,
                       reader: Reader[File, LabeledSentence]#Fn,
@@ -39,28 +32,13 @@ case class Evaluation(labeledInput: File,
                       maybeNFolds: Option[Int])
     extends Command
 
-case object Evaluation extends CommandT {
-  val emptyUnsafe = Evaluation(null, null, None, None, None)
-}
-
 case class Extraction(rawInput: File,
                       reader: Reader[Any, Any],
                       modelIn: Option[File],
                       extractOut: Option[File])
     extends Command
 
-case object Extraction extends CommandT {
-  val emptyUnsafe = Extraction(null, null, None, None)
-}
-
-case class RelConfig(cmd: CommandT,
-                     lr: Option[LearningCmd],
-                     ev: Option[Evaluation],
-                     ex: Option[Extraction])
-
-object RelConfig {
-  val emptyUnsafe = RelConfig(null, None, None, None)
-}
+case class RelConfig(cmd: Command)
 
 object RelationExtractionLearningMain {
 
@@ -75,12 +53,13 @@ object RelationExtractionLearningMain {
       cmd("learning")
         .optional()
         .action { (_, c) =>
-          (
-            if (c.lr.isEmpty)
-              c.copy(lr = Some(LearningCmd.emptyUnsafe))
-            else
-              c
-          ).copy(cmd = LearningCmd)
+          c.copy(
+            cmd = Learning(labeledInput = null,
+                           reader = null,
+                           doCandGen = false,
+                           modelOut = None,
+                           cost = None,
+                           eps = None))
         }
         .text("\tApp will learn a relation extraction model. \n" +
           "\tOne of three possible commands.")
@@ -88,12 +67,12 @@ object RelationExtractionLearningMain {
       cmd("evaluation")
         .optional()
         .action { (_, c) =>
-          (
-            if (c.ev.isEmpty)
-              c.copy(ev = Some(Evaluation.emptyUnsafe))
-            else
-              c
-          ).copy(cmd = Evaluation)
+          c.copy(
+            cmd = Evaluation(labeledInput = null,
+                             reader = null,
+                             modelIn = None,
+                             evalOut = None,
+                             maybeNFolds = None))
         }
         .text(
           "\tApp will evaluate a relation extraction model on gold-standard, labeled relations.\n" +
@@ -102,26 +81,24 @@ object RelationExtractionLearningMain {
       cmd("extraction")
         .optional()
         .action { (_, c) =>
-          (
-            if (c.ex.isEmpty)
-              c.copy(ex = Some(Extraction.emptyUnsafe))
-            else
-              c
-          ).copy(cmd = Extraction)
+          c.copy(
+            cmd = Extraction(rawInput = null, reader = null, modelIn = None, extractOut = None))
         }
         .text("\tApp will perform relation extraction using a previously learned model.\n" +
           "\tOne of three possible commands.")
 
-      opt[File]("labeledInput")
+      opt[File]("labeled_input")
         .optional()
         .abbr("li")
         .valueName("<file>")
         .action { (li, c) =>
-          c.copy(
-            lr = Some(
-              c.lr
-                .getOrElse(LearningCmd.emptyUnsafe)
-                .copy(labeledInput = li)))
+          c.copy(cmd = c.cmd match {
+            case cmd: Learning => cmd.copy(labeledInput = li)
+            case cmd: Evaluation => cmd.copy(labeledInput = li)
+            case _ =>
+              throw new IllegalStateException(
+                s"labeled_input is invalid for command ${c.cmd.getClass}")
+          })
         }
         .text("Input of labeled relation data.")
 
@@ -133,14 +110,18 @@ object RelationExtractionLearningMain {
         .action { (readerStrInput, c) =>
           ReaderMap[File, LabeledSentence](readerStrInput) match {
             case Some(r) =>
-              c.copy(
-                lr = Some(
-                  c.lr
-                    .getOrElse(LearningCmd.emptyUnsafe)
-                    .copy(reader = r)))
+              c.copy(cmd = c.cmd match {
+                case cmd: Learning => cmd.copy(reader = r)
+                case cmd: Evaluation => cmd.copy(reader = r)
+                case cmd: Extraction => cmd.copy(reader = r.asInstanceOf[Reader[Any, Any]])
+                case _ =>
+                  throw new IllegalStateException(s"Unknown Command type: ${c.cmd.getClass}")
+              })
+
             case None =>
-              println(s"ERROR: Unrecognized labeled reader: $readerStrInput")
-              c
+              throw new IllegalArgumentException(
+                s"ERROR: Unrecognized labeled reader: $readerStrInput\n" +
+                  s"command type: ${c.cmd.getClass}")
           }
         }
 
@@ -148,14 +129,14 @@ object RelationExtractionLearningMain {
         .optional()
         .abbr("output")
         .valueName("<filepath>")
-        .text(
-          "Path to where the trained relation classifier and pipeline config should be saved to.")
+        .text("Path to where the trained relation classifier and pipeline config should be saved.")
         .action { (mo, c) =>
-          c.copy(
-            lr = Some(
-              c.lr
-                .getOrElse(LearningCmd.emptyUnsafe)
-                .copy(modelOut = Some(mo))))
+          c.copy(cmd = c.cmd match {
+            case cmd: Learning => cmd.copy(modelOut = Some(mo))
+            case _ =>
+              throw new IllegalStateException(
+                s"model_output invalid for command: ${c.cmd.getClass}")
+          })
         }
 
       opt[Boolean]("candidate_generation_train")
@@ -165,11 +146,12 @@ object RelationExtractionLearningMain {
         .text("Perform sentence-based candidate generation during training?\n" +
           "\tFalse means only use positively labeled things.")
         .action { (cg, c) =>
-          c.copy(
-            lr = Some(
-              c.lr
-                .getOrElse(LearningCmd.emptyUnsafe)
-                .copy(doCandGen = cg)))
+          c.copy(cmd = c.cmd match {
+            case cmd: Learning => cmd.copy(doCandGen = cg)
+            case _ =>
+              throw new IllegalStateException(
+                s"candidate_generation_train invalid for command: ${c.cmd.getClass}")
+          })
         }
 
       opt[Double]("cost")
@@ -178,25 +160,25 @@ object RelationExtractionLearningMain {
         .valueName("<float>")
         .text("Positive mis-classification cost for cost-sensitive learning.")
         .action { (cost, c) =>
-          c.copy(
-            lr = Some(
-              c.lr
-                .getOrElse(LearningCmd.emptyUnsafe)
-                .copy(cost = Some(cost))))
+          c.copy(cmd = c.cmd match {
+            case cmd: Learning => cmd.copy(cost = Some(cost))
+            case _ =>
+              throw new IllegalStateException(s"cost invalid for command: ${c.cmd.getClass}")
+          })
         }
 
-      opt[Double]("eps")
+      opt[Double]("epsilon")
         .optional()
         .abbr("e")
         .valueName("<float>")
         .text("Stopping criterion for learning: when the parameter change between iterations\n" +
           "\tis less than eps, learning stops.")
         .action { (eps, c) =>
-          c.copy(
-            lr = Some(
-              c.lr
-                .getOrElse(LearningCmd.emptyUnsafe)
-                .copy(eps = Some(eps))))
+          c.copy(cmd = c.cmd match {
+            case cmd: Learning => cmd.copy(eps = Some(eps))
+            case _ =>
+              throw new IllegalStateException(s"epsilon invalid for command: ${c.cmd.getClass}")
+          })
         }
 
       opt[Int]("n_cv_folds")
@@ -205,17 +187,17 @@ object RelationExtractionLearningMain {
         .valueName("<int>")
         .text("Number of cross validation folds: must be >= 2")
         .action { (nFolds, c) =>
-          c.copy(
-            ev = Some(
-              c.ev
-                .getOrElse(Evaluation.emptyUnsafe)
-                .copy(maybeNFolds = Some(nFolds))))
+          c.copy(cmd = c.cmd match {
+            case cmd: Evaluation => cmd.copy(maybeNFolds = Some(nFolds))
+            case _ =>
+              throw new IllegalStateException(s"n_cv_folds invalid for command: ${c.cmd.getClass}")
+          })
         }
 
     }
 
   def main(args: Array[String]): Unit =
-    parser.parse(args, RelConfig.emptyUnsafe) match {
+    parser.parse(args, RelConfig(cmd = null)) match {
 
       case Some(config) =>
         validate(config)
@@ -241,7 +223,7 @@ object RelationExtractionLearningMain {
       System.exit(1)
     }
 
-    if (config.cmd == LearningCmd && config.lr.get.modelOut.isEmpty) {
+    if (config.cmd == Learning && config.lr.get.modelOut.isEmpty) {
       println(
         "ERROR: Command is \"learning\" and " +
           "no model output path is specified.\n")
@@ -269,7 +251,7 @@ object RelationExtractionLearningMain {
 
     val maybeModelTrainData: Option[(MultiLearner, RelLearnTrainingData, () => MultiEstimator)] =
       config.lr.map {
-        case LearningCmd(labeledInput, reader, doCG, modelOut, cost, eps) =>
+        case Learning(labeledInput, reader, doCG, modelOut, cost, eps) =>
           val labeledSentences = reader(labeledInput)
           println(s"Obtained ${labeledSentences.size} sentences")
           println(s"Of those, ${labeledSentences.count(_._2.nonEmpty)} are labeled")
