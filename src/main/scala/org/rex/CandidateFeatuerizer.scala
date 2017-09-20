@@ -221,8 +221,14 @@ object CandidateFeatuerizer extends TextFeatuerizer[Candidate] {
                 val buff = new ArrayBuffer[String](cand.endInnerIndex - cand.startInnerIndex)
 
                 cfor(cand.startInnerIndex)(_ < cand.endInnerIndex, _ + 1) { i =>
-                  if (wf(i)) {
-                    buff.append(wv(i))
+                  try {
+                    if (wf(i)) {
+                      buff.append(wv(i))
+                    }
+                  } catch {
+                    case e: Exception =>
+                      println(s"\bnFAILED ON i: $i from candidate:\n${cand}\n\n")
+                      throw e
                   }
                 }
 
