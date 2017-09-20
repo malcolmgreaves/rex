@@ -282,16 +282,14 @@ object RelationExtractionLearningMain {
               mkTrainData(candgen, labeledSentences, noRelation)
             else
               mkPositiveTrainData(labeledSentences)
-          println(s"A total of ${labeledData.size} candidates, of which ${(labeledData
-            .count(_._2 != noRelation) / labeledData.size.toDouble) * 100.0} % are labeled.")
+          println(s"A total of ${labeledData.size} candidates, of which " +
+            s"${(labeledData.count(_._2 != noRelation) / labeledData.size.toDouble) * 100.0} % " +
+            s"are labeled.")
 
-          val relations =
-            labeledData
-              .foldLeft(Set.empty[RelationLearner.Label]) {
-                case (rs, (_, rel)) => rs + rel
-              }
-          println(s"""There are ${relations.size} relations:\n\t${relations
-            .mkString("\n\t")}""")
+          val relations = labeledData.foldLeft(Set.empty[RelationLearner.Label]) {
+            case (rs, (_, rel)) => rs + rel
+          }
+          println(s"""There are ${relations.size} relations:\n\t${relations.mkString("\n\t")}""")
 
           val sourceRelationLearner = RelationLearner(
             LiblinearConfig(
@@ -322,7 +320,8 @@ object RelationExtractionLearningMain {
                 modelOut.foreach { mo =>
                   if (calledAtLeastOnce.getAndSet(true))
                     println(
-                      s"WARNING: Model serialization & deserialization is not implemented. NOT saving model to: $mo")
+                      s"WARNING: Model serialization & deserialization is not implemented. " +
+                        s"NOT saving model to: $mo")
                 }
 
                 estimators
@@ -335,74 +334,75 @@ object RelationExtractionLearningMain {
 
     config.ev.foreach {
       case Evaluation(labeledInput, reader, modelIn, evalOut, maybeNFolds) =>
-        val eval =
-          maybeModelTrainData match {
+        maybeModelTrainData match {
 
-            case Some((rlearners, labeledData, completeEstimators)) =>
-              println(
-                s"Ignoring Evaluation's labeledInput in favor of LearningCmd's labeledInput\n(ignored: $labeledInput)")
+          case Some((rlearners, labeledData, completeEstimators)) =>
+            println(
+              s"Ignoring Evaluation's labeledInput in favor of " +
+                s"LearningCmd's labeledInput\n(ignored: $labeledInput)")
 
-              val nFolds = maybeNFolds.getOrElse(4)
-              val dataTrainTest =
-                if (nFolds == 1) {
-                  println(s"Performing train-test with 75% train")
-                  trainTestSplit(labeledData, 0.75)
+            val nFolds = maybeNFolds.getOrElse(4)
+            val dataTrainTest =
+              if (nFolds == 1) {
+                println(s"Performing train-test with 75% train")
+                trainTestSplit(labeledData, 0.75)
 
-                } else {
-                  println(s"Performing $nFolds-fold cross validation")
-                  mkCrossValid(labeledData, nFolds)
-                }
+              } else {
+                println(s"Performing $nFolds-fold cross validation")
+                mkCrossValid(labeledData, nFolds)
+              }
 
-              dataTrainTest.toSeq.zipWithIndex
-                .foreach {
+            dataTrainTest.toSeq.zipWithIndex
+              .foreach {
 
-                  case ((train, test), fIndex) =>
-                    val fold = fIndex + 1
-                    println(s"#$fold/$nFolds : Begin Training & testing")
-                    val start = System.currentTimeMillis()
+                case ((train, test), fIndex) =>
+                  val fold = fIndex + 1
+                  println(s"#$fold/$nFolds : Begin Training & testing")
+                  val start = System.currentTimeMillis()
 
-                    val estimators = trainLearners(rlearners, train)
+                  val estimators = trainLearners(rlearners, train)
 
-                    val numberCorrectPredictions =
-                      test
-                        .foldLeft(0) {
-                          case (nCorrect, (instance, label)) =>
-                            val predicted =
-                              Learning
-                                .argmax(
-                                  estimators
-                                    .map {
-                                      case (r, estimator) =>
-                                        (r, estimator(instance).result.head)
-                                    }
-                                )(Learning.TupleVal2[String])
-                                ._1
+                  val numberCorrectPredictions =
+                    test
+                      .foldLeft(0) {
+                        case (nCorrect, (instance, label)) =>
+                          val predicted =
+                            Learning
+                              .argmax(
+                                estimators
+                                  .map {
+                                    case (r, estimator) =>
+                                      (r, estimator(instance).result.head)
+                                  }
+                              )(Learning.TupleVal2[String])
+                              ._1
 
-                            if (predicted == label)
-                              nCorrect + 1
-                            else
-                              nCorrect
-                        }
+                          if (predicted == label)
+                            nCorrect + 1
+                          else
+                            nCorrect
+                      }
 
-                    val end = System.currentTimeMillis()
+                  val end = System.currentTimeMillis()
 
-                    println(s"""#$fold/$nFolds : Completed in ${Duration(
-                                 end - start,
-                                 TimeUnit.MILLISECONDS).toMinutes} minutes (${end - start} ms)
-                         |#$fold/$nFolds correct $numberCorrectPredictions out of ${test.size} : accuracy: ${(numberCorrectPredictions.toDouble / test.size) * 100.0}
-                       """.stripMargin)
-                }
+                  println(
+                    s"#$fold/$nFolds : Completed in " +
+                      s"${Duration(end - start, TimeUnit.MILLISECONDS).toMinutes} minutes " +
+                      s"(${end - start} ms)" +
+                      "\n" +
+                      s"#$fold/$nFolds correct $numberCorrectPredictions out of ${test.size} : " +
+                      s"accuracy: ${(numberCorrectPredictions.toDouble / test.size) * 100.0}")
+              }
 
-            case None =>
-              throw new RuntimeException(
-                "ERROR: Evaluation from serialized model is not implemented.")
-          }
+          case None =>
+            throw new RuntimeException(
+              "ERROR: Evaluation from serialized model is not implemented.")
+        }
 
         evalOut.foreach { eo =>
           println(s"WARNING: Evaluation output is not implemented. NOT writing evaluation to: $eo")
         }
 
-        eval
     }
 
     config.ex.foreach {
