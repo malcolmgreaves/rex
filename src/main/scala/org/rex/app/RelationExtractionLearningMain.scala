@@ -340,7 +340,8 @@ object RelationExtractionLearningMain {
         val rlearners = createRelationLearnerFuncs(createRelations(labeledData, verbose = verbose),
                                                    featurizer,
                                                    cost = cost,
-                                                   eps = eps)
+                                                   eps = eps,
+                                                   verbose = verbose)
         val estimators = trainEstimator(rlearners, labeledData, verbose = verbose)
         saveEstimators(modelOut, estimators)
 
@@ -349,7 +350,8 @@ object RelationExtractionLearningMain {
         val rlearners = createRelationLearnerFuncs(createRelations(labeledData, verbose = verbose),
                                                    featurizer,
                                                    cost = cost,
-                                                   eps = eps)
+                                                   eps = eps,
+                                                   verbose = verbose)
 
         val nFolds = maybeNFolds.getOrElse(4)
         val dataTrainTest =
@@ -378,7 +380,7 @@ object RelationExtractionLearningMain {
                   labelCount(train)
                     .map {
                       case (label, count) =>
-                        s"$count instances of $label (${formatDecimalPoint(count / train.size)}%)"
+                        s"$count instances of $label (${formatDecimalPoint(count.toDouble / train.size)}%)"
                     }
                     .mkString("\n")
 
@@ -425,14 +427,14 @@ object RelationExtractionLearningMain {
   def formatDecimalPoint(value: Double): String =
     f"$value%3.2f"
 
-  def labelCount(labeledData: Traversable[(Any, Label)]): Seq[(Label, Double)] =
+  def labelCount(labeledData: Traversable[(Any, Label)]): Seq[(Label, Long)] =
     labeledData
-      .foldLeft(Map.empty[Label, Double]) {
+      .foldLeft(Map.empty[Label, Long]) {
         case (accum, (_, label)) =>
           if (accum.contains(label)) {
-            (accum - label) + (label -> (accum(label) + 1))
+            (accum - label) + (label -> (accum(label) + 1L))
           } else {
-            accum + (label -> 1)
+            accum + (label -> 1L)
           }
       }
       .toSeq
@@ -494,16 +496,28 @@ object RelationExtractionLearningMain {
 
   def createRelationLearnerFuncs(relations: Set[RelationLearner.Label],
                                  featurizer: TextFeatuerizer[Candidate]#Fn,
+                                 lossFunc: Option[SolverType] = None,
                                  cost: Option[Double] = None,
-                                 eps: Option[Double] = None): MultiLearner = {
+                                 eps: Option[Double] = None,
+                                 verbose: Boolean = true): MultiLearner = {
     // a single binary relation learner constructor:
     // when called, makes a new model that is able to learn a from +/- instances for a single
     // relation type
+    val usingCost = cost.getOrElse(8.5)
+    val usingEps = eps.getOrElse(0.001)
+    val usingLoss = lossFunc.getOrElse(SolverType.L1R_L2LOSS_SVC)
+    if (verbose) {
+      print(
+        s"Training a linear SVM with " +
+          s"cost: $usingCost , " +
+          s"epsilon: $usingEps, " +
+          s"loss function: $usingLoss")
+    }
     val sourceRelationLearner = RelationLearner(
       LiblinearConfig(
-        solverType = SolverType.L1R_L2LOSS_SVC,
-        cost = cost.getOrElse(8.5),
-        eps = eps.getOrElse(0.001),
+        solverType = usingLoss,
+        cost = usingCost,
+        eps = usingEps,
         showDebug = false
       ),
       featurizer
