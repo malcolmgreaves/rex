@@ -25,8 +25,8 @@ object ReaderMap {
     s.trim.toLowerCase match {
       case "conll" =>
         if (inputClz.equals(classOf[File]) && outputClz.equals(
-              classOf[Connl04Format.LabeledSentence]))
-          Some(Connl04Format.read.asInstanceOf[Reader[I, T]#Fn])
+              classOf[UiucRelationFmt.LabeledSentence]))
+          Some(UiucRelationFmt.read.asInstanceOf[Reader[I, T]#Fn])
         else
           throw new RuntimeException(s"Expecting an input for a Reader Fn of type ")
 

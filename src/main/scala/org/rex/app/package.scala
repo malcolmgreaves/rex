@@ -2,7 +2,7 @@ package org.rex
 
 import java.util.Random
 
-import org.rex.app.Connl04Format._
+import org.rex.app.UiucRelationFmt._
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Future, Await, ExecutionContext}

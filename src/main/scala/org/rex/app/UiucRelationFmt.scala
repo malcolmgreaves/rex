@@ -1,0 +1,143 @@
+package org.rex.app
+
+import java.io.File
+
+import org.rex.Sentence
+
+import scala.collection.mutable.ArrayBuffer
+import scala.io.Source
+import scala.language.{existentials, implicitConversions, postfixOps}
+
+object UiucRelationFmt {
+
+  //
+  // Line :: types that represent each possible line in the format
+  //
+
+  /** The Line type represents each possible shape of a line of text in the format. */
+  sealed trait Line
+
+  /** Represents a blank line. */
+  case object Break extends Line
+
+  /** A line that contains token information, including results from text processing. */
+  case class TokenLine(sentence: Int, neTag: String, token: Int, posTag: String, word: String)
+      extends Line
+
+  /** A line that contains the labeled relation that is present in the preceeding sentence. */
+  case class RelationLine(arg1: Int, arg2: Int, relation: String) extends Line
+
+  /** A labeled example: a sentence along with all applicable, positive relations. */
+  type LabeledSentence = (Sentence, Seq[RelationLine])
+
+  /** Function that produces labeled sentences from a plaintext file. */
+  val read: Reader[File, LabeledSentence]#Fn =
+    (inFi: File) => {
+      println(s"Reading input from:\n$inFi")
+      val input = Source.fromFile(inFi)
+
+      val rawLines = input.getLines().map(parseLine).toIndexedSeq
+      println(s"Obtained ${rawLines.size} individual lines")
+
+      val groupedIntoLabeledSentences = labeledSentencesFromLines(rawLines)
+      println(s"Obtained ${groupedIntoLabeledSentences.size} labeled sentences")
+
+      groupedIntoLabeledSentences
+    }
+
+  /** Given a line of text, parses it and converts it into the appropriate Line type.
+    *
+    * If there is an error in processing the input string, then the exception will be propigated
+    * to the caller.
+    * Importantly, the underlying format assumes that lines are either:
+    * - empty
+    * - have 9 tab-separated values (a TokenLine)
+    * - have 3 tab-separated values (a RelationLine)
+    * If one of the above 3 conditions does _not_ apply, an IllegalArgumentException is thrown.
+    * */
+  def parseLine(line: String): Line =
+    if (line.isEmpty)
+      Break
+    else {
+      val bits = line.split("\t")
+      bits.length match {
+
+        case 9 =>
+          TokenLine(
+            bits(0).toInt,
+            bits(1).toUpperCase,
+            bits(2).toInt,
+            bits(4),
+            bits(5)
+          )
+
+        case 3 =>
+          RelationLine(
+            bits(0).toInt,
+            bits(1).toInt,
+            bits(2)
+          )
+
+        case unknownFieldNumber =>
+          throw new IllegalArgumentException(
+            s"Expedcting either 3 or 9 tab-separated parts, " +
+              s"not $unknownFieldNumber")
+      }
+    }
+
+  def labeledSentencesFromLines(lines: Traversable[Line]): Traversable[LabeledSentence] = {
+
+    class MutableAccumulator(val tokenLines: ArrayBuffer[TokenLine] = ArrayBuffer.empty,
+                             val relationLines: ArrayBuffer[RelationLine] = ArrayBuffer.empty,
+                             val finished: ArrayBuffer[LabeledSentence] = ArrayBuffer.empty,
+                             var seenOneBreak: Boolean = false)
+
+    val result = lines.foldLeft(new MutableAccumulator()) {
+      case (mutableAccum, line) =>
+        line match {
+
+          case Break =>
+            if(mutableAccum.seenOneBreak) {
+              // we've already seen one break before, this means we're AFTER the relation line
+              // therefore we've finished the sentence
+              val sentence = sentenceFrom(mutableAccum.tokenLines)
+              val relationsOf = mutableAccum.relationLines.toIndexedSeq
+              mutableAccum.finished.append((sentence, relationsOf))
+              // reset state
+              mutableAccum.tokenLines.clear()
+              mutableAccum.relationLines.clear()
+              mutableAccum.seenOneBreak = false
+
+            } else {
+              // first time seeing a break for the current sentence & relation label processing,
+              // this means that we're in-between the sentence's token lines and the relation lines
+              mutableAccum.seenOneBreak = true
+            }
+
+          case tl: TokenLine =>
+            mutableAccum.tokenLines.append(tl)
+
+          case rl: RelationLine =>
+            mutableAccum.relationLines.append(rl)
+        }
+        mutableAccum
+    }
+
+    if(result.tokenLines.nonEmpty && result.relationLines.nonEmpty) {
+      // get the last one, if there's still something left in the buffer
+      val sentence = sentenceFrom(result.tokenLines)
+      val relationsOf = result.relationLines.toIndexedSeq
+      result.finished.append((sentence, relationsOf))
+    }
+
+    result.finished.toIndexedSeq
+  }
+
+  def sentenceFrom(tls: Seq[TokenLine]): Sentence =
+    Sentence(
+      tls.map(_.word).map { _.replaceAll("/", " ")},
+      Some(tls.map(_.posTag)),
+      Some(tls.map(_.neTag))
+    )
+
+}
