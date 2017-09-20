@@ -1,11 +1,11 @@
 package org.rex.text
 
+import org.rex.SharedTestingData._
 import org.scalatest.FunSuite
 
 class TextProcessorTest extends FunSuite {
 
   import NPChunkingTest._
-  import TextProcessorTest._
 
   private val textProcessor = TextProcessorTest
 
@@ -38,18 +38,23 @@ class TextProcessorTest extends FunSuite {
     })
 
     import NeTagSet.Default4Class._
-    testChunk(johnSmithDoc.sentences.zipWithIndex.map(x => (x._1, Some(johnSmithChunked(x._2)))))
+    testChunk(johnSmithDoc.sentences.zipWithIndex.map { x =>
+      (x._1, Some(johnSmithChunked(x._2)))
+    })
   }
 
   test("NP chunking") {
-    testChunk(johnSmithSentences.zipWithIndex.map(x => (x._1, Some(johnSmithChunked(x._2)))))
+    import NeTagSet.Default4Class._
+    testChunk(johnSmithSentences.zipWithIndex.map { x =>
+      (x._1, Some(johnSmithChunked(x._2)))
+    })
   }
 
 }
 
 object TextProcessorTest extends TextProcessor {
 
-  override val conf = ProcessingConf.DefaultProcConf.procConf
+  override val conf: ProcessingConf = ProcessingConf.DefaultProcConf.procConf
 
   private lazy val sharedCoreNlpProcessor = CoreNlpTextProcessor(conf)
 
@@ -67,7 +72,8 @@ object TextProcessorTest extends TextProcessor {
 
     assert(
       expectedDoc.sentences.size == processedDoc.sentences.size,
-      s"sentence count mismatch: expecting ${expectedDoc.sentences.size} actual ${processedDoc.sentences.size}"
+      s"sentence count mismatch: expecting ${expectedDoc.sentences.size} " +
+        s"actual ${processedDoc.sentences.size}"
     )
 
     def checkSeqs(seq1: Seq[String], seq2: Seq[String], message: String): List[Error] =
@@ -84,15 +90,14 @@ object TextProcessorTest extends TextProcessor {
           })
       else
         List(
-          s"[$message] Sequences did not match because they have different sizes: ${seq1.size} vs ${seq1.size}")
+          s"[$message] Sequences did not match because they have different sizes: " +
+            s"${seq1.size} vs ${seq1.size}")
 
     val sentenceErrors =
       expectedDoc.sentences
         .zip(processedDoc.sentences)
-        .zipWithIndex
-        .foldLeft(List.empty[Error])({
-
-          case (errors, ((sExpected, sProcessed), index)) =>
+        .foldLeft(List.empty[Error]) {
+          case (errors, (sExpected, sProcessed)) =>
             val newErrors = List(
               checkSeqs(
                 sExpected.tokens,
@@ -112,7 +117,7 @@ object TextProcessorTest extends TextProcessor {
             )
 
             errors ++ newErrors.flatten
-        })
+        }
 
     assert(
       sentenceErrors.isEmpty,
@@ -120,47 +125,4 @@ object TextProcessorTest extends TextProcessor {
          |${sentenceErrors.mkString(" ; ")}""".stripMargin
     )
   }
-
-  type Error = String
-
-  /////////////////////////////////////////////////////////////////////////////////////////////////
-
-  val insurgentsText = TextFeatuerizerTest.insurgentsText
-
-  val insurgentsTokens = Seq("Insurgents", "killed", "in", "ongoing", "fighting", ".")
-
-  val insurgentsEntities = insurgentsTokens.map(ignore => "O")
-
-  val insurgentsTags = Seq("NNS", "VBN", "IN", "JJ", "NN", ".")
-
-  /////////////////////////////////////////////////////////////////////////////////////////////////
-
-  val johnSmithText = "John Smith went to China. He visited Beijing, on January 10th, 2013."
-
-  val johnSmithTokens = Seq(
-    Seq("John", "Smith", "went", "to", "China", "."),
-    Seq("He", "visited", "Beijing", ",", "on", "January", "10th", ",", "2013", ".")
-  )
-
-  val johnSmithEntites = Seq(
-    Seq("PERSON", "PERSON", "O", "O", "LOCATION", "O"),
-    Seq("O", "O", "LOCATION", "O", "O", "DATE", "DATE", "DATE", "DATE", "O")
-  )
-
-  val johnSmithTags = Seq(
-    Seq("NNP", "NNP", "VBD", "TO", "NNP", "."),
-    Seq("PRP", "VBD", "NNP", ",", "IN", "NNP", "JJ", ",", "CD", ".")
-  )
-
-  val johnSmithSentences = (0 until johnSmithTokens.size).map(index =>
-    Sentence(johnSmithTokens(index), Some(johnSmithTags(index)), Some(johnSmithEntites(index))))
-
-  val johnSmithDoc = Document("john smith sentences", johnSmithSentences)
-
-  val johnSmithChunked = Seq(
-    Seq("John Smith", "went", "to", "China", "."),
-    Seq("He", "visited", "Beijing", ",", "on", "January 10th, 2013", ".")
-  )
-
-  /////////////////////////////////////////////////////////////////////////////////////////////////
 }

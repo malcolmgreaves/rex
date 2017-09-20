@@ -1,24 +1,25 @@
 package org.rex.relation_extract
 
 import nak.data.FeatureObservation
-import org.rex.text.{SentenceViewFilter, WordFilter, WordView}
 import org.scalatest.FunSuite
+
+import org.rex.text.WordFilter.Fn
+import org.rex.text.{SentenceViewFilter, WordFilter, WordView}
+import org.rex.SharedTestingData._
 
 class TextFeatuerizerTest extends FunSuite {
 
   import TextFeatuerizerTest._
 
-  ////////////////////////////////////////////////////////////////////////////////
-
   def testInsideFeatures(expected: Set[String], actual: Set[String]): Unit = {
     val diff = expected.diff(actual)
     val intersection = expected.intersect(actual)
     assert(
-      diff.size == 0
-        && intersection.size == expected.size
-        && intersection.size == actual.size,
-      s"""Features did not match\nDifference: ${diff.mkString(" : ")}\nIntersection: ${intersection
-        .mkString(" : ")}"""
+      diff.isEmpty &&
+        intersection.size == expected.size &&
+        intersection.size == actual.size,
+      s"""Features did not match\nDifference: ${diff.mkString(" : ")}
+         |Intersection: ${intersection.mkString(" : ")}""".stripMargin
     )
   }
 
@@ -50,8 +51,6 @@ class TextFeatuerizerTest extends FunSuite {
       InsideFeatures(insideConf2skip2gram)(undersizedSeq).toSet
     )
   }
-
-  ////////////////////////////////////////////////////////////////////////////////
 
   def testAdjacentFeatures(expectedFeatures: Seq[String], actualFeatures: Seq[String]): Unit =
     assert(
@@ -110,11 +109,9 @@ class TextFeatuerizerTest extends FunSuite {
         ))
   }
 
-  ////////////////////////////////////////////////////////////////////////////////
-
   import CandGenTest.insurgentsCandidatesSentence
 
-  test("featuerizer on simple undersized sentence case (inside 4-skip 2-grams + adjacent 2-grams)") {
+  test("featurizer on simple undersized sentence (inside 4-skip 2-grams + adjacent 2-grams)") {
 
     val candidate =
       insurgentsCandidatesSentence
@@ -130,13 +127,14 @@ class TextFeatuerizerTest extends FunSuite {
 
       case Some(error) =>
         fail(
-          s"Candidate: $candidate = (${candidate.queryW}, ${candidate.answerW}) Featurization Error:\n$error")
+          s"Candidate: $candidate = (${candidate.queryW}, ${candidate.answerW}) " +
+            s"Featurization Error:\n$error")
 
       case None => () // success!
     }
   }
 
-  test("full-on Featuerizer using candidates (inside 2-skip 2-grams + adjacent 2-grams)") {
+  test("full-on featuerizer using candidates (inside 2-skip 2-grams + adjacent 2-grams)") {
 
     val featuerized =
       insurgentsCandidatesSentence
@@ -163,48 +161,14 @@ class TextFeatuerizerTest extends FunSuite {
 }
 
 object TextFeatuerizerTest {
-  ////////////////////////////////////////////////////////////////////////////////
-
-  val insurgentsText = "Insurgents killed in ongoing fighting."
-  val insurgentsSeq = Seq("Insurgents", "killed", "in", "ongoing", "fighting")
-
-  val insurgentsUnigrams = Set("Insurgents", "killed", "in", "ongoing", "fighting")
-  val insurgentsBigrams = Set("Insurgents,killed", "killed,in", "in,ongoing", "ongoing,fighting")
-  val insurgentsTrigrams = Set("Insurgents,killed,in", "killed,in,ongoing", "in,ongoing,fighting")
-
-  val insurgents1skipBigrams = Set("Insurgents,killed",
-                                   "killed,in",
-                                   "in,ongoing",
-                                   "ongoing,fighting",
-                                   "Insurgents,in",
-                                   "killed,ongoing",
-                                   "in,fighting")
-  val insurgents2skipBigrams = Set("Insurgents,killed",
-                                   "killed,in",
-                                   "in,ongoing",
-                                   "ongoing,fighting",
-                                   "Insurgents,in",
-                                   "killed,ongoing",
-                                   "in,fighting",
-                                   "Insurgents,ongoing",
-                                   "killed,fighting")
-
-  ////////////////////////////////////////////////////////////////////////////////
-
-  val undersizedText = "hello world"
-  val undersizedSeq = Seq("hello", "world")
-
-  val undersizedGrams = Set("hello", "world", "hello,world")
-
-  ////////////////////////////////////////////////////////////////////////////////
 
   val insideConf2skip2gram = InsideFeatures(2, 2)
   val insideConf4skip2gram = InsideFeatures(2, 4)
 
   val adjacentConf2gram = AdjacentFeatures(2)
 
-  val wordFilter = WordFilter.noKnownPunct
-  val wordView = WordView.lowercase
+  val wordFilter: Fn = WordFilter.noKnownPunct
+  val wordView: WordView.Fn = WordView.lowercase
 
   val featuerizer2skip2gram2gram = CandidateFeatuerizer(
     Some((adjacentConf2gram, SentenceViewFilter.noKnownPunctLowercase)),
@@ -219,7 +183,7 @@ object TextFeatuerizerTest {
   ////////////////////////////////////////////////////////////////////////////////
 
   def featuresAsStrSet(fs: Seq[FeatureObservation[String]]): Set[String] =
-    fs.map(_.feature).toSet
+    fs.map { _.feature }.toSet
 
   // query -> answer -> Set(FeatureObservation)
   // for sentence text "Insurgents killed in ongoing fighting."
@@ -256,8 +220,6 @@ object TextFeatuerizerTest {
     )
   )
 
-  type Error = String
-
   def checkCandidate(groundTruth: Map[String, Map[String, Seq[String]]])(
       query: String,
       answer: String,
@@ -284,5 +246,4 @@ object TextFeatuerizerTest {
     }
 
   }
-
 }
