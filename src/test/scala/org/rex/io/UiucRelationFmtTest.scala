@@ -176,7 +176,7 @@ object UiucRelationFmtTest {
 
   val expectedTextRelationInfo: Seq[(String, Int, Seq[RelationLine])] = Seq(
     (
-      "In 1969, James Earl Ray pleaded guilty in Memphis, Tenn. to the assassination of civil rights leader Martin Luther King Junior.",
+      "In 1969, James Earl Ray pleaded guilty in Memphis, Tenn., to the assassination of civil rights leader Martin Luther King Junior.",
       18,
       Seq(RelationLine(arg1TokenIndex = 3, arg2TokenIndex = 16, relation = "kill"))
     ),
@@ -186,7 +186,7 @@ object UiucRelationFmtTest {
       Seq(RelationLine(arg1TokenIndex = 4, arg2TokenIndex = 10, relation = "kill"))
     ),
     (
-      "Leroy Ivy of Oxford and his brother John Henry Ivy of Tupelo were indicted this month on a charge of conspiracy to murder Lee Counter Circuit Judge Thomas Gardner III.",
+      "Leroy Ivy of Oxford and his brother John Henry Ivy of Tupelo were indicted this month on a charge of conspiracy to murder Lee County Circuit Judge Thomas Gardner III.",
       21,
       Seq(
         RelationLine(arg1TokenIndex = 1, arg2TokenIndex = 20, relation = "kill"),
