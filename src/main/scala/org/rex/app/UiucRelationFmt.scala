@@ -97,7 +97,7 @@ object UiucRelationFmt {
         line match {
 
           case Break =>
-            if(mutableAccum.seenOneBreak) {
+            if (mutableAccum.seenOneBreak) {
               // we've already seen one break before, this means we're AFTER the relation line
               // therefore we've finished the sentence
               val sentence = sentenceFrom(mutableAccum.tokenLines)
@@ -123,7 +123,7 @@ object UiucRelationFmt {
         mutableAccum
     }
 
-    if(result.tokenLines.nonEmpty && result.relationLines.nonEmpty) {
+    if (result.tokenLines.nonEmpty && result.relationLines.nonEmpty) {
       // get the last one, if there's still something left in the buffer
       val sentence = sentenceFrom(result.tokenLines)
       val relationsOf = result.relationLines.toIndexedSeq
@@ -135,7 +135,7 @@ object UiucRelationFmt {
 
   def sentenceFrom(tls: Seq[TokenLine]): Sentence =
     Sentence(
-      tls.map(_.word).map { _.replaceAll("/", " ")},
+      tls.map(_.word).map { _.replaceAll("/", " ") },
       Some(tls.map(_.posTag)),
       Some(tls.map(_.neTag))
     )

@@ -444,7 +444,7 @@ object RelationExtractionLearningMain {
           nEmpty
     }
     if (nInvalidExamples != 0) {
-      println(s"ERROR:: found ${nInvalidExamples} examples that were empty!!")
+      println(s"ERROR:: found $nInvalidExamples examples that were empty!!")
     }
 
     if (verbose) {
