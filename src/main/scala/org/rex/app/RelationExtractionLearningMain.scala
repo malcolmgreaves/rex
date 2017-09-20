@@ -3,42 +3,50 @@ package org.rex.app
 import java.io.File
 import java.util.Random
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicBoolean
 
 import nak.liblinear.{LiblinearConfig, SolverType}
 import org.rex.app.Connl04Format._
-import org.rex._
 import scopt.OptionParser
+import org.rex._
 import org.rex.RelationLearner.{TrainingData => RelLearnTrainingData}
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.Duration
 import scala.language.{existentials, implicitConversions, postfixOps}
 
+case class RelConfig(cmd: Command)
+
 sealed trait Command
 
 case class Learning(labeledInput: File,
                     reader: Reader[File, LabeledSentence]#Fn,
                     doCandGen: Boolean = true,
-                    modelOut: Option[File],
+                    modelOut: File,
                     cost: Option[Double],
                     eps: Option[Double])
     extends Command
 
 case class Evaluation(labeledInput: File,
                       reader: Reader[File, LabeledSentence]#Fn,
-                      modelIn: Option[File],
+                      modelIn: File,
                       evalOut: Option[File],
                       maybeNFolds: Option[Int])
     extends Command
 
-case class Extraction(rawInput: File,
-                      reader: Reader[Any, Any],
-                      modelIn: Option[File],
-                      extractOut: Option[File])
+case class LearnEvaluate(labeledInput: File,
+                         reader: Reader[File, LabeledSentence]#Fn,
+                         doCandGen: Boolean = true,
+                         modelOut: File,
+                         maybeNFolds: Option[Int],
+                         cost: Option[Double],
+                         eps: Option[Double])
     extends Command
 
-case class RelConfig(cmd: Command)
+case class Extraction(rawInput: File,
+                      reader: Reader[Any, Any],
+                      modelIn: File,
+                      extractOut: Option[File])
+    extends Command
 
 object RelationExtractionLearningMain {
 
@@ -57,7 +65,7 @@ object RelationExtractionLearningMain {
             cmd = Learning(labeledInput = null,
                            reader = null,
                            doCandGen = false,
-                           modelOut = None,
+                           modelOut = null,
                            cost = None,
                            eps = None))
         }
@@ -70,7 +78,7 @@ object RelationExtractionLearningMain {
           c.copy(
             cmd = Evaluation(labeledInput = null,
                              reader = null,
-                             modelIn = None,
+                             modelIn = null,
                              evalOut = None,
                              maybeNFolds = None))
         }
@@ -78,11 +86,24 @@ object RelationExtractionLearningMain {
           "\tApp will evaluate a relation extraction model on gold-standard, labeled relations.\n" +
             "\tOne of three possible commands.")
 
+      cmd("learn_eval")
+        .optional()
+        .action { (_, c) =>
+          c.copy(
+            cmd = LearnEvaluate(labeledInput = null,
+                                reader = null,
+                                doCandGen = false,
+                                modelOut = null,
+                                maybeNFolds = None,
+                                cost = None,
+                                eps = None))
+        }
+
       cmd("extraction")
         .optional()
         .action { (_, c) =>
           c.copy(
-            cmd = Extraction(rawInput = null, reader = null, modelIn = None, extractOut = None))
+            cmd = Extraction(rawInput = null, reader = null, modelIn = null, extractOut = None))
         }
         .text("\tApp will perform relation extraction using a previously learned model.\n" +
           "\tOne of three possible commands.")
@@ -95,6 +116,7 @@ object RelationExtractionLearningMain {
           c.copy(cmd = c.cmd match {
             case cmd: Learning => cmd.copy(labeledInput = li)
             case cmd: Evaluation => cmd.copy(labeledInput = li)
+            case cmd: LearnEvaluate => cmd.copy(labeledInput = li)
             case _ =>
               throw new IllegalStateException(
                 s"labeled_input is invalid for command ${c.cmd.getClass}")
@@ -113,6 +135,7 @@ object RelationExtractionLearningMain {
               c.copy(cmd = c.cmd match {
                 case cmd: Learning => cmd.copy(reader = r)
                 case cmd: Evaluation => cmd.copy(reader = r)
+                case cmd: LearnEvaluate => cmd.copy(reader = r)
                 case cmd: Extraction => cmd.copy(reader = r.asInstanceOf[Reader[Any, Any]])
                 case _ =>
                   throw new IllegalStateException(s"Unknown Command type: ${c.cmd.getClass}")
@@ -132,7 +155,7 @@ object RelationExtractionLearningMain {
         .text("Path to where the trained relation classifier and pipeline config should be saved.")
         .action { (mo, c) =>
           c.copy(cmd = c.cmd match {
-            case cmd: Learning => cmd.copy(modelOut = Some(mo))
+            case cmd: Learning => cmd.copy(modelOut = mo)
             case _ =>
               throw new IllegalStateException(
                 s"model_output invalid for command: ${c.cmd.getClass}")
@@ -148,6 +171,7 @@ object RelationExtractionLearningMain {
         .action { (cg, c) =>
           c.copy(cmd = c.cmd match {
             case cmd: Learning => cmd.copy(doCandGen = cg)
+            case cmd: LearnEvaluate => cmd.copy(doCandGen = cg)
             case _ =>
               throw new IllegalStateException(
                 s"candidate_generation_train invalid for command: ${c.cmd.getClass}")
@@ -162,6 +186,7 @@ object RelationExtractionLearningMain {
         .action { (cost, c) =>
           c.copy(cmd = c.cmd match {
             case cmd: Learning => cmd.copy(cost = Some(cost))
+            case cmd: LearnEvaluate => cmd.copy(cost = Some(cost))
             case _ =>
               throw new IllegalStateException(s"cost invalid for command: ${c.cmd.getClass}")
           })
@@ -176,6 +201,7 @@ object RelationExtractionLearningMain {
         .action { (eps, c) =>
           c.copy(cmd = c.cmd match {
             case cmd: Learning => cmd.copy(eps = Some(eps))
+            case cmd: LearnEvaluate => cmd.copy(eps = Some(eps))
             case _ =>
               throw new IllegalStateException(s"epsilon invalid for command: ${c.cmd.getClass}")
           })
@@ -189,6 +215,7 @@ object RelationExtractionLearningMain {
         .action { (nFolds, c) =>
           c.copy(cmd = c.cmd match {
             case cmd: Evaluation => cmd.copy(maybeNFolds = Some(nFolds))
+            case cmd: LearnEvaluate => cmd.copy(maybeNFolds = Some(nFolds))
             case _ =>
               throw new IllegalStateException(s"n_cv_folds invalid for command: ${c.cmd.getClass}")
           })
@@ -201,9 +228,26 @@ object RelationExtractionLearningMain {
 
       case Some(config) =>
         validate(config)
-        implicit val r = new Random()
+
+        implicit val _ = new Random()
         import scala.concurrent.ExecutionContext.Implicits.global
-        main_action(config)
+        process_command(
+          cmd = config.cmd,
+          featurizer = CandidateFeatuerizer(
+            Some(
+              (
+                AdjacentFeatures(2),
+                SentenceViewFilter.noKnownPunctLowercase
+              )),
+            Some(
+              (
+                InsideFeatures(2, 4),
+                WordFilter.noKnownPunct,
+                WordView.lowercase
+              ))
+          ),
+          verbose = true
+        )
 
       case None =>
         // arguments are bad, error message will have been displayed
@@ -213,184 +257,236 @@ object RelationExtractionLearningMain {
 
   /** Validates a configuration: exits with status code 1 if invalid. */
   def validate(config: RelConfig): Unit = {
-    if (!(config.lr.isDefined || config.ev.isDefined || config.ex.isDefined)) {
-      println(
-        "ERROR: One of LearningCmd (learning), " +
-          "EvaluationCmd (evaluation), " +
-          "or ExtractionCmd (extraction) " +
-          "must be supplied as the <COMMAND>.\n")
-      parser.showUsage
+
+    if (config == null) {
+      println("Configuration cannot be null")
       System.exit(1)
     }
 
-    if (config.cmd == Learning && config.lr.get.modelOut.isEmpty) {
-      println(
-        "ERROR: Command is \"learning\" and " +
-          "no model output path is specified.\n")
-      parser.showUsage
-      System.exit(1)
+    config.cmd match {
+      case lr: Learning =>
+        if (lr.modelOut == null) {
+          println(
+            "ERROR: Command is \"learning\" and " +
+              "no model output path is specified.\n")
+          parser.showUsage
+          System.exit(1)
+
+        } else if (lr.modelOut.exists()) {
+          println("ERROR: model_output already exists!")
+          System.exit(1)
+        }
+
+      case ev: Evaluation =>
+        if (ev.modelIn == null) {
+          println("ERROR: evaluation command needs input model")
+          parser.showUsage
+          System.exit(1)
+
+        } else if (!ev.modelIn.exists()) {
+          println("ERROR: model input doesn't exist")
+          System.exit(1)
+        }
+
+      case le: LearnEvaluate =>
+        ()
+
+      case ex: Extraction =>
+        if (ex.modelIn == null) {
+          println("ERROR: extraction command needs input model")
+          parser.showUsage
+          System.exit(1)
+
+        } else if (!ex.modelIn.exists()) {
+          println("ERROR: model input doesn't exist")
+          System.exit(1)
+        }
+
+      case _ =>
+        print(s"ERROR: unknown command type: ${config.cmd}")
+        System.exit(1)
     }
   }
 
   /** The application logic. Assumes configuration is valid. */
-  def main_action(config: RelConfig)(implicit rand: Random, ec: ExecutionContext): Unit = {
-    val featurizer =
-      CandidateFeatuerizer(
-        Some(
-          (
-            AdjacentFeatures(2),
-            SentenceViewFilter.noKnownPunctLowercase
-          )),
-        Some(
-          (
-            InsideFeatures(2, 4),
-            WordFilter.noKnownPunct,
-            WordView.lowercase
-          ))
-      )
+  def process_command(cmd: Command, featurizer: TextFeatuerizer[Candidate]#Fn, verbose: Boolean)(
+      implicit rand: Random,
+      ec: ExecutionContext): Unit =
+    cmd match {
 
-    val maybeModelTrainData: Option[(MultiLearner, RelLearnTrainingData, () => MultiEstimator)] =
-      config.lr.map {
-        case Learning(labeledInput, reader, doCG, modelOut, cost, eps) =>
-          val labeledSentences = reader(labeledInput)
-          println(s"Obtained ${labeledSentences.size} sentences")
-          println(s"Of those, ${labeledSentences.count(_._2.nonEmpty)} are labeled")
+      case Learning(labeledInput, reader, doCG, modelOut, cost, eps) =>
+        val labeledData = createLabeledData(labeledInput, reader, doCG, verbose = verbose)
+        val rlearners = createRelationLearnerFuncs(createRelations(labeledData, verbose = verbose),
+                                                   featurizer,
+                                                   cost = cost,
+                                                   eps = eps)
+        val estimators = trainEstimator(rlearners, labeledData, verbose = verbose)
+        saveEstimators(modelOut, estimators)
 
-          val candgen = mkStdCandGen(labeledSentences)
+      case LearnEvaluate(labeledInput, reader, doCG, modelOut, maybeNFolds, cost, eps) =>
+        val labeledData = createLabeledData(labeledInput, reader, doCG = doCG, verbose = verbose)
+        val rlearners = createRelationLearnerFuncs(createRelations(labeledData, verbose = verbose),
+                                                   featurizer,
+                                                   cost = cost,
+                                                   eps = eps)
 
-          println(s"Making training data with sentence-based candidate generation? $doCG")
-          val labeledData =
-            if (doCG)
-              mkTrainData(candgen, labeledSentences, noRelation)
-            else
-              mkPositiveTrainData(labeledSentences)
-          println(s"A total of ${labeledData.size} candidates, of which " +
-            s"${(labeledData.count(_._2 != noRelation) / labeledData.size.toDouble) * 100.0} % " +
-            s"are labeled.")
+        val nFolds = maybeNFolds.getOrElse(4)
+        val dataTrainTest =
+          if (nFolds == 1) {
+            if (verbose) {
+              println(s"Performing train-test with 75% train")
+            }
+            trainTestSplit(labeledData, 0.75)
 
-          val relations = labeledData.foldLeft(Set.empty[RelationLearner.Label]) {
-            case (rs, (_, rel)) => rs + rel
-          }
-          println(s"""There are ${relations.size} relations:\n\t${relations.mkString("\n\t")}""")
-
-          val sourceRelationLearner = RelationLearner(
-            LiblinearConfig(
-              solverType = SolverType.L1R_L2LOSS_SVC,
-              cost = cost.getOrElse(8.5),
-              eps = eps.getOrElse(0.001),
-              showDebug = false
-            ),
-            featurizer
-          )
-
-          val rlearners: MultiLearner =
-            relations
-              .map(r => (r, sourceRelationLearner))
-              .toMap
-
-          val trainModel = {
-            val calledAtLeastOnce = new AtomicBoolean()
-            () =>
-              {
-                val start = System.currentTimeMillis()
-                val estimators = trainLearners(rlearners, labeledData)
-                val end = System.currentTimeMillis()
-                println(
-                  s"finished training in ${Duration(end - start, TimeUnit.MILLISECONDS).toMinutes} " +
-                    s"minutes (${end - start} ms)")
-
-                modelOut.foreach { mo =>
-                  if (calledAtLeastOnce.getAndSet(true))
-                    println(
-                      s"WARNING: Model serialization & deserialization is not implemented. " +
-                        s"NOT saving model to: $mo")
-                }
-
-                estimators
-              }
-
+          } else {
+            if (verbose) {
+              println(s"Performing $nFolds-fold cross validation")
+            }
+            mkCrossValid(labeledData, nFolds)
           }
 
-          (rlearners, labeledData, trainModel)
-      }
+        dataTrainTest.toSeq.zipWithIndex
+          .foreach {
 
-    config.ev.foreach {
-      case Evaluation(labeledInput, reader, modelIn, evalOut, maybeNFolds) =>
-        maybeModelTrainData match {
+            case ((train, test), fIndex) =>
+              val start_fold = System.currentTimeMillis()
 
-          case Some((rlearners, labeledData, completeEstimators)) =>
-            println(
-              s"Ignoring Evaluation's labeledInput in favor of " +
-                s"LearningCmd's labeledInput\n(ignored: $labeledInput)")
-
-            val nFolds = maybeNFolds.getOrElse(4)
-            val dataTrainTest =
-              if (nFolds == 1) {
-                println(s"Performing train-test with 75% train")
-                trainTestSplit(labeledData, 0.75)
-
-              } else {
-                println(s"Performing $nFolds-fold cross validation")
-                mkCrossValid(labeledData, nFolds)
+              val fold = fIndex + 1
+              if (verbose) {
+                println(s"#$fold/$nFolds : Begin Training & testing")
               }
 
-            dataTrainTest.toSeq.zipWithIndex
-              .foreach {
+              val estimators = trainEstimator(rlearners, labeledData = train, verbose = verbose)
 
-                case ((train, test), fIndex) =>
-                  val fold = fIndex + 1
-                  println(s"#$fold/$nFolds : Begin Training & testing")
-                  val start = System.currentTimeMillis()
-
-                  val estimators = trainLearners(rlearners, train)
-
-                  val numberCorrectPredictions =
-                    test
-                      .foldLeft(0) {
-                        case (nCorrect, (instance, label)) =>
-                          val predicted =
-                            Learning
-                              .argmax(
-                                estimators
-                                  .map {
-                                    case (r, estimator) =>
-                                      (r, estimator(instance).result.head)
-                                  }
-                              )(Learning.TupleVal2[String])
-                              ._1
-
-                          if (predicted == label)
-                            nCorrect + 1
-                          else
-                            nCorrect
+              val numberCorrectPredictions =
+                test
+                  .foldLeft(0) {
+                    case (nCorrect, (instance, label)) =>
+                      val estimatesPerRelation = estimators.map {
+                        case (r, estimator) =>
+                          (r, estimator(instance).result.head)
                       }
+                      val predicted =
+                        Learning.argmax(estimatesPerRelation)(Learning.TupleVal2[String])._1
+                      if (predicted == label)
+                        nCorrect + 1
+                      else
+                        nCorrect
+                  }
 
-                  val end = System.currentTimeMillis()
+              val end_fold = System.currentTimeMillis()
+              println(
+                s"#$fold/$nFolds : Completed in " +
+                  s"${Duration(end_fold - start_fold, TimeUnit.MILLISECONDS).toMinutes} minutes " +
+                  s"(${end_fold - start_fold} ms)" +
+                  "\n" +
+                  s"#$fold/$nFolds correct $numberCorrectPredictions out of ${test.size} : " +
+                  s"accuracy: ${(numberCorrectPredictions.toDouble / test.size) * 100.0}")
+          }
 
-                  println(
-                    s"#$fold/$nFolds : Completed in " +
-                      s"${Duration(end - start, TimeUnit.MILLISECONDS).toMinutes} minutes " +
-                      s"(${end - start} ms)" +
-                      "\n" +
-                      s"#$fold/$nFolds correct $numberCorrectPredictions out of ${test.size} : " +
-                      s"accuracy: ${(numberCorrectPredictions.toDouble / test.size) * 100.0}")
-              }
+      case _: Evaluation =>
+        throw new IllegalStateException("Evaluation unimplemented !!!")
 
-          case None =>
-            throw new RuntimeException(
-              "ERROR: Evaluation from serialized model is not implemented.")
-        }
+      case _: Extraction =>
+        throw new IllegalStateException("Extraction is unimplemented!!")
 
-        evalOut.foreach { eo =>
-          println(s"WARNING: Evaluation output is not implemented. NOT writing evaluation to: $eo")
-        }
-
+      case _ =>
+        throw new IllegalStateException(s"ERROR: unknown command ${cmd.getClass}")
     }
 
-    config.ex.foreach {
-      case Extraction(rawInput, reader, modelIn, extractOut) =>
-        throw new RuntimeException("ERROR: Extraction command unimplemented.")
+  def createLabeledData(labeledInput: File,
+                        reader: Reader[File, LabeledSentence]#Fn,
+                        doCG: Boolean,
+                        verbose: Boolean = true): RelLearnTrainingData = {
+
+    val labeledSentences = reader(labeledInput)
+    if (verbose) {
+      println(s"Obtained ${labeledSentences.size} sentences")
+      println(s"Of those, ${labeledSentences.count(_._2.nonEmpty)} are labeled")
     }
+
+    val candgen = mkStdCandGen(labeledSentences)
+
+    if (verbose) {
+      println(s"Making training data with sentence-based candidate generation? $doCG")
+    }
+
+    val labeledData =
+      if (doCG)
+        mkTrainData(candgen, labeledSentences, noRelation)
+      else
+        mkPositiveTrainData(labeledSentences)
+
+    if (verbose) {
+      println(
+        s"A total of ${labeledData.size} candidates, of which " +
+          s"${(labeledData.count(_._2 != noRelation) / labeledData.size.toDouble) * 100.0} % " +
+          s"are labeled.")
+    }
+
+    labeledData
+  }
+
+  def createRelations(labeledData: RelLearnTrainingData,
+                      verbose: Boolean = true): Set[RelationLearner.Label] = {
+    val relations = labeledData.foldLeft(Set.empty[RelationLearner.Label]) {
+      case (rs, (_, rel)) => rs + rel
+    }
+    if (verbose) {
+      println(s"""There are ${relations.size} relations:\n\t${relations.mkString("\n\t")}""")
+    }
+    relations
+  }
+
+  def createRelationLearnerFuncs(relations: Set[RelationLearner.Label],
+                                 featurizer: TextFeatuerizer[Candidate]#Fn,
+                                 cost: Option[Double] = None,
+                                 eps: Option[Double] = None): MultiLearner = {
+    // a single binary relation learner constructor:
+    // when called, makes a new model that is able to learn a from +/- instances for a single
+    // relation type
+    val sourceRelationLearner = RelationLearner(
+      LiblinearConfig(
+        solverType = SolverType.L1R_L2LOSS_SVC,
+        cost = cost.getOrElse(8.5),
+        eps = eps.getOrElse(0.001),
+        showDebug = false
+      ),
+      featurizer
+    )
+
+    val rlearners: MultiLearner =
+      relations
+        .map(r => (r, sourceRelationLearner))
+        .toMap
+
+    rlearners
+  }
+
+  def trainEstimator(rlearners: MultiLearner,
+                     labeledData: RelLearnTrainingData,
+                     verbose: Boolean = true): MultiEstimator = {
+    val start = System.currentTimeMillis()
+    val estimators = trainLearners(rlearners, labeledData)
+    val end = System.currentTimeMillis()
+    if (verbose) {
+      println(
+        s"finished training in ${Duration(end - start, TimeUnit.MILLISECONDS).toMinutes} " +
+          s"minutes (${end - start} ms)")
+    }
+    estimators
+  }
+
+  def saveEstimators(model: File, estimator: MultiEstimator): Unit = {
+    print(
+      s"ERROR: Model serialization & deserialization is not implemented. " +
+        s"NOT saving model to: $model")
+  }
+
+  def loadEstimators(model: File): MultiEstimator = {
+    throw new IllegalStateException(
+      s"WARNING: Model serialization & deserialization is not implemented. " +
+        s"NOT saving model to: $model")
   }
 
 }
