@@ -91,11 +91,11 @@ object CandidateFeatuerizer extends TextFeatuerizer[Candidate] {
           if (lIndex - ngramSize < 0)
             nothingStr
           else
-            left(words, lIndex)(ngramSize),
+            AdjacentFeatures.left(words, lIndex)(ngramSize),
           if (rIndex + ngramSize >= words.size)
             nothingStr
           else
-            right(words, rIndex)(ngramSize)
+            AdjacentFeatures.right(words, rIndex)(ngramSize)
         )
     }
 

@@ -1,5 +1,9 @@
 package org.rex.text
 
+import edu.arizona.sista.processors.Processor
+import edu.arizona.sista.processors.corenlp.CoreNLPProcessor
+import edu.arizona.sista.processors.fastnlp.FastNLPProcessor
+
 object CoreNlpTextProcessor {
 
   // implicit conversion from a Sista project Document type to a REx project Document
@@ -17,13 +21,17 @@ object CoreNlpTextProcessor {
   def apply(pConf: ProcessingConf, corenlpProcessor: Processor): TextProcessor =
     new TextProcessor {
 
-      override val conf =
+      override val conf: ProcessingConf =
         pConf
 
       override def process(id: String, text: String): Document =
         (
           id, {
             val doc = corenlpProcessor.mkDocument(text)
+
+            // here, doc is mutable
+            // this is why we have these nested if statements w/o meaningful values
+            // in their respective blocks
 
             if (conf.tagSet.isDefined) {
               corenlpProcessor.tagPartsOfSpeech(doc)

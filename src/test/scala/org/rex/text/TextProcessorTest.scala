@@ -1,6 +1,5 @@
 package org.rex.text
 
-import org.rex.relation_extract.ProcessingConf
 import org.scalatest.FunSuite
 
 class TextProcessorTest extends FunSuite {
@@ -13,7 +12,8 @@ class TextProcessorTest extends FunSuite {
   test("text processing insurgents sentence") {
     val insurgentsDoc = textProcessor.process("", insurgentsText)
     assert(insurgentsDoc.sentences.size == 1, "expecting 1 sentence")
-    assert(insurgentsTokens == insurgentsDoc.sentences.head.tokens, "Tokenization doesn't match expected")
+    assert(insurgentsTokens == insurgentsDoc.sentences.head.tokens,
+           "Tokenization doesn't match expected")
     assert(insurgentsEntities == insurgentsDoc.sentences.head.entities.get, "NER doesn't match")
     assert(insurgentsTags == insurgentsDoc.sentences.head.tags.get, "POS tags don't match")
   }
@@ -24,20 +24,20 @@ class TextProcessorTest extends FunSuite {
     johnSmithTokens.zipWithIndex.foreach({
       case (expected, index) =>
         assert(expected == johnSmithDoc.sentences(index).tokens,
-          s"[John Smith sentence $index] expecting tokens to match up")
+               s"[John Smith sentence $index] expecting tokens to match up")
     })
     johnSmithEntites.zipWithIndex.foreach({
       case (expected, index) =>
         assert(expected == johnSmithDoc.sentences(index).entities.get,
-          s"[John Smith sentence $index] expecting named entities to match up")
+               s"[John Smith sentence $index] expecting named entities to match up")
     })
     johnSmithTags.zipWithIndex.foreach({
       case (expected, index) =>
         assert(expected == johnSmithDoc.sentences(index).tags.get,
-          s"[John Smith sentence $index] expecting part-of-speech tags to match up")
+               s"[John Smith sentence $index] expecting part-of-speech tags to match up")
     })
 
-    import org.rex.relation_extract.NeTagSet.Default4Class._
+    import NeTagSet.Default4Class._
     testChunk(johnSmithDoc.sentences.zipWithIndex.map(x => (x._1, Some(johnSmithChunked(x._2)))))
   }
 
@@ -59,10 +59,10 @@ object TextProcessorTest extends TextProcessor {
     }
 
   /**
-   * Relies upon testing assertions.
-   * If it successeds, then it return Unit.
-   * Otherwise it will fail the test
-   */
+    * Relies upon testing assertions.
+    * If it successeds, then it return Unit.
+    * Otherwise it will fail the test
+    */
   def testDocument(expectedDoc: Document, processedDoc: Document): Unit = {
 
     assert(
@@ -72,7 +72,8 @@ object TextProcessorTest extends TextProcessor {
 
     def checkSeqs(seq1: Seq[String], seq2: Seq[String], message: String): List[Error] =
       if (seq1.size == seq2.size)
-        seq1.zip(seq2)
+        seq1
+          .zip(seq2)
           .foldLeft(List.empty[Error])({
 
             case (errors, (s1, s2)) =>
@@ -82,15 +83,16 @@ object TextProcessorTest extends TextProcessor {
                 errors
           })
       else
-        List(s"[$message] Sequences did not match because they have different sizes: ${seq1.size} vs ${seq1.size}")
+        List(
+          s"[$message] Sequences did not match because they have different sizes: ${seq1.size} vs ${seq1.size}")
 
     val sentenceErrors =
-      expectedDoc.sentences.zip(processedDoc.sentences)
+      expectedDoc.sentences
+        .zip(processedDoc.sentences)
         .zipWithIndex
         .foldLeft(List.empty[Error])({
 
           case (errors, ((sExpected, sProcessed), index)) =>
-
             val newErrors = List(
               checkSeqs(
                 sExpected.tokens,
@@ -151,8 +153,7 @@ object TextProcessorTest extends TextProcessor {
   )
 
   val johnSmithSentences = (0 until johnSmithTokens.size).map(index =>
-    Sentence(johnSmithTokens(index), Some(johnSmithTags(index)), Some(johnSmithEntites(index)))
-  )
+    Sentence(johnSmithTokens(index), Some(johnSmithTags(index)), Some(johnSmithEntites(index))))
 
   val johnSmithDoc = Document("john smith sentences", johnSmithSentences)
 

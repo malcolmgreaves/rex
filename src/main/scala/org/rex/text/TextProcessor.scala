@@ -1,7 +1,5 @@
 package org.rex.text
 
-import org.rex.relation_extract.ProcessingConf
-
 /**
   * Adds structure to text.
   *

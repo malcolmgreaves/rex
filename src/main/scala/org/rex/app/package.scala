@@ -2,10 +2,10 @@ package org.rex
 
 import java.util.Random
 
-import org.rex.io.UiucRelationFmt._
 import org.rex.io.Reader
+import org.rex.io.UiucRelationFmt._
 import org.rex.relation_extract._
-import org.rex.text.WordFilter
+import org.rex.text._
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}

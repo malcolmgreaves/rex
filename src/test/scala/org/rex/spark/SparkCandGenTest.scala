@@ -30,14 +30,14 @@ class SparkCandGenTest extends SparkTestSuite {
         intersection.size == insurgentsCandidatesSentence.size &&
         intersection.size == createdCandidates.size
 
-    assert(test,
+    assert(
+      test,
       s"""Candidates did not match. Expecting ${insurgentsCandidatesSentence.size} actually have ${createdCandidates.size} candidates.\n""" +
-        s"""Difference: "${diff.mkString(" : ")}"\nIntersection: "${intersection.mkString(" : ")}""""
+        s"""Difference: "${diff.mkString(" : ")}"\nIntersection: "${intersection
+          .mkString(" : ")}""""
     )
   }
 
-  ignoreSparkTest("Spark Coreference-based Candidate Generation") {
-
-  }
+  ignoreSparkTest("Spark Coreference-based Candidate Generation") {}
 
 }

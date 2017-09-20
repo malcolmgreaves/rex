@@ -11,7 +11,8 @@ class SparkPipelineTest extends SparkTestSuite {
 
   sparkTest("spark data pipeline test") {
 
-    val pipeline = SparkDataPipeline(TextProcessorTest)(IdentityDocChunker)(sentCGNoKnownPunct)(featuerizer2skip2gram2gram)
+    val pipeline = SparkDataPipeline(TextProcessorTest)(IdentityDocChunker)(sentCGNoKnownPunct)(
+      featuerizer2skip2gram2gram)
 
     val errors =
       checkPipelineOutput(
@@ -26,7 +27,8 @@ class SparkPipelineTest extends SparkTestSuite {
               )
           })
           .filter(_._2.nonEmpty)
-          .collect().toSeq,
+          .collect()
+          .toSeq,
         idFeatureObs
       )
     val noErrorsTest = errors.isEmpty
@@ -37,4 +39,3 @@ class SparkPipelineTest extends SparkTestSuite {
   }
 
 }
-

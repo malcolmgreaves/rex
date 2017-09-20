@@ -3,7 +3,7 @@ package org.rex.relation_extract
 import java.time.Duration
 
 import nak.liblinear.LiblinearConfig
-import org.rex.text.{SentenceViewFilter, TextProcessorTest, WordFilter, WordView}
+import org.rex.text._
 import org.scalatest.FunSuite
 
 import scala.util.Try
@@ -43,7 +43,8 @@ class RelationLearnerTest extends FunSuite {
     val startC = System.currentTimeMillis()
     val candidates = candidatePipeln("bernie", bernieText)
     val endC = System.currentTimeMillis()
-    println(s"Took ${Duration.ofMillis(endC - startC).getSeconds} seconds (${endC - startC} ms) to generate ${candidates.size} candidates from ${bernieSentences.size} sentences.")
+    println(
+      s"Took ${Duration.ofMillis(endC - startC).getSeconds} seconds (${endC - startC} ms) to generate ${candidates.size} candidates from ${bernieSentences.size} sentences.")
 
     def clean(s: String) = s.replaceAll(" ", "")
 
@@ -88,12 +89,11 @@ class RelationLearnerTest extends FunSuite {
   }
 
   def checkInstanceLabelClassifiations(
-    classifier: Learning[Candidate, String]#Classifier,
-    d: Learning[Candidate, String]#TrainingData)(tf: Option[CandidateFeatuerizer.Fn]): Unit = {
+      classifier: Learning[Candidate, String]#Classifier,
+      d: Learning[Candidate, String]#TrainingData)(tf: Option[CandidateFeatuerizer.Fn]): Unit = {
 
     val errors =
-      d
-        .foldLeft(Seq.empty[String]) {
+      d.foldLeft(Seq.empty[String]) {
           case (errs, (instance, label)) =>
             val clazz = classifier(instance)
             if (clazz == label)
@@ -135,13 +135,42 @@ object RelationLearnerTest {
       notPunct
     )
 
-  val bernieText = "Sanders is an American politician. He was born on September 8, 1941. An independent politician since 1979, Sanders is associated with the Vermont Progressive Party and was a member of the Liberty Union Party from 1971 to 1979."
+  val bernieText =
+    "Sanders is an American politician. He was born on September 8, 1941. An independent politician since 1979, Sanders is associated with the Vermont Progressive Party and was a member of the Liberty Union Party from 1971 to 1979."
 
   val bernieSentences =
     Seq(
       Sentence(Seq("Sanders", "is", "an", "American", "politician", ".")),
       Sentence(Seq("He", "was", "born", "on", "September 8, 1941", ".")),
-      Sentence(Seq("An", "independent", "politician", "since", "1979", ",", "Sanders", "is", "associated", "with", "the", "Vermont", "Progressive", "Party", "and", "was", "a", "member", "of", "the", "Liberty Union Party", "from", "1971", "to", "1979", "."))
+      Sentence(
+        Seq(
+          "An",
+          "independent",
+          "politician",
+          "since",
+          "1979",
+          ",",
+          "Sanders",
+          "is",
+          "associated",
+          "with",
+          "the",
+          "Vermont",
+          "Progressive",
+          "Party",
+          "and",
+          "was",
+          "a",
+          "member",
+          "of",
+          "the",
+          "Liberty Union Party",
+          "from",
+          "1971",
+          "to",
+          "1979",
+          "."
+        ))
     )
 
   val bernieDoc = Document("bernie", bernieSentences)
@@ -161,7 +190,7 @@ object RelationLearnerTest {
         queryCorefWordIndex = 0,
         answerWordIndex = 4
       ),
-        bornInLabel
+      bornInLabel
     )
   )
 

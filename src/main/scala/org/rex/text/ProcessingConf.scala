@@ -1,4 +1,4 @@
-package org.rex.relation_extract
+package org.rex.text
 
 /**
   * Information about the configuration of a natural language parser.
@@ -21,7 +21,7 @@ object ProcessingConf {
 
   object DefaultProcConf {
 
-    implicit val procConf = ProcessingConf(
+    implicit val procConf: ProcessingConf = ProcessingConf(
       entSet = Some(NeTagSet.Default4Class.entSet),
       tagSet = Some(PosTagSet.DefaultPennTreebank.posSet),
       parse = true,
@@ -46,7 +46,7 @@ object NeTagSet {
   /** Contains implicit NamedEntitySet with PERSON, LOCATION, and ORGANIZATION tags and "" non-entity tag */
   object Default4Class {
 
-    implicit val entSet = NeTagSet(
+    implicit val entSet: NeTagSet = NeTagSet(
       tags = Set("PERSON", "LOCATION", "ORGANIZATION", "DATE"),
       nonEntityTag = "O"
     )
@@ -84,7 +84,7 @@ object PosTagSet {
 
   object DefaultPennTreebank {
 
-    implicit val posSet = PosTagSet(
+    implicit val posSet: PosTagSet = PosTagSet(
       punctuation = Set("$", "``", "''", "(", ")", ",", "--", ".", ":", "SYM"),
       adjectives = Set("JJ", "JJR", "JJS"),
       nouns = Set("NN", "NNP", "NNPS", "NNS"),
