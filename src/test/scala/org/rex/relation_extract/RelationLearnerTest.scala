@@ -1,18 +1,17 @@
-package org.rex
+package org.rex.relation_extract
 
 import java.time.Duration
 
 import nak.liblinear.LiblinearConfig
-import org.rex.relation_extract._
-import org.rex.text.{NerDocChunker, SentenceViewFilter, WordFilter, WordView}
+import org.rex.text.{SentenceViewFilter, TextProcessorTest, WordFilter, WordView}
 import org.scalatest.FunSuite
 
 import scala.util.Try
 
 class RelationLearnerTest extends FunSuite {
 
-  import TextFeatuerizerTest._
   import RelationLearnerTest._
+  import TextFeatuerizerTest._
 
   test("basic relation learning test: memorization") {
     val rlearner = RelationLearner(

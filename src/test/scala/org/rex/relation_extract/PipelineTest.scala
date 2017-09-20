@@ -1,8 +1,7 @@
-package org.rex
+package org.rex.relation_extract
 
 import nak.data.FeatureObservation
-import org.rex.relation_extract.{Pipeline, SentenceCandGen}
-import org.rex.text.{IdentityDocChunker, WordFilter}
+import org.rex.text.{IdentityDocChunker, TextProcessorTest, WordFilter}
 import org.scalatest.FunSuite
 
 class PipelineTest extends FunSuite {

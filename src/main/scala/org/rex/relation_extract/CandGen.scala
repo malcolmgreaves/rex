@@ -1,7 +1,6 @@
 package org.rex.relation_extract
 
-import org.rex._
-import org.rex.text.WordFilter
+import org.rex.text.{Document, Mention, WordFilter}
 
 object CandGen {
   type Fn = Document => Seq[Candidate]
@@ -13,35 +12,29 @@ object CandGen {
 case class SentenceCandGen(wordFilter: WordFilter.Fn) extends CandGen.Fn {
 
   override def apply(doc: Document): Seq[CandidateSentence] =
-    doc.sentences.flatMap(s => {
-
+    doc.sentences.flatMap { s =>
       val wf = wordFilter(s)
 
-      val filtWordIndices = s.tokens.zipWithIndex
-        .flatMap({
-          case (word, index) =>
-            if (wf(index))
-              Some(index)
-            else
-              None
-        })
+      val filtWordIndices = s.tokens.zipWithIndex.flatMap {
+        case (_, index) =>
+          Some(index).filter(wf)
+      }
 
-      filtWordIndices.flatMap(
-        queryIndex =>
-          filtWordIndices.flatMap(
-            answerIndex =>
-              if (queryIndex != answerIndex)
-                Some(CandidateSentence(s, queryIndex, answerIndex))
-              else
-              None))
-    })
+      filtWordIndices.flatMap { queryIndex =>
+        filtWordIndices.flatMap { answerIndex =>
+          if (queryIndex != answerIndex)
+            Some(CandidateSentence(s, queryIndex, answerIndex))
+          else
+            None
+        }
+      }
+    }
 }
 
 /**
   * Generates candidates using co-reference resolution information in the Document.
   */
-case class CorefCandGen(mentionFilt: WordFilter.Fn, candFilt: WordFilter.Fn)
-    extends CandGen.Fn {
+case class CorefCandGen(mentionFilt: WordFilter.Fn, candFilt: WordFilter.Fn) extends CandGen.Fn {
 
   private val candidateHelper = CorefCandGen.candidates_h(candFilt) _
 
@@ -50,9 +43,8 @@ case class CorefCandGen(mentionFilt: WordFilter.Fn, candFilt: WordFilter.Fn)
 
       case Some(corefMentions) =>
         corefMentions
-          .filter(_.mentions.size >= 2)
-          .flatMap(coref => {
-
+          .filter { _.mentions.size >= 2 }
+          .flatMap { coref =>
             val validMentions =
               coref.mentions
                 .filter(
@@ -60,39 +52,35 @@ case class CorefCandGen(mentionFilt: WordFilter.Fn, candFilt: WordFilter.Fn)
                     (mention.until - mention.from) == 1 && mentionFilt(
                       doc.sentences(mention.sentenceNum))(mention.from))
 
-            if (validMentions.size >= 2)
-              (0 until validMentions.size)
-                .map(i =>
+            if (validMentions.size >= 2) {
+              validMentions.indices
+                .flatMap { i =>
                   (i + 1 until validMentions.size)
-                    .map(j => (validMentions(i), validMentions(j))))
-                .flatten
-                .filter({
+                    .map(j => (validMentions(i), validMentions(j)))
+                }
+                .filter {
                   case (m1, m2) => m1.sentenceNum != m2.sentenceNum
-                })
-                .map({
+                }
+                .flatMap {
                   case (m1, m2) =>
                     val f = candidateHelper(doc)
-                    f(m2.sentenceNum, m1, m2.from) ++ f(m1.sentenceNum,
-                                                        m2,
-                                                        m1.from)
-                })
-                .flatten
-            else
-              Seq.empty[CandidateDocument]
+                    f(m2.sentenceNum, m1, m2.from) ++ f(m1.sentenceNum, m2, m1.from)
+                }
+            } else {
+              nothing
+            }
+          }
 
-          })
-
-      case None =>
-        Seq.empty[CandidateDocument]
+      case None => nothing
     }
+
+  private lazy val nothing = Seq.empty[CandidateDocument]
 }
 
 private object CorefCandGen {
 
-  def candidates_h(wf: WordFilter.Fn)(doc: Document)(
-      sIndex: Int,
-      m: Mention,
-      corefIndex: Int): Seq[CandidateDocument] = {
+  def candidates_h(wf: WordFilter.Fn)(
+      doc: Document)(sIndex: Int, m: Mention, corefIndex: Int): Seq[CandidateDocument] = {
 
     val query = WordTarget(m.sentenceNum, m.from)
 
@@ -100,29 +88,29 @@ private object CorefCandGen {
 
     val s = doc.sentences(sIndex)
 
-    (0 until s.tokens.size)
-      .filter(index => index != corefIndex && wf(s)(index))
-      .map(
-        index =>
-          Seq(
-            // let's treat index here as something that is an ANSWER
-            CandidateCorefQuery(
-              doc,
-              query,
-              sIndex,
-              corefIndex,
-              index
-            ),
-            // let's treat index here as something that is a QUERY
-            CandidateCorefAnswer(
-              doc,
-              index,
-              sIndex,
-              corefIndex,
-              answer
-            )
-        ))
-      .flatten
+    s.tokens.indices
+      .filter { index =>
+        index != corefIndex && wf(s)(index)
+      }
+      .flatMap { index =>
+        Seq(
+          // let's treat index here as something that is an ANSWER
+          CandidateCorefQuery(
+            doc,
+            query,
+            sIndex,
+            corefIndex,
+            index
+          ),
+          // let's treat index here as something that is a QUERY
+          CandidateCorefAnswer(
+            doc,
+            index,
+            sIndex,
+            corefIndex,
+            answer
+          )
+        )
+      }
   }
-
 }

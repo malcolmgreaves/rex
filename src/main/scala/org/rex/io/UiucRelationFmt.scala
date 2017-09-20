@@ -21,8 +21,7 @@ object UiucRelationFmt {
   case object Break extends Line
 
   /** A line that contains token information, including results from text processing. */
-  case class TokenLine(neTag: String, tokenIndex: Int, posTag: String, word: String)
-      extends Line
+  case class TokenLine(neTag: String, tokenIndex: Int, posTag: String, word: String) extends Line
 
   /** A line that contains the labeled relation that is present in the preceeding sentence. */
   case class RelationLine(arg1TokenIndex: Int, arg2TokenIndex: Int, relation: String) extends Line
@@ -72,7 +71,7 @@ object UiucRelationFmt {
 
         case 3 =>
           RelationLine(
-            arg1TokenIndex =  bits(0).toInt,
+            arg1TokenIndex = bits(0).toInt,
             arg2TokenIndex = bits(1).toInt,
             relation = bits(2)
           )

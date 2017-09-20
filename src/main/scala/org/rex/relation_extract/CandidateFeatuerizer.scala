@@ -36,19 +36,18 @@ object CandidateFeatuerizer extends TextFeatuerizer[Candidate] {
   def apply(adjacentConf: Option[(AdjacentFeatures, SentenceViewFilter.Fn)],
             insideConf: Option[(InsideFeatures, WordFilter.Fn, WordView.Fn)]): Fn = {
 
-    @inline
     def filterAndRecomputeIndices(w: Seq[(String, Boolean)],
                                   qi: Int,
                                   ai: Int): (Seq[String], Int, Int) = {
 
-      @inline def updateIndex(removingIndex: Int, indexToUpdate: Int): Int =
+      def updateIndex(removingIndex: Int, indexToUpdate: Int): Int =
         if (removingIndex < indexToUpdate)
           indexToUpdate - 1
         else
           indexToUpdate
 
       @tailrec
-      def f(words: List[(String, Boolean, Int)],
+      def helper_fun(words: List[(String, Boolean, Int)],
             q: Int,
             a: Int,
             filtered: Seq[String]): (Seq[String], Int, Int) =
@@ -56,18 +55,18 @@ object CandidateFeatuerizer extends TextFeatuerizer[Candidate] {
 
           case (word, shouldKeep, index) :: rest =>
             if (shouldKeep)
-              f(rest, q, a, filtered :+ word)
+              helper_fun(rest, q, a, filtered :+ word)
             else
-              f(rest, updateIndex(index, q), updateIndex(index, a), filtered)
+              helper_fun(rest, updateIndex(index, q), updateIndex(index, a), filtered)
 
           case Nil =>
             (filtered, q, a)
         }
 
-      f(
-        w.zipWithIndex
-          .map(x => (x._1._1, x._1._2, x._2))
-          .toList,
+      helper_fun(
+        w.zipWithIndex.map { x =>
+          (x._1._1, x._1._2, x._2)
+        }.toList,
         qi,
         ai,
         Seq.empty[String]
@@ -192,9 +191,7 @@ object CandidateFeatuerizer extends TextFeatuerizer[Candidate] {
           }
         }
 
-        case None => { (ignore: Candidate) =>
-          nothingStr
-        }
+        case None =>  (_: Candidate) => nothingStr
       }
 
     val makeInsideFeatures: Candidate => Seq[String] =
@@ -221,14 +218,8 @@ object CandidateFeatuerizer extends TextFeatuerizer[Candidate] {
                 val buff = new ArrayBuffer[String](cand.endInnerIndex - cand.startInnerIndex)
 
                 cfor(cand.startInnerIndex)(_ < cand.endInnerIndex, _ + 1) { i =>
-                  try {
-                    if (wf(i)) {
-                      buff.append(wv(i))
-                    }
-                  } catch {
-                    case e: Exception =>
-                      println(s"\bnFAILED ON i: $i from candidate:\n${cand}\n\n")
-                      throw e
+                  if (wf(i)) {
+                    buff.append(wv(i))
                   }
                 }
 
@@ -242,8 +233,7 @@ object CandidateFeatuerizer extends TextFeatuerizer[Candidate] {
             }
 
         case None =>
-          (ignore: Candidate) =>
-            nothingStr
+          (_: Candidate) => nothingStr
       }
 
     // the candidate featurization function at last!
@@ -267,5 +257,5 @@ object CandidateFeatuerizer extends TextFeatuerizer[Candidate] {
         .toSeq
   }
 
-  val nothingStr = IndexedSeq.empty[String]
+  private val nothingStr = IndexedSeq.empty[String]
 }

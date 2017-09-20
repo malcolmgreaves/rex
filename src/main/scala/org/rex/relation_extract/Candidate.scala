@@ -1,5 +1,7 @@
 package org.rex.relation_extract
 
+import org.rex.text.{Document, Sentence}
+
 /**
   * Type that representes a candidate answer to a given query.
   * Contains linguistic information surrounding this (query,answer) pair.

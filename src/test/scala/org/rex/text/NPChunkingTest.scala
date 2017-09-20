@@ -1,11 +1,7 @@
-package org.rex
+package org.rex.text
 
-import org.scalatest.FunSuite
-import org.rex.TextProcessorTest._
 import org.rex.relation_extract.NeTagSet
-import org.rex.text.NerSentChunker
-
-import scala.Some
+import org.scalatest.FunSuite
 
 class NPChunkingTest extends FunSuite {
 

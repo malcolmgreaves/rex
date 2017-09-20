@@ -1,7 +1,6 @@
-package org.rex
+package org.rex.relation_extract
 
-import org.rex.relation_extract.{CandidateSentence, CorefCandGen, SentenceCandGen}
-import org.rex.text.WordFilter
+import org.rex.text.{Coref, TextProcessorTest, WordFilter}
 import org.scalatest.FunSuite
 
 class CandGenTest extends FunSuite {

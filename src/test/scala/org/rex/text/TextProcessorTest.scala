@@ -1,15 +1,12 @@
-package org.rex
+package org.rex.text
 
-import edu.arizona.sista.processors.fastnlp.FastNLPProcessor
-import org.scalatest.{BeforeAndAfterAll, FunSuite}
-import edu.arizona.sista.processors.corenlp.CoreNLPProcessor
 import org.rex.relation_extract.ProcessingConf
-import org.rex.text.TextProcessor
+import org.scalatest.FunSuite
 
 class TextProcessorTest extends FunSuite {
 
-  import TextProcessorTest._
   import NPChunkingTest._
+  import TextProcessorTest._
 
   private val textProcessor = TextProcessorTest
 
@@ -45,7 +42,6 @@ class TextProcessorTest extends FunSuite {
   }
 
   test("NP chunking") {
-    import org.rex.relation_extract.NeTagSet.Default4Class._
     testChunk(johnSmithSentences.zipWithIndex.map(x => (x._1, Some(johnSmithChunked(x._2)))))
   }
 

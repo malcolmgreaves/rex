@@ -1,8 +1,7 @@
 package org.rex.spark
 
-import org.rex.TextProcessorTest
-
 import SparkModules._
+import org.rex.text.TextProcessorTest
 
 class SparkTextProcessorTest extends SparkTestSuite {
 

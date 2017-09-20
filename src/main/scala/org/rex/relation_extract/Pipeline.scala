@@ -24,9 +24,10 @@ object Pipeline {
             tf: TextFeatuerizer[Candidate]#Fn): OfFeatsAndCands =
     (id: Id, text: Text) =>
       cg(dk(tp.process(id, text)))
-        .map(c => (c, aggregateFeatureObservations(tf(c))))
+        .map { c =>
+          (c, aggregateFeatureObservations(tf(c)))
+      }
 
-  @inline
   def aggregateFeatureObservations(featureObservations: Features): Features =
     featureObservations
       .foldLeft(Map.empty[String, Double])({
@@ -41,9 +42,6 @@ object Pipeline {
           }
       })
       .toSeq
-      .map({
-        case (feature, value) =>
-          FeatureObservation(feature, value)
-      })
+      .map { case (feature, value) => FeatureObservation(feature, value) }
 
 }

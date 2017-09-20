@@ -28,8 +28,6 @@ object Document {
     )
 }
 
-
-
 /**
   * Encapsulates information about many related co-referent mentions.
   *

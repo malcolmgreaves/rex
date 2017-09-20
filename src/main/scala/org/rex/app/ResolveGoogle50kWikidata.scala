@@ -329,7 +329,12 @@ object OutputSimplifiedTriples {
 
 object Freebase2WikidataStuff {
 
-  import ResolveGoogle50kWikidata.{FreebaseId, FreebaseId2WikidataId, KnowledgebaseByFreebaseId, WikidataId}
+  import ResolveGoogle50kWikidata.{
+    FreebaseId,
+    FreebaseId2WikidataId,
+    KnowledgebaseByFreebaseId,
+    WikidataId
+  }
 
   @inline
   def loadFreebase2WikidataIdMap(fbkb: KnowledgebaseByFreebaseId,
