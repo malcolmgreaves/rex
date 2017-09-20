@@ -507,7 +507,7 @@ object RelationExtractionLearningMain {
     val usingEps = eps.getOrElse(0.001)
     val usingLoss = lossFunc.getOrElse(SolverType.L1R_L2LOSS_SVC)
     if (verbose) {
-      print(
+      println(
         s"Training a linear SVM with " +
           s"cost: $usingCost , " +
           s"epsilon: $usingEps, " +
@@ -545,7 +545,7 @@ object RelationExtractionLearningMain {
   }
 
   def saveEstimators(model: File, estimator: MultiEstimator): Unit = {
-    print(
+    println(
       s"ERROR: Model serialization & deserialization is not implemented. " +
         s"NOT saving model to: $model")
   }
