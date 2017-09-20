@@ -24,14 +24,14 @@ case class LearningCmd(labeledInput: File,
                        modelOut: File,
                        cost: Option[Double],
                        eps: Option[Double])
-    extends Command
+  extends Command
 
 case class EvaluationCmd(labeledInput: File,
                          reader: Reader[File, LabeledSentence]#Fn,
                          modelIn: File,
                          evalOut: Option[File],
                          maybeNFolds: Option[Int])
-    extends Command
+  extends Command
 
 case class LearnEvaluateCmd(labeledInput: File,
                             reader: Reader[File, LabeledSentence]#Fn,
@@ -40,22 +40,22 @@ case class LearnEvaluateCmd(labeledInput: File,
                             maybeNFolds: Option[Int],
                             cost: Option[Double],
                             eps: Option[Double])
-    extends Command
+  extends Command
 
 case class ExtractionCmd(rawInput: File,
                          reader: Reader[Any, Any],
                          modelIn: File,
                          extractOut: Option[File])
-    extends Command
+  extends Command
 
 case class DistSupExperimentCmd(
-    processedTextDir: File,
-    relations: File,
-    distant_label_reader: DistSupExperimentCmd.RelationKb => Reader[File, LabeledSentence]#Fn,
-    doCandGen: Boolean = true,
-    maybeNFolds: Option[Int],
-    cost: Option[Double],
-    eps: Option[Double]) // extends Command
+                                 processedTextDir: File,
+                                 relations: File,
+                                 distant_label_reader: DistSupExperimentCmd.RelationKb => Reader[File, LabeledSentence]#Fn,
+                                 doCandGen: Boolean = true,
+                                 maybeNFolds: Option[Int],
+                                 cost: Option[Double],
+                                 eps: Option[Double]) // extends Command
 
 object DistSupExperimentCmd {
   type ArgumentPair = (String, String)
@@ -79,11 +79,11 @@ object RelationExtractionLearningMain {
         .action { (_, c) =>
           c.copy(
             cmd = LearningCmd(labeledInput = null,
-                              reader = null,
-                              doCandGen = false,
-                              modelOut = null,
-                              cost = None,
-                              eps = None))
+              reader = null,
+              doCandGen = false,
+              modelOut = null,
+              cost = None,
+              eps = None))
         }
         .text("\tApp will learn a relation extraction model. \n" +
           "\tOne of three possible commands.")
@@ -93,10 +93,10 @@ object RelationExtractionLearningMain {
         .action { (_, c) =>
           c.copy(
             cmd = EvaluationCmd(labeledInput = null,
-                                reader = null,
-                                modelIn = null,
-                                evalOut = None,
-                                maybeNFolds = None))
+              reader = null,
+              modelIn = null,
+              evalOut = None,
+              maybeNFolds = None))
         }
         .text(
           "\tApp will evaluate a relation extraction model on gold-standard, labeled relations.\n" +
@@ -107,12 +107,12 @@ object RelationExtractionLearningMain {
         .action { (_, c) =>
           c.copy(
             cmd = LearnEvaluateCmd(labeledInput = null,
-                                   reader = null,
-                                   doCandGen = false,
-                                   modelOut = null,
-                                   maybeNFolds = None,
-                                   cost = None,
-                                   eps = None))
+              reader = null,
+              doCandGen = false,
+              modelOut = null,
+              maybeNFolds = None,
+              cost = None,
+              eps = None))
         }
 
       cmd("extraction")
@@ -329,25 +329,25 @@ object RelationExtractionLearningMain {
 
   /** The application logic. Assumes configuration is valid. */
   def process_command(cmd: Command, featurizer: TextFeatuerizer[Candidate]#Fn, verbose: Boolean)(
-      implicit rand: Random,
-      ec: ExecutionContext): Unit =
+    implicit rand: Random,
+    ec: ExecutionContext): Unit =
     cmd match {
 
       case LearningCmd(labeledInput, reader, doCG, modelOut, cost, eps) =>
         val labeledData = createLabeledData(labeledInput, reader, doCG, verbose = verbose)
         val rlearners = createRelationLearnerFuncs(createRelations(labeledData, verbose = verbose),
-                                                   featurizer,
-                                                   cost = cost,
-                                                   eps = eps)
+          featurizer,
+          cost = cost,
+          eps = eps)
         val estimators = trainEstimator(rlearners, labeledData, verbose = verbose)
         saveEstimators(modelOut, estimators)
 
       case LearnEvaluateCmd(labeledInput, reader, doCG, modelOut, maybeNFolds, cost, eps) =>
         val labeledData = createLabeledData(labeledInput, reader, doCG = doCG, verbose = verbose)
         val rlearners = createRelationLearnerFuncs(createRelations(labeledData, verbose = verbose),
-                                                   featurizer,
-                                                   cost = cost,
-                                                   eps = eps)
+          featurizer,
+          cost = cost,
+          eps = eps)
 
         val nFolds = maybeNFolds.getOrElse(4)
         val dataTrainTest =
@@ -435,6 +435,17 @@ object RelationExtractionLearningMain {
         mkTrainData(candgen, labeledSentences, noRelation)
       else
         mkPositiveTrainData(labeledSentences)
+
+
+    val nInvalidExamples = labeledData.foldLeft(0) { case (nEmpty, (instance, label)) =>
+      if (instance.innerFromSentence.tokens.isEmpty)
+        nEmpty + 1
+      else
+        nEmpty
+    }
+    if (nInvalidExamples != 0) {
+      println(s"ERROR:: found ${nInvalidExamples} examples that were empty!!")
+    }
 
     if (verbose) {
       println(
