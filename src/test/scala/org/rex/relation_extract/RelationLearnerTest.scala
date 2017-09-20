@@ -3,15 +3,16 @@ package org.rex.relation_extract
 import java.time.Duration
 
 import nak.liblinear.LiblinearConfig
-import org.rex.text._
 import org.scalatest.FunSuite
+
+import org.rex.text._
+import org.rex.relation_extract.TextFeatuerizerTest._
 
 import scala.util.Try
 
 class RelationLearnerTest extends FunSuite {
 
   import RelationLearnerTest._
-  import TextFeatuerizerTest._
 
   test("basic relation learning test: memorization") {
     val rlearner = RelationLearner(
@@ -94,15 +95,15 @@ class RelationLearnerTest extends FunSuite {
 
     val errors =
       d.foldLeft(Seq.empty[String]) {
-          case (errs, (instance, label)) =>
-            val clazz = classifier(instance)
-            if (clazz == label)
-              errs
-            else {
-              val features = tf.map(f => f(instance))
-              errs :+ s"classifying (${instance.queryW} , ${instance.answerW}) as $clazz actually a $label\n$features"
-            }
-        }
+        case (errs, (instance, label)) =>
+          val clazz = classifier(instance)
+          if (clazz == label)
+            errs
+          else {
+            val features = tf.map(f => f(instance))
+            errs :+ s"classifying (${instance.queryW} , ${instance.answerW}) as $clazz actually a $label\n$features"
+          }
+      }
 
     if (errors.nonEmpty)
       fail(s"""Errors in simple classification:\n${errors.mkString("\n")}\n""")

@@ -17,7 +17,7 @@ class SparkPipelineTest extends SparkTestSuite {
     val pipeline = SparkDataPipeline(TextProcessorTest)(IdentityDocChunker)(sentCGNoKnownPunct)(
       featuerizer2skip2gram2gram)
 
-    val errors= checkPipelineOutput(
+    val errors = checkPipelineOutput(
       pipeline(sc.parallelize(idTextData))
         .map {
           case (id, x) =>

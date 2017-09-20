@@ -1,7 +1,8 @@
 package org.rex.relation_extract
 
-import org.rex.text.{Coref, TextProcessorTest, WordFilter}
+import org.rex.text._
 import org.scalatest.FunSuite
+import org.rex.SharedTestingData._
 
 class CandGenTest extends FunSuite {
 
@@ -14,11 +15,16 @@ class CandGenTest extends FunSuite {
     val diff = insurgentsCandidatesSentence.toSet.diff(createdCandidates)
     val intersection = insurgentsCandidatesSentence.toSet.intersect(createdCandidates)
 
-    val test = diff.size == 0 && intersection.size == insurgentsCandidatesSentence.size && intersection.size == createdCandidates.size
+    val test = diff.isEmpty &&
+      intersection.size == insurgentsCandidatesSentence.size &&
+      intersection.size == createdCandidates.size
+
     assert(
       test,
-      s"""Candidates did not match. Expecting ${insurgentsCandidatesSentence.size} actually have ${createdCandidates.size} candidates.\n""" +
-        s"""Difference: ${diff.mkString(" : ")}\nIntersection: ${intersection.mkString(" : ")}"""
+      s"""Candidates did not match.
+         |Expecting ${insurgentsCandidatesSentence.size} actually have ${createdCandidates.size} candidates.
+         |Difference: ${diff.mkString(" : ")}\nIntersection: ${intersection
+           .mkString(" : ")}""".stripMargin
     )
   }
 
@@ -58,8 +64,6 @@ object CandGenTest {
     (s: Sentence) => (i: Int) => s.tags.exists(tags => tags(i) == "PRP")
 
   lazy val sentenceCandGenNoKnownPunct = SentenceCandGen(WordFilter.noKnownPunct)
-
-  import TextFeatuerizerTest._
 
   val insurgentsSentence = Sentence(insurgentsSeq)
 
@@ -101,24 +105,22 @@ object CandGenTest {
     ("house", "He", Seq("drove", "to", "Judy", "'s"))
   )
 
-  type Error = String
-
-  def checkCandidates(actual: SimpleCandSet, expected: SimpleCandSet): List[Error] = {
+  def checkCandidates(actual: SimpleCandSet, expected: SimpleCandSet): Seq[Error] = {
 
     val diff = actual.diff(expected)
     val inter = actual.intersect(expected)
 
     val diffErr =
-      if (diff.size > 0)
-        List(s"""Difference: ${diff.mkString(" : ")}""")
+      if (diff.nonEmpty)
+        Seq(s"""Difference: ${diff.mkString(" : ")}""")
       else
-        List.empty[String]
+        Seq.empty[String]
 
     val interErr =
       if (inter.size != expected.size)
-        List(s"""Intersection: ${inter.mkString(" : ")}""")
+        Seq(s"""Intersection: ${inter.mkString(" : ")}""")
       else
-        List.empty[String]
+        Seq.empty[String]
 
     diffErr ++ interErr
   }
