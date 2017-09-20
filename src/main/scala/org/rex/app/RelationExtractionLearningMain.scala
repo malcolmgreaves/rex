@@ -18,34 +18,34 @@ case class RelConfig(cmd: Command)
 
 sealed trait Command
 
-case class Learning(labeledInput: File,
-                    reader: Reader[File, LabeledSentence]#Fn,
-                    doCandGen: Boolean = true,
-                    modelOut: File,
-                    cost: Option[Double],
-                    eps: Option[Double])
+case class LearningCmd(labeledInput: File,
+                       reader: Reader[File, LabeledSentence]#Fn,
+                       doCandGen: Boolean = true,
+                       modelOut: File,
+                       cost: Option[Double],
+                       eps: Option[Double])
     extends Command
 
-case class Evaluation(labeledInput: File,
-                      reader: Reader[File, LabeledSentence]#Fn,
-                      modelIn: File,
-                      evalOut: Option[File],
-                      maybeNFolds: Option[Int])
-    extends Command
-
-case class LearnEvaluate(labeledInput: File,
+case class EvaluationCmd(labeledInput: File,
                          reader: Reader[File, LabeledSentence]#Fn,
-                         doCandGen: Boolean = true,
-                         modelOut: File,
-                         maybeNFolds: Option[Int],
-                         cost: Option[Double],
-                         eps: Option[Double])
+                         modelIn: File,
+                         evalOut: Option[File],
+                         maybeNFolds: Option[Int])
     extends Command
 
-case class Extraction(rawInput: File,
-                      reader: Reader[Any, Any],
-                      modelIn: File,
-                      extractOut: Option[File])
+case class LearnEvaluateCmd(labeledInput: File,
+                            reader: Reader[File, LabeledSentence]#Fn,
+                            doCandGen: Boolean = true,
+                            modelOut: File,
+                            maybeNFolds: Option[Int],
+                            cost: Option[Double],
+                            eps: Option[Double])
+    extends Command
+
+case class ExtractionCmd(rawInput: File,
+                         reader: Reader[Any, Any],
+                         modelIn: File,
+                         extractOut: Option[File])
     extends Command
 
 object RelationExtractionLearningMain {
@@ -62,12 +62,12 @@ object RelationExtractionLearningMain {
         .optional()
         .action { (_, c) =>
           c.copy(
-            cmd = Learning(labeledInput = null,
-                           reader = null,
-                           doCandGen = false,
-                           modelOut = null,
-                           cost = None,
-                           eps = None))
+            cmd = LearningCmd(labeledInput = null,
+                              reader = null,
+                              doCandGen = false,
+                              modelOut = null,
+                              cost = None,
+                              eps = None))
         }
         .text("\tApp will learn a relation extraction model. \n" +
           "\tOne of three possible commands.")
@@ -76,11 +76,11 @@ object RelationExtractionLearningMain {
         .optional()
         .action { (_, c) =>
           c.copy(
-            cmd = Evaluation(labeledInput = null,
-                             reader = null,
-                             modelIn = null,
-                             evalOut = None,
-                             maybeNFolds = None))
+            cmd = EvaluationCmd(labeledInput = null,
+                                reader = null,
+                                modelIn = null,
+                                evalOut = None,
+                                maybeNFolds = None))
         }
         .text(
           "\tApp will evaluate a relation extraction model on gold-standard, labeled relations.\n" +
@@ -90,20 +90,20 @@ object RelationExtractionLearningMain {
         .optional()
         .action { (_, c) =>
           c.copy(
-            cmd = LearnEvaluate(labeledInput = null,
-                                reader = null,
-                                doCandGen = false,
-                                modelOut = null,
-                                maybeNFolds = None,
-                                cost = None,
-                                eps = None))
+            cmd = LearnEvaluateCmd(labeledInput = null,
+                                   reader = null,
+                                   doCandGen = false,
+                                   modelOut = null,
+                                   maybeNFolds = None,
+                                   cost = None,
+                                   eps = None))
         }
 
       cmd("extraction")
         .optional()
         .action { (_, c) =>
           c.copy(
-            cmd = Extraction(rawInput = null, reader = null, modelIn = null, extractOut = None))
+            cmd = ExtractionCmd(rawInput = null, reader = null, modelIn = null, extractOut = None))
         }
         .text("\tApp will perform relation extraction using a previously learned model.\n" +
           "\tOne of three possible commands.")
@@ -114,9 +114,9 @@ object RelationExtractionLearningMain {
         .valueName("<file>")
         .action { (li, c) =>
           c.copy(cmd = c.cmd match {
-            case cmd: Learning => cmd.copy(labeledInput = li)
-            case cmd: Evaluation => cmd.copy(labeledInput = li)
-            case cmd: LearnEvaluate => cmd.copy(labeledInput = li)
+            case cmd: LearningCmd => cmd.copy(labeledInput = li)
+            case cmd: EvaluationCmd => cmd.copy(labeledInput = li)
+            case cmd: LearnEvaluateCmd => cmd.copy(labeledInput = li)
             case _ =>
               throw new IllegalStateException(
                 s"labeled_input is invalid for command ${c.cmd.getClass}")
@@ -133,10 +133,10 @@ object RelationExtractionLearningMain {
           ReaderMap[File, LabeledSentence](readerStrInput) match {
             case Some(r) =>
               c.copy(cmd = c.cmd match {
-                case cmd: Learning => cmd.copy(reader = r)
-                case cmd: Evaluation => cmd.copy(reader = r)
-                case cmd: LearnEvaluate => cmd.copy(reader = r)
-                case cmd: Extraction => cmd.copy(reader = r.asInstanceOf[Reader[Any, Any]])
+                case cmd: LearningCmd => cmd.copy(reader = r)
+                case cmd: EvaluationCmd => cmd.copy(reader = r)
+                case cmd: LearnEvaluateCmd => cmd.copy(reader = r)
+                case cmd: ExtractionCmd => cmd.copy(reader = r.asInstanceOf[Reader[Any, Any]])
                 case _ =>
                   throw new IllegalStateException(s"Unknown Command type: ${c.cmd.getClass}")
               })
@@ -155,7 +155,7 @@ object RelationExtractionLearningMain {
         .text("Path to where the trained relation classifier and pipeline config should be saved.")
         .action { (mo, c) =>
           c.copy(cmd = c.cmd match {
-            case cmd: Learning => cmd.copy(modelOut = mo)
+            case cmd: LearningCmd => cmd.copy(modelOut = mo)
             case _ =>
               throw new IllegalStateException(
                 s"model_output invalid for command: ${c.cmd.getClass}")
@@ -170,8 +170,8 @@ object RelationExtractionLearningMain {
           "\tFalse means only use positively labeled things.")
         .action { (cg, c) =>
           c.copy(cmd = c.cmd match {
-            case cmd: Learning => cmd.copy(doCandGen = cg)
-            case cmd: LearnEvaluate => cmd.copy(doCandGen = cg)
+            case cmd: LearningCmd => cmd.copy(doCandGen = cg)
+            case cmd: LearnEvaluateCmd => cmd.copy(doCandGen = cg)
             case _ =>
               throw new IllegalStateException(
                 s"candidate_generation_train invalid for command: ${c.cmd.getClass}")
@@ -185,8 +185,8 @@ object RelationExtractionLearningMain {
         .text("Positive mis-classification cost for cost-sensitive learning.")
         .action { (cost, c) =>
           c.copy(cmd = c.cmd match {
-            case cmd: Learning => cmd.copy(cost = Some(cost))
-            case cmd: LearnEvaluate => cmd.copy(cost = Some(cost))
+            case cmd: LearningCmd => cmd.copy(cost = Some(cost))
+            case cmd: LearnEvaluateCmd => cmd.copy(cost = Some(cost))
             case _ =>
               throw new IllegalStateException(s"cost invalid for command: ${c.cmd.getClass}")
           })
@@ -200,8 +200,8 @@ object RelationExtractionLearningMain {
           "\tis less than eps, learning stops.")
         .action { (eps, c) =>
           c.copy(cmd = c.cmd match {
-            case cmd: Learning => cmd.copy(eps = Some(eps))
-            case cmd: LearnEvaluate => cmd.copy(eps = Some(eps))
+            case cmd: LearningCmd => cmd.copy(eps = Some(eps))
+            case cmd: LearnEvaluateCmd => cmd.copy(eps = Some(eps))
             case _ =>
               throw new IllegalStateException(s"epsilon invalid for command: ${c.cmd.getClass}")
           })
@@ -214,8 +214,8 @@ object RelationExtractionLearningMain {
         .text("Number of cross validation folds: must be >= 2")
         .action { (nFolds, c) =>
           c.copy(cmd = c.cmd match {
-            case cmd: Evaluation => cmd.copy(maybeNFolds = Some(nFolds))
-            case cmd: LearnEvaluate => cmd.copy(maybeNFolds = Some(nFolds))
+            case cmd: EvaluationCmd => cmd.copy(maybeNFolds = Some(nFolds))
+            case cmd: LearnEvaluateCmd => cmd.copy(maybeNFolds = Some(nFolds))
             case _ =>
               throw new IllegalStateException(s"n_cv_folds invalid for command: ${c.cmd.getClass}")
           })
@@ -264,7 +264,7 @@ object RelationExtractionLearningMain {
     }
 
     config.cmd match {
-      case lr: Learning =>
+      case lr: LearningCmd =>
         if (lr.modelOut == null) {
           println(
             "ERROR: Command is \"learning\" and " +
@@ -277,7 +277,7 @@ object RelationExtractionLearningMain {
           System.exit(1)
         }
 
-      case ev: Evaluation =>
+      case ev: EvaluationCmd =>
         if (ev.modelIn == null) {
           println("ERROR: evaluation command needs input model")
           parser.showUsage
@@ -288,10 +288,10 @@ object RelationExtractionLearningMain {
           System.exit(1)
         }
 
-      case le: LearnEvaluate =>
+      case le: LearnEvaluateCmd =>
         ()
 
-      case ex: Extraction =>
+      case ex: ExtractionCmd =>
         if (ex.modelIn == null) {
           println("ERROR: extraction command needs input model")
           parser.showUsage
@@ -314,7 +314,7 @@ object RelationExtractionLearningMain {
       ec: ExecutionContext): Unit =
     cmd match {
 
-      case Learning(labeledInput, reader, doCG, modelOut, cost, eps) =>
+      case LearningCmd(labeledInput, reader, doCG, modelOut, cost, eps) =>
         val labeledData = createLabeledData(labeledInput, reader, doCG, verbose = verbose)
         val rlearners = createRelationLearnerFuncs(createRelations(labeledData, verbose = verbose),
                                                    featurizer,
@@ -323,7 +323,7 @@ object RelationExtractionLearningMain {
         val estimators = trainEstimator(rlearners, labeledData, verbose = verbose)
         saveEstimators(modelOut, estimators)
 
-      case LearnEvaluate(labeledInput, reader, doCG, modelOut, maybeNFolds, cost, eps) =>
+      case LearnEvaluateCmd(labeledInput, reader, doCG, modelOut, maybeNFolds, cost, eps) =>
         val labeledData = createLabeledData(labeledInput, reader, doCG = doCG, verbose = verbose)
         val rlearners = createRelationLearnerFuncs(createRelations(labeledData, verbose = verbose),
                                                    featurizer,
@@ -384,10 +384,10 @@ object RelationExtractionLearningMain {
                   s"accuracy: ${(numberCorrectPredictions.toDouble / test.size) * 100.0}")
           }
 
-      case _: Evaluation =>
+      case _: EvaluationCmd =>
         throw new IllegalStateException("Evaluation unimplemented !!!")
 
-      case _: Extraction =>
+      case _: ExtractionCmd =>
         throw new IllegalStateException("Extraction is unimplemented!!")
 
       case _ =>
@@ -465,7 +465,7 @@ object RelationExtractionLearningMain {
 
   def trainEstimator(rlearners: MultiLearner,
                      labeledData: RelLearnTrainingData,
-                     verbose: Boolean = true): MultiEstimator = {
+                     verbose: Boolean = true)(implicit ec: ExecutionContext): MultiEstimator = {
     val start = System.currentTimeMillis()
     val estimators = trainLearners(rlearners, labeledData)
     val end = System.currentTimeMillis()
