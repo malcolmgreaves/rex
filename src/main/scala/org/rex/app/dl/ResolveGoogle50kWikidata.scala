@@ -53,12 +53,10 @@ object ResolveGoogle50kWikidata extends App {
         config.freebase2wikidataId
       )
     val endFb2Wd = System.currentTimeMillis()
-    LoadUtils.printTime(
-      "Finished loading Freebase ID -> Wikidata ID mapping in",
-      startFb2Wd,
-      endFb2Wd)
-    println(
-      s"Sample of $k Freebase ID => WikidataID mappings [out of ${fb2wd.size}}]")
+    LoadUtils.printTime("Finished loading Freebase ID -> Wikidata ID mapping in",
+                        startFb2Wd,
+                        endFb2Wd)
+    println(s"Sample of $k Freebase ID => WikidataID mappings [out of ${fb2wd.size}}]")
     fb2wd
       .take(k)
       .foreach(println)
@@ -72,11 +70,8 @@ object ResolveGoogle50kWikidata extends App {
         config.wikidataDump
       )
     val endWText = System.currentTimeMillis()
-    LoadUtils.printTime("Finished loading Wikidata Text Mentions in",
-                        startWText,
-                        endWText)
-    println(
-      s"Sample of $k WikidataID text mentions [out of ${wikidataId2textMentions.size}}]")
+    LoadUtils.printTime("Finished loading Wikidata Text Mentions in", startWText, endWText)
+    println(s"Sample of $k WikidataID text mentions [out of ${wikidataId2textMentions.size}}]")
     wikidataId2textMentions
       .take(k)
       .foreach(println)
@@ -91,9 +86,7 @@ object ResolveGoogle50kWikidata extends App {
       config.triplesKbOut
     )
     val endTOut = System.currentTimeMillis()
-    LoadUtils.printTime("Finished writing simplified relation triples in",
-                        startTOut,
-                        endTOut)
+    LoadUtils.printTime("Finished writing simplified relation triples in", startTOut, endTOut)
   }
 
   case class Config(googleDir: File,
@@ -157,8 +150,7 @@ object ResolveGoogle50kWikidata extends App {
           else
             failure(s"Google directory doesn't exist: ${c.googleDir}")
         else
-          failure(
-            s"Freebase -> Wikidata ID mapping file doesn't exist: ${c.freebase2wikidataId}")
+          failure(s"Freebase -> Wikidata ID mapping file doesn't exist: ${c.freebase2wikidataId}")
       else
         failure("Not all arguments supplied.")
     }
@@ -194,24 +186,17 @@ object LoadUtils {
 
 object WikidataDumpStuff {
 
-  import ResolveGoogle50kWikidata.{
-    FreebaseId,
-    WikidataId,
-    Mention,
-    WikidataId2TextMentions
-  }
+  import ResolveGoogle50kWikidata.{FreebaseId, WikidataId, Mention, WikidataId2TextMentions}
 
   import rapture.json.jsonBackends.jackson._
   import rapture.json._
 
-  @inline private[this] def obtain(
-      attempts: Try[Seq[Mention]]*): Seq[Mention] =
+  @inline private[this] def obtain(attempts: Try[Seq[Mention]]*): Seq[Mention] =
     attempts
       .flatMap(_.toOption)
       .foldLeft(Seq.empty[Mention])(_ ++ _)
 
-  def jsonParse(idsOfInterest: Set[WikidataId])(
-      s: String): Option[(WikidataId, Seq[Mention])] =
+  def jsonParse(idsOfInterest: Set[WikidataId])(s: String): Option[(WikidataId, Seq[Mention])] =
     Try(Json.parse(s)) match {
 
       case Success(j) =>
@@ -236,17 +221,15 @@ object WikidataDumpStuff {
           None
 
       case Failure(e) =>
-        println(
-          s"[WikidataDumpStuff] *recovered, skip* ERROR parsing:\n\n$s\n\n")
+        println(s"[WikidataDumpStuff] *recovered, skip* ERROR parsing:\n\n$s\n\n")
         e.printStackTrace()
         println("[WikidataDumpStuff] /////////////////////////////////")
         None
     }
 
   @inline
-  def loadWikidataTextMentions(
-      fb2wd: Map[FreebaseId, WikidataId],
-      wikdataDumpFi: File): WikidataId2TextMentions = {
+  def loadWikidataTextMentions(fb2wd: Map[FreebaseId, WikidataId],
+                               wikdataDumpFi: File): WikidataId2TextMentions = {
 
     val parser: String => GenTraversableOnce[(String, Seq[String])] =
       WikidataDumpStuff.jsonParse(fb2wd.values.toSet) _
@@ -319,8 +302,7 @@ object OutputSimplifiedTriples {
                                         .foreach { oMention =>
                                           relations
                                             .foreach { relation =>
-                                              w.write(
-                                                s"$sMention\t$oMention\t$relation\n")
+                                              w.write(s"$sMention\t$oMention\t$relation\n")
                                             }
                                         }
                                     }
@@ -404,11 +386,7 @@ object Freebase2WikidataStuff {
 
 object GoogleStuff {
 
-  import ResolveGoogle50kWikidata.{
-    FreebaseId,
-    Relation,
-    KnowledgebaseByFreebaseId
-  }
+  import ResolveGoogle50kWikidata.{FreebaseId, Relation, KnowledgebaseByFreebaseId}
 
   import rapture.json.jsonBackends.jackson._
   import rapture.json._
@@ -448,8 +426,7 @@ object GoogleStuff {
                   println(
                     s"[loadFreebaseIdGoogleKb] *recovered, skipped* ERROR, offending line\n\n$l\n\n")
                   e.printStackTrace()
-                  println(
-                    "[loadFreebaseIdGoogleKb] ///////////////////////////////////////////")
+                  println("[loadFreebaseIdGoogleKb] ///////////////////////////////////////////")
                   None
             })
             .foldLeft(knowledgebase) {

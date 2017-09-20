@@ -8,14 +8,13 @@ import org.rex.spark.SparkModules.{SparkTextProcessor, SparkCandGen}
 import scala.language.implicitConversions
 
 trait SparkDataPipeline
-    extends (RDD[(String, String)] => RDD[
-      (String, Seq[(Candidate, Seq[FeatureObservation[String]])])])
+    extends (RDD[(String, String)] => RDD[(String,
+                                           Seq[(Candidate, Seq[FeatureObservation[String]])])])
 
 object SparkDataPipeline {
 
   implicit class FnSparkDataPipeline(
-      f: RDD[(String, String)] => RDD[
-        (String, Seq[(Candidate, Seq[FeatureObservation[String]])])])
+      f: RDD[(String, String)] => RDD[(String, Seq[(Candidate, Seq[FeatureObservation[String]])])])
       extends SparkDataPipeline {
     override def apply(data: RDD[(String, String)]) = f(data)
   }
@@ -27,9 +26,8 @@ object SparkDataPipeline {
     apply(SparkTextProcessor(KryoSerializationWrapper(tp)))(dk)(
       SparkCandGen(KryoSerializationWrapper(cg)))(tf)
 
-  @inline private def apply(stp: SparkTextProcessor.Fn)(
-      dk: DocumentChunker.Fn)(scg: SparkCandGen.Fn)(
-      tf: CandidateFeatuerizer.Fn): SparkDataPipeline =
+  @inline private def apply(stp: SparkTextProcessor.Fn)(dk: DocumentChunker.Fn)(
+      scg: SparkCandGen.Fn)(tf: CandidateFeatuerizer.Fn): SparkDataPipeline =
     (data: RDD[(String, String)]) =>
       scg(stp(data).map(dk))
         .map({

@@ -9,6 +9,7 @@ import nak.liblinear.{LiblinearConfig, SolverType}
 import org.rex.app.Connl04Format._
 import org.rex._
 import scopt.OptionParser
+import org.rex.RelationLearner.{TrainingData => RelLearnTrainingData}
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.Duration
@@ -94,8 +95,9 @@ object RelationExtractionLearningMain {
               c
           ).copy(cmd = Evaluation)
         }
-        .text("\tApp will evaluate a relation extraction model on gold-standard, labeled relations.\n" +
-          "\tOne of three possible commands.")
+        .text(
+          "\tApp will evaluate a relation extraction model on gold-standard, labeled relations.\n" +
+            "\tOne of three possible commands.")
 
       cmd("extraction")
         .optional()
@@ -146,7 +148,8 @@ object RelationExtractionLearningMain {
         .optional()
         .abbr("output")
         .valueName("<filepath>")
-        .text("Path to where the trained relation classifier and pipeline config should be saved to.")
+        .text(
+          "Path to where the trained relation classifier and pipeline config should be saved to.")
         .action { (mo, c) =>
           c.copy(
             lr = Some(
@@ -159,9 +162,8 @@ object RelationExtractionLearningMain {
         .optional()
         .abbr("cg")
         .valueName("<boolean>")
-        .text(
-          "Perform sentence-based candidate generation during training?\n" +
-            "\tFalse means only use positively labeled things.")
+        .text("Perform sentence-based candidate generation during training?\n" +
+          "\tFalse means only use positively labeled things.")
         .action { (cg, c) =>
           c.copy(
             lr = Some(
@@ -187,9 +189,8 @@ object RelationExtractionLearningMain {
         .optional()
         .abbr("e")
         .valueName("<float>")
-        .text(
-          "Stopping criterion for learning: when the parameter change between iterations\n" +
-            "\tis less than eps, learning stops.")
+        .text("Stopping criterion for learning: when the parameter change between iterations\n" +
+          "\tis less than eps, learning stops.")
         .action { (eps, c) =>
           c.copy(
             lr = Some(
@@ -250,8 +251,7 @@ object RelationExtractionLearningMain {
   }
 
   /** The application logic. Assumes configuration is valid. */
-  def main_action(config: RelConfig)(implicit rand: Random,
-                                     ec: ExecutionContext): Unit = {
+  def main_action(config: RelConfig)(implicit rand: Random, ec: ExecutionContext): Unit = {
     val featurizer =
       CandidateFeatuerizer(
         Some(
@@ -267,19 +267,16 @@ object RelationExtractionLearningMain {
           ))
       )
 
-    val maybeModelTrainData: Option[
-      (MultiLearner, RelationLearner.TrainingData, () => MultiEstimator)] =
+    val maybeModelTrainData: Option[(MultiLearner, RelLearnTrainingData, () => MultiEstimator)] =
       config.lr.map {
         case LearningCmd(labeledInput, reader, doCG, modelOut, cost, eps) =>
           val labeledSentences = reader(labeledInput)
           println(s"Obtained ${labeledSentences.size} sentences")
-          println(
-            s"Of those, ${labeledSentences.count(_._2.nonEmpty)} are labeled")
+          println(s"Of those, ${labeledSentences.count(_._2.nonEmpty)} are labeled")
 
           val candgen = mkStdCandGen(labeledSentences)
 
-          println(
-            s"Making training data with sentence-based candidate generation? $doCG")
+          println(s"Making training data with sentence-based candidate generation? $doCG")
           val labeledData =
             if (doCG)
               mkTrainData(candgen, labeledSentences, noRelation)
@@ -319,7 +316,8 @@ object RelationExtractionLearningMain {
                 val estimators = trainLearners(rlearners, labeledData)
                 val end = System.currentTimeMillis()
                 println(
-                  s"finished training in ${Duration(end - start, TimeUnit.MILLISECONDS).toMinutes} minutes (${end - start} ms)")
+                  s"finished training in ${Duration(end - start, TimeUnit.MILLISECONDS).toMinutes} " +
+                    s"minutes (${end - start} ms)")
 
                 modelOut.foreach { mo =>
                   if (calledAtLeastOnce.getAndSet(true))
@@ -388,9 +386,11 @@ object RelationExtractionLearningMain {
 
                     val end = System.currentTimeMillis()
 
-                    println("" +
-                      s"#$fold/$nFolds : Completed in ${Duration(end - start, TimeUnit.MILLISECONDS).toMinutes} minutes (${end - start} ms)\n" +
-                      s"#$fold/$nFolds correct $numberCorrectPredictions out of ${test.size} : accuracy: ${(numberCorrectPredictions.toDouble / test.size) * 100.0}")
+                    println(s"""#$fold/$nFolds : Completed in ${Duration(
+                                 end - start,
+                                 TimeUnit.MILLISECONDS).toMinutes} minutes (${end - start} ms)
+                         |#$fold/$nFolds correct $numberCorrectPredictions out of ${test.size} : accuracy: ${(numberCorrectPredictions.toDouble / test.size) * 100.0}
+                       """.stripMargin)
                 }
 
             case None =>
@@ -399,8 +399,7 @@ object RelationExtractionLearningMain {
           }
 
         evalOut.foreach { eo =>
-          println(
-            s"WARNING: Evaluation output is not implemented. NOT writing evaluation to: $eo")
+          println(s"WARNING: Evaluation output is not implemented. NOT writing evaluation to: $eo")
         }
 
         eval

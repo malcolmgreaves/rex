@@ -33,9 +33,8 @@ object CandidateFeatuerizer extends TextFeatuerizer[Candidate] {
     * is to only use the lower-cased version of the token. Alternatives include POS or NE tags,
     * or combinations thereof.
     */
-  def apply(
-      adjacentConf: Option[(AdjacentFeatures, SentenceViewFilter.Fn)],
-      insideConf: Option[(InsideFeatures, WordFilter.Fn, WordView.Fn)]): Fn = {
+  def apply(adjacentConf: Option[(AdjacentFeatures, SentenceViewFilter.Fn)],
+            insideConf: Option[(InsideFeatures, WordFilter.Fn, WordView.Fn)]): Fn = {
 
     @inline
     def filterAndRecomputeIndices(w: Seq[(String, Boolean)],
@@ -104,105 +103,93 @@ object CandidateFeatuerizer extends TextFeatuerizer[Candidate] {
     val makeAdjacentFeatures: Candidate => Seq[String] =
       adjacentConf match {
 
-        case Some((AdjacentFeatures(width), sentViewFilt)) => {
+        case Some((AdjacentFeatures(width), sentViewFilt)) => { (cand: Candidate) =>
+          {
 
-          (cand: Candidate) =>
-            {
+            val createAdjacentFeaturesAtSize: Int => Seq[Seq[String]] =
+              cand match {
 
-              val createAdjacentFeaturesAtSize: Int => Seq[Seq[String]] =
-                cand match {
+                case CandidateSentence(sentence, queryIndex, answerIndex) => {
 
-                  case CandidateSentence(sentence, queryIndex, answerIndex) => {
+                  val sentenceFeatures =
+                    adjFeats1Sent(
+                      sentViewFilt(sentence),
+                      queryIndex,
+                      answerIndex
+                    )
 
-                    val sentenceFeatures =
-                      adjFeats1Sent(
-                        sentViewFilt(sentence),
-                        queryIndex,
-                        answerIndex
-                      )
-
-                    (ngramSize: Int) =>
-                      sentenceFeatures(ngramSize)
-                      //                      .map(_.filter(_._2).map(_._1))
-                        .filter(_.nonEmpty)
-                  }
-
-                  case CandidateCorefQuery(doc,
-                                           query,
-                                           shared,
-                                           queryCoref,
-                                           answer) => {
-
-                    val sharedFeatures =
-                      adjFeats1Sent(
-                        sentViewFilt(doc.sentences(shared)),
-                        queryCoref,
-                        answer
-                      )
-
-                    val featuresAroundQuery =
-                      adjFeats1Sent(
-                        sentViewFilt(doc.sentences(query.sentNum)),
-                        query.wordIndex,
-                        query.wordIndex
-                      )
-
-                    (ngramSize: Int) =>
-                      (sharedFeatures(ngramSize) ++ featuresAroundQuery(
-                        ngramSize))
-                      //                      .map(_.filter(_._2).map(_._1))
-                        .filter(_.nonEmpty)
-                  }
-
-                  case CandidateCorefAnswer(doc,
-                                            query,
-                                            shared,
-                                            answerCoref,
-                                            answer) => {
-
-                    val sharedFeatures =
-                      adjFeats1Sent(
-                        sentViewFilt(doc.sentences(shared)),
-                        query,
-                        answerCoref
-                      )
-
-                    val featuresAroundAnswer =
-                      adjFeats1Sent(
-                        sentViewFilt(doc.sentences(answer.sentNum)),
-                        answer.wordIndex,
-                        answer.wordIndex
-                      )
-
-                    (ngramSize: Int) =>
-                      (sharedFeatures(ngramSize) ++ featuresAroundAnswer(
-                        ngramSize))
-                      //                      .map(_.filter(_._2).map(_._1))
-                        .filter(_.nonEmpty)
-                  }
+                  (ngramSize: Int) =>
+                    sentenceFeatures(ngramSize)
+                    //                      .map(_.filter(_._2).map(_._1))
+                      .filter(_.nonEmpty)
                 }
 
-              // the rest of code inside the next block {...} is all equivalent to:
-              //                        (1 until width + 1)
-              //                          .flatMap(createAdjacentFeaturesAtSize)
-              //                          .filter(_.nonEmpty)
-              //                          .map(features => s"""${features.mkString(",")}""")
-              { // we use local mutable operations for efficiency
-                val buff = new ArrayBuffer[String](width * 2)
+                case CandidateCorefQuery(doc, query, shared, queryCoref, answer) => {
 
-                cfor(0)(_ < width + 1, _ + 1) { i =>
-                  val featuresForI = createAdjacentFeaturesAtSize(i)
+                  val sharedFeatures =
+                    adjFeats1Sent(
+                      sentViewFilt(doc.sentences(shared)),
+                      queryCoref,
+                      answer
+                    )
 
-                  cfor(0)(_ < featuresForI.size, _ + 1) { j =>
-                    val featuresForJ = featuresForI(j)
-                    if (featuresForJ.nonEmpty) {
-                      buff.append(s"""${featuresForJ.mkString(",")}""")
-                    }
-                  }
+                  val featuresAroundQuery =
+                    adjFeats1Sent(
+                      sentViewFilt(doc.sentences(query.sentNum)),
+                      query.wordIndex,
+                      query.wordIndex
+                    )
+
+                  (ngramSize: Int) =>
+                    (sharedFeatures(ngramSize) ++ featuresAroundQuery(ngramSize))
+                    //                      .map(_.filter(_._2).map(_._1))
+                      .filter(_.nonEmpty)
                 }
-                buff.toSeq
+
+                case CandidateCorefAnswer(doc, query, shared, answerCoref, answer) => {
+
+                  val sharedFeatures =
+                    adjFeats1Sent(
+                      sentViewFilt(doc.sentences(shared)),
+                      query,
+                      answerCoref
+                    )
+
+                  val featuresAroundAnswer =
+                    adjFeats1Sent(
+                      sentViewFilt(doc.sentences(answer.sentNum)),
+                      answer.wordIndex,
+                      answer.wordIndex
+                    )
+
+                  (ngramSize: Int) =>
+                    (sharedFeatures(ngramSize) ++ featuresAroundAnswer(ngramSize))
+                    //                      .map(_.filter(_._2).map(_._1))
+                      .filter(_.nonEmpty)
+                }
               }
+
+            // the rest of code inside the next block {...} is all equivalent to:
+            //                        (1 until width + 1)
+            //                          .flatMap(createAdjacentFeaturesAtSize)
+            //                          .filter(_.nonEmpty)
+            //                          .map(features => s"""${features.mkString(",")}""")
+            { // we use local mutable operations for efficiency
+              val buff = new ArrayBuffer[String](width * 2)
+
+              cfor(0)(_ < width + 1, _ + 1) { i =>
+                val featuresForI = createAdjacentFeaturesAtSize(i)
+
+                cfor(0)(_ < featuresForI.size, _ + 1) { j =>
+                  val featuresForJ = featuresForI(j)
+                  if (featuresForJ.nonEmpty) {
+                    buff.append(s"""${featuresForJ.mkString(",")}""")
+                  }
+                }
+              }
+              buff.toSeq
             }
+          }
         }
 
         case None => { (ignore: Candidate) =>
@@ -231,14 +218,12 @@ object CandidateFeatuerizer extends TextFeatuerizer[Candidate] {
               //                  )
               // use encapsulated mutability for performance
               val innerFiltered = {
-                val buff = new ArrayBuffer[String](
-                  cand.endInnerIndex - cand.startInnerIndex)
+                val buff = new ArrayBuffer[String](cand.endInnerIndex - cand.startInnerIndex)
 
-                cfor(cand.startInnerIndex)(_ < cand.endInnerIndex, _ + 1) {
-                  i =>
-                    if (wf(i)) {
-                      buff.append(wv(i))
-                    }
+                cfor(cand.startInnerIndex)(_ < cand.endInnerIndex, _ + 1) { i =>
+                  if (wf(i)) {
+                    buff.append(wv(i))
+                  }
                 }
 
                 buff.toSeq

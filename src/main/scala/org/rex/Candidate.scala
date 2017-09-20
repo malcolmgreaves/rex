@@ -23,8 +23,7 @@ sealed trait Candidate {
 /**
   * A candidate where the query and answer are contained within the same sentence.
   */
-case class CandidateSentence(s: Sentence, queryIndex: Int, answerIndex: Int)
-    extends Candidate {
+case class CandidateSentence(s: Sentence, queryIndex: Int, answerIndex: Int) extends Candidate {
 
   override lazy val innerFromSentence =
     s

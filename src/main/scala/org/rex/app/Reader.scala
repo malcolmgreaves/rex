@@ -28,8 +28,7 @@ object ReaderMap {
               classOf[Connl04Format.LabeledSentence]))
           Some(Connl04Format.read.asInstanceOf[Reader[I, T]#Fn])
         else
-          throw new RuntimeException(
-            s"Expecting an input for a Reader Fn of type ")
+          throw new RuntimeException(s"Expecting an input for a Reader Fn of type ")
 
       case _ =>
         None

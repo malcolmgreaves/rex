@@ -10,8 +10,7 @@ import scala.language.existentials
 
 package object app {
 
-  def mkStdCandGen(
-      labeledSentences: Reader[A forSome { type A }, LabeledSentence]#Readable)
+  def mkStdCandGen(labeledSentences: Reader[A forSome { type A }, LabeledSentence]#Readable)
     : SentenceCandGen = {
 
     val pconf = {
@@ -40,10 +39,9 @@ package object app {
     }
   }
 
-  def mkTrainData(
-      candgen: SentenceCandGen,
-      labeledSentences: Reader[A forSome { type A }, LabeledSentence]#Readable,
-      noRelationPresent: RelationLearner.Label): RelationLearner.TrainingData =
+  def mkTrainData(candgen: SentenceCandGen,
+                  labeledSentences: Reader[A forSome { type A }, LabeledSentence]#Readable,
+                  noRelationPresent: RelationLearner.Label): RelationLearner.TrainingData =
     labeledSentences.flatMap {
       case (sentence, relz) =>
         val labeled =
@@ -56,8 +54,7 @@ package object app {
         val unlabeled =
           candgen(Document("", Seq(sentence)))
             .flatMap(candidate => {
-              if (!anyIndexPairs.contains(
-                    (candidate.queryIndex, candidate.answerIndex)))
+              if (!anyIndexPairs.contains((candidate.queryIndex, candidate.answerIndex)))
                 Some((candidate, noRelationPresent))
               else
                 None
@@ -66,8 +63,7 @@ package object app {
         labeled ++ unlabeled
     }.toIterable
 
-  def mkPositiveTrainData(
-      labeledSentences: Reader[A forSome { type A }, LabeledSentence]#Readable)
+  def mkPositiveTrainData(labeledSentences: Reader[A forSome { type A }, LabeledSentence]#Readable)
     : RelationLearner.TrainingData =
     labeledSentences
       .flatMap {
@@ -102,8 +98,8 @@ package object app {
       .toTraversable
   }
 
-  def shuffleAssign(labeledData: RelationLearner.TrainingData,
-                    randAssign: Random => () => Int)(implicit rand: Random) = {
+  def shuffleAssign(labeledData: RelationLearner.TrainingData, randAssign: Random => () => Int)(
+      implicit rand: Random) = {
 
     val rAssign = randAssign(rand)
 
@@ -116,8 +112,7 @@ package object app {
       }
   }
 
-  def trainTestSplit(labeledData: RelationLearner.TrainingData,
-                     proportionTrain: Double)(
+  def trainTestSplit(labeledData: RelationLearner.TrainingData, proportionTrain: Double)(
       implicit rand: Random): Traversable[(Train, Test)] = {
 
     val partitioned = shuffleAssign(
@@ -143,8 +138,7 @@ package object app {
 
   type MultiEstimator = Map[RelationLearner.Label, RelationLearner.Estimator]
 
-  def trainLearners(rlearners: MultiLearner,
-                    train: RelationLearner.TrainingData)(
+  def trainLearners(rlearners: MultiLearner, train: RelationLearner.TrainingData)(
       implicit ec: ExecutionContext): MultiEstimator =
     Await
       .result(

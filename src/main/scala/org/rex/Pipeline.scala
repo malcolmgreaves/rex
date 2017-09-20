@@ -12,9 +12,7 @@ object Pipeline {
 
   type OfCandidates = (Id, Text) => Seq[Candidate]
 
-  def apply(tp: TextProcessor,
-            dk: DocumentChunker.Fn,
-            cg: CandGen.Fn): OfCandidates =
+  def apply(tp: TextProcessor, dk: DocumentChunker.Fn, cg: CandGen.Fn): OfCandidates =
     (id: Id, text: Text) => cg(dk(tp.process(id, text)))
 
   type OfFeatsAndCands = (Id, Text) => Seq[(Candidate, Features)]

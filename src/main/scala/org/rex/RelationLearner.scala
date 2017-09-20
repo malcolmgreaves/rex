@@ -56,8 +56,7 @@ object RelationLearner extends Learning[Candidate, String] {
             )
         }
 
-      val nakClassifier = new LiblinearClassifier
-      with FeaturizedClassifier[String, Candidate] {
+      val nakClassifier = new LiblinearClassifier with FeaturizedClassifier[String, Candidate] {
 
         override def fmap: FeatureMap = __nakClassifier.fmap
         override val lmap: Map[String, Int] = __nakClassifier.lmap
@@ -66,8 +65,8 @@ object RelationLearner extends Learning[Candidate, String] {
           __nakClassifier.featurizer
 
         override def apply(context: Array[(Int, Double)]): Array[Double] = {
-          val ctxt = context.map(c =>
-            new FeatureNode(c._1, c._2).asInstanceOf[nak.liblinear.Feature])
+          val ctxt =
+            context.map(c => new FeatureNode(c._1, c._2).asInstanceOf[nak.liblinear.Feature])
           Try {
             val labelScores = Array.fill(numLabels)(0.0)
             Linear.predictProbability(model, ctxt, labelScores)
@@ -93,8 +92,7 @@ object RelationLearner extends Learning[Candidate, String] {
               }
           )
         else
-          (c: Candidate) =>
-            DistributionStr(index2label, nakClassifier.evalRaw(c).toSeq)
+          (c: Candidate) => DistributionStr(index2label, nakClassifier.evalRaw(c).toSeq)
 
       val classifier =
         if (index2label.size < 2)

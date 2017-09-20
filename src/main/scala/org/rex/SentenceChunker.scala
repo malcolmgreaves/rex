@@ -36,8 +36,7 @@ case class NerSentChunker(entSet: NeTagSet) extends SentenceChunker.Fn {
               .map({ case ((e, t), indexMinus1) => (e, t, indexMinus1 + 1) })
               .foldLeft((Seq.empty[Seq[Int]], ents.head, Seq(0)))({
 
-                case ((indicesChunked, previousEnt, workingIndices),
-                      (entity, token, index)) =>
+                case ((indicesChunked, previousEnt, workingIndices), (entity, token, index)) =>
                   val continueToChunk = !isNonEntity(entity) && previousEnt == entity
 
                   val updatedWorkingIndices =
@@ -97,8 +96,7 @@ private object NerSentChunker {
 
   // Does chunking on l according to the chunked indices (idxs).
   @inline
-  def chunk_h(idxs: Seq[Seq[Int]])(tokens: Seq[String],
-                                   toStr: Tokens2Str): Seq[String] = {
+  def chunk_h(idxs: Seq[Seq[Int]])(tokens: Seq[String], toStr: Tokens2Str): Seq[String] = {
     val select = toStr(tokens)
     idxs
       .foldLeft(Seq.empty[String])({

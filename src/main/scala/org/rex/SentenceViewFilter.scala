@@ -15,8 +15,7 @@ object SentenceViewFilter {
 
   type Fn = Sentence => Seq[TokenTest]
 
-  def apply(wordView: WordView.Fn,
-            wordFilter: WordFilter.Fn): SentenceViewFilter.Fn =
+  def apply(wordView: WordView.Fn, wordFilter: WordFilter.Fn): SentenceViewFilter.Fn =
     (s: Sentence) => {
       val wv = wordView(s)
       val wf = wordFilter(s)

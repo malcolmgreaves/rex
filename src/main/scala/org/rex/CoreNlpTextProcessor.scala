@@ -18,8 +18,7 @@ object CoreNlpTextProcessor {
     * The input ProcessorConf is assumed to be based upon what the Processor
     * uses. Caller is responsibile for verifying and agreeing to this assumption.
     */
-  def apply(pConf: ProcessingConf,
-            corenlpProcessor: Processor): TextProcessor =
+  def apply(pConf: ProcessingConf, corenlpProcessor: Processor): TextProcessor =
     new TextProcessor {
 
       override val conf =

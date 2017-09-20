@@ -11,9 +11,7 @@ import edu.arizona.sista.processors.CorefMention
   * @param sentences The document's sentences, in-order.
   * @param corefMentions Pairs of co-referent entities across the sentences in this document.
   */
-case class Document(id: String,
-                    sentences: Seq[Sentence],
-                    corefMentions: Option[Seq[Coref]] = None)
+case class Document(id: String, sentences: Seq[Sentence], corefMentions: Option[Seq[Coref]] = None)
 
 object Document {
 
@@ -27,8 +25,7 @@ object Document {
       idAndDoc._2.coreferenceChains.map(
         chains =>
           chains.getChains
-            .map(chain =>
-              Coref(chain.map(Mention.sistaCorefMention2Mention).toSeq))
+            .map(chain => Coref(chain.map(Mention.sistaCorefMention2Mention).toSeq))
             .toSeq)
     )
 }
@@ -68,8 +65,7 @@ case class Coref(mentions: Seq[Mention]) extends Serializable
   * @param from The index that the mention starts on.
   * @param until The index immediately after the end of the mention.
   */
-case class Mention(sentenceNum: Int, from: Int, until: Int)
-    extends Serializable
+case class Mention(sentenceNum: Int, from: Int, until: Int) extends Serializable
 
 object Mention {
 

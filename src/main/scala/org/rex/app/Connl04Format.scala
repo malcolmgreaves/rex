@@ -18,11 +18,7 @@ object Connl04Format {
 
   case object Break extends Line
 
-  case class TokenLine(sentence: Int,
-                       neTag: String,
-                       token: Int,
-                       posTag: String,
-                       word: String)
+  case class TokenLine(sentence: Int, neTag: String, token: Int, posTag: String, word: String)
       extends Line
 
   case class RelationLine(arg1: Int, arg2: Int, relation: String) extends Line
@@ -84,11 +80,7 @@ object Connl04Format {
 
   def lineAggregate(lines: Traversable[Line]): Seq[LabeledLines] =
     lines
-      .foldLeft(
-        (Seq.empty[LabeledLines],
-         Seq.empty[TokenLine],
-         Seq.empty[RelationLine],
-         false)) {
+      .foldLeft((Seq.empty[LabeledLines], Seq.empty[TokenLine], Seq.empty[RelationLine], false)) {
         case ((labeled, workingToks, workingRels, brokenBefore), l) =>
           l match {
 
