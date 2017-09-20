@@ -1,6 +1,6 @@
 package org.rex.io
 
-import java.io.File
+import java.io.{BufferedInputStream, File, FileInputStream, InputStream}
 
 import org.rex.text.Sentence
 
@@ -30,10 +30,21 @@ object UiucRelationFmt {
   type LabeledSentence = (Sentence, Seq[RelationLine])
 
   /** Function that produces labeled sentences from a plaintext file. */
-  val read: Reader[File, LabeledSentence]#Fn =
-    (inFi: File) => {
+  lazy val read_file: Reader[File, LabeledSentence]#Fn =
+    inFi => {
       println(s"Reading input from:\n$inFi")
-      val input = Source.fromFile(inFi)
+      val stream = new BufferedInputStream(new FileInputStream(inFi))
+      try {
+        read_stream(stream)
+      } finally {
+        stream.close()
+      }
+    }
+
+  /** Function that produces labeled sentences from a plaintext stream. */
+  lazy val read_stream: Reader[InputStream, LabeledSentence]#Fn =
+    stream => {
+      val input = Source.fromInputStream(stream)
 
       val rawLines = input.getLines().map(parseLine).toIndexedSeq
       println(s"Obtained ${rawLines.size} individual lines")
@@ -131,11 +142,20 @@ object UiucRelationFmt {
     result.finished.toIndexedSeq
   }
 
-  def sentenceFrom(tls: Seq[TokenLine]): Sentence =
-    Sentence(
-      tls.map(_.word).map { _.replaceAll("/", " ") },
-      Some(tls.map(_.posTag)),
-      Some(tls.map(_.neTag))
-    )
+  def sentenceFrom(tls: Seq[TokenLine]): Sentence = {
+
+    val (tokens, tags, entities) =
+      tls.foldLeft((Seq.empty[String], Seq.empty[String], Seq.empty[String])) {
+        case ((tks, tgs, ents), tokenLine) =>
+          (tks :+ cleanWord(tokenLine.word), tgs :+ tokenLine.posTag, ents :+ tokenLine.neTag)
+      }
+    Sentence(tokens = tokens, tags = Some(tags), entities = Some(entities))
+  }
+
+  def cleanWord(word: String): String = {
+    word
+      .replaceAll("/,/", ", ")
+      .replaceAll("/", " ")
+  }
 
 }

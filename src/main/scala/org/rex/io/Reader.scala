@@ -26,7 +26,7 @@ object ReaderMap {
       case "conll" =>
         if (inputClz.equals(classOf[File]) && outputClz.equals(
               classOf[UiucRelationFmt.LabeledSentence]))
-          Some(UiucRelationFmt.read.asInstanceOf[Reader[I, T]#Fn])
+          Some(UiucRelationFmt.read_file.asInstanceOf[Reader[I, T]#Fn])
         else
           throw new RuntimeException(s"Expecting an input for a Reader Fn of type ")
 
