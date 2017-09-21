@@ -64,8 +64,9 @@ object CandidateFeatuerizer extends TextFeatuerizer[Candidate] {
         }
 
       helper_fun(
-        w.zipWithIndex.map { x =>
-          (x._1._1, x._1._2, x._2)
+        w.zipWithIndex.map {
+          case ((word, bool), index) =>
+            (word, bool, index)
         }.toList,
         qi,
         ai,
@@ -88,108 +89,102 @@ object CandidateFeatuerizer extends TextFeatuerizer[Candidate] {
 
       (ngramSize: Int) =>
         Seq(
-          if (lIndex - ngramSize < 0)
-            nothingStr
-          else
-            AdjacentFeatures.left(words, lIndex)(ngramSize),
-          if (rIndex + ngramSize >= words.size)
-            nothingStr
-          else
-            AdjacentFeatures.right(words, rIndex)(ngramSize)
+          {
+            if (lIndex - ngramSize < 0)
+              nothingStr
+            else
+              AdjacentFeatures.left(words, lIndex)(ngramSize)
+          }, {
+            if (rIndex + ngramSize >= words.size)
+              nothingStr
+            else
+              AdjacentFeatures.right(words, rIndex)(ngramSize)
+          }
         )
     }
 
     val makeAdjacentFeatures: Candidate => Seq[String] =
       adjacentConf match {
 
-        case Some((AdjacentFeatures(width), sentViewFilt)) => { (cand: Candidate) =>
-          {
+        case Some((AdjacentFeatures(width), sentViewFilt)) =>
+          (cand: Candidate) =>
+            {
 
-            val createAdjacentFeaturesAtSize: Int => Seq[Seq[String]] =
-              cand match {
+              val createAdjacentFeaturesAtSize: Int => Seq[Seq[String]] =
+                cand match {
 
-                case CandidateSentence(sentence, queryIndex, answerIndex) => {
+                  case CandidateSentence(sentence, queryIndex, answerIndex) =>
+                    val sentenceFeatures =
+                      adjFeats1Sent(
+                        sentViewFilt(sentence),
+                        queryIndex,
+                        answerIndex
+                      )
 
-                  val sentenceFeatures =
-                    adjFeats1Sent(
-                      sentViewFilt(sentence),
-                      queryIndex,
-                      answerIndex
-                    )
+                    (ngramSize: Int) =>
+                      sentenceFeatures(ngramSize)
+                        .filter { _.nonEmpty }
 
-                  (ngramSize: Int) =>
-                    sentenceFeatures(ngramSize)
-                    //                      .map(_.filter(_._2).map(_._1))
-                      .filter(_.nonEmpty)
+                  case CandidateCorefQuery(doc, query, shared, queryCoref, answer) =>
+                    val sharedFeatures =
+                      adjFeats1Sent(
+                        sentViewFilt(doc.sentences(shared)),
+                        queryCoref,
+                        answer
+                      )
+
+                    val featuresAroundQuery =
+                      adjFeats1Sent(
+                        sentViewFilt(doc.sentences(query.sentNum)),
+                        query.wordIndex,
+                        query.wordIndex
+                      )
+
+                    (ngramSize: Int) =>
+                      (sharedFeatures(ngramSize) ++ featuresAroundQuery(ngramSize))
+                        .filter { _.nonEmpty }
+
+                  case CandidateCorefAnswer(doc, query, shared, answerCoref, answer) =>
+                    val sharedFeatures =
+                      adjFeats1Sent(
+                        sentViewFilt(doc.sentences(shared)),
+                        query,
+                        answerCoref
+                      )
+
+                    val featuresAroundAnswer =
+                      adjFeats1Sent(
+                        sentViewFilt(doc.sentences(answer.sentNum)),
+                        answer.wordIndex,
+                        answer.wordIndex
+                      )
+
+                    (ngramSize: Int) =>
+                      (sharedFeatures(ngramSize) ++ featuresAroundAnswer(ngramSize))
+                        .filter(_.nonEmpty)
                 }
 
-                case CandidateCorefQuery(doc, query, shared, queryCoref, answer) => {
+              // the rest of code inside the next block {...} is all equivalent to:
+              //                        (1 until width + 1)
+              //                          .flatMap(createAdjacentFeaturesAtSize)
+              //                          .filter(_.nonEmpty)
+              //                          .map(features => s"""${features.mkString(",")}""")
+              { // we use local mutable operations for efficiency
+                val buff = new ArrayBuffer[String](width * 2)
 
-                  val sharedFeatures =
-                    adjFeats1Sent(
-                      sentViewFilt(doc.sentences(shared)),
-                      queryCoref,
-                      answer
-                    )
+                cfor(0)(_ < width + 1, _ + 1) { i =>
+                  val featuresForI = createAdjacentFeaturesAtSize(i)
 
-                  val featuresAroundQuery =
-                    adjFeats1Sent(
-                      sentViewFilt(doc.sentences(query.sentNum)),
-                      query.wordIndex,
-                      query.wordIndex
-                    )
-
-                  (ngramSize: Int) =>
-                    (sharedFeatures(ngramSize) ++ featuresAroundQuery(ngramSize))
-                    //                      .map(_.filter(_._2).map(_._1))
-                      .filter(_.nonEmpty)
-                }
-
-                case CandidateCorefAnswer(doc, query, shared, answerCoref, answer) => {
-
-                  val sharedFeatures =
-                    adjFeats1Sent(
-                      sentViewFilt(doc.sentences(shared)),
-                      query,
-                      answerCoref
-                    )
-
-                  val featuresAroundAnswer =
-                    adjFeats1Sent(
-                      sentViewFilt(doc.sentences(answer.sentNum)),
-                      answer.wordIndex,
-                      answer.wordIndex
-                    )
-
-                  (ngramSize: Int) =>
-                    (sharedFeatures(ngramSize) ++ featuresAroundAnswer(ngramSize))
-                    //                      .map(_.filter(_._2).map(_._1))
-                      .filter(_.nonEmpty)
-                }
-              }
-
-            // the rest of code inside the next block {...} is all equivalent to:
-            //                        (1 until width + 1)
-            //                          .flatMap(createAdjacentFeaturesAtSize)
-            //                          .filter(_.nonEmpty)
-            //                          .map(features => s"""${features.mkString(",")}""")
-            { // we use local mutable operations for efficiency
-              val buff = new ArrayBuffer[String](width * 2)
-
-              cfor(0)(_ < width + 1, _ + 1) { i =>
-                val featuresForI = createAdjacentFeaturesAtSize(i)
-
-                cfor(0)(_ < featuresForI.size, _ + 1) { j =>
-                  val featuresForJ = featuresForI(j)
-                  if (featuresForJ.nonEmpty) {
-                    buff.append(s"""${featuresForJ.mkString(",")}""")
+                  cfor(0)(_ < featuresForI.size, _ + 1) { j =>
+                    val featuresForJ = featuresForI(j)
+                    if (featuresForJ.nonEmpty) {
+                      buff.append(s"""${featuresForJ.mkString(",")}""")
+                    }
                   }
                 }
+                buff.toSeq
               }
-              buff.toSeq
             }
-          }
-        }
 
         case None =>
           (_: Candidate) =>
@@ -242,21 +237,20 @@ object CandidateFeatuerizer extends TextFeatuerizer[Candidate] {
     // the candidate featurization function at last!
     (cand: Candidate) =>
       (makeAdjacentFeatures(cand) ++ makeInsideFeatures(cand))
-        .foldLeft(Map.empty[String, Double])(
-          (fmap, feature) =>
-            fmap.get(feature) match {
+        .foldLeft(Map.empty[String, Double]) { (fmap, feature) =>
+          fmap.get(feature) match {
 
-              case Some(value) =>
-                (fmap - feature) + (feature -> (value + 1.0))
+            case Some(value) =>
+              (fmap - feature) + (feature -> (value + 1.0))
 
-              case None =>
-                fmap + (feature -> 1.0)
+            case None =>
+              fmap + (feature -> 1.0)
           }
-        )
-        .map({
+        }
+        .map {
           case (feature, value) =>
             FeatureObservation[String](feature, value)
-        })
+        }
         .toSeq
   }
 

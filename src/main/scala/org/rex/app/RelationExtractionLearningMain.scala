@@ -7,7 +7,7 @@ import java.util.concurrent.TimeUnit
 import nak.liblinear.{LiblinearConfig, SolverType}
 import org.rex.io.UiucRelationFmt._
 import scopt.OptionParser
-import org.rex.relation_extract.RelationLearner.{TrainingData, Label, Instance}
+import org.rex.relation_extract.RelationLearner.{TrainingData, Label}
 import org.rex.io.{Reader, ReaderMap}
 import org.rex.relation_extract._
 import org.rex.text.{SentenceViewFilter, WordFilter, WordView}
@@ -16,60 +16,10 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.Duration
 import scala.language.{existentials, implicitConversions, postfixOps}
 
-case class RelConfig(cmd: Command)
-
-sealed trait Command
-
-case class LearningCmd(labeledInput: File,
-                       reader: Reader[File, LabeledSentence]#Fn,
-                       doCandGen: Boolean = true,
-                       modelOut: File,
-                       cost: Option[Double],
-                       eps: Option[Double])
-    extends Command
-
-case class EvaluationCmd(labeledInput: File,
-                         reader: Reader[File, LabeledSentence]#Fn,
-                         modelIn: File,
-                         evalOut: Option[File],
-                         maybeNFolds: Option[Int])
-    extends Command
-
-case class LearnEvaluateCmd(labeledInput: File,
-                            reader: Reader[File, LabeledSentence]#Fn,
-                            doCandGen: Boolean = true,
-                            modelOut: File,
-                            maybeNFolds: Option[Int],
-                            cost: Option[Double],
-                            eps: Option[Double])
-    extends Command
-
-case class ExtractionCmd(rawInput: File,
-                         reader: Reader[Any, Any],
-                         modelIn: File,
-                         extractOut: Option[File])
-    extends Command
-
-case class DistSupExperimentCmd(
-    processedTextDir: File,
-    relations: File,
-    distant_label_reader: DistSupExperimentCmd.RelationKb => Reader[File, LabeledSentence]#Fn,
-    doCandGen: Boolean = true,
-    maybeNFolds: Option[Int],
-    cost: Option[Double],
-    eps: Option[Double]) // extends Command
-
-object DistSupExperimentCmd {
-  type ArgumentPair = (String, String)
-  type Positive = Seq[ArgumentPair]
-  type Negative = Seq[ArgumentPair]
-  type RelationKb = Map[RelationLearner.Label, (Positive, Negative)]
-}
-
 object RelationExtractionLearningMain {
 
   /** The app's command line option parser. */
-  val parser: OptionParser[RelConfig] =
+  lazy val parser: OptionParser[RelConfig] =
     new scopt.OptionParser[RelConfig]("relation-extraction-learning-main") {
       head("Relation Learning and Extraction")
 
@@ -85,7 +35,8 @@ object RelationExtractionLearningMain {
                               doCandGen = false,
                               modelOut = null,
                               cost = None,
-                              eps = None))
+                              eps = None,
+                              sizeForFeatureHashing = None))
         }
         .text("\tApp will learn a relation extraction model. \n" +
           "\tOne of three possible commands.")
@@ -114,7 +65,8 @@ object RelationExtractionLearningMain {
                                    modelOut = null,
                                    maybeNFolds = None,
                                    cost = None,
-                                   eps = None))
+                                   eps = None,
+                                   sizeForFeatureHashing = None))
         }
 
       cmd("extraction")
@@ -224,6 +176,20 @@ object RelationExtractionLearningMain {
           })
         }
 
+      opt[Int]("feature_hash_size")
+        .optional()
+        .valueName("<int>")
+        .text("If provided, the size of the hashed feature space.")
+        .action { (featHashSize, c) =>
+          c.copy(cmd = c.cmd match {
+            case cmd: LearningCmd => cmd.copy(sizeForFeatureHashing = Some(featHashSize))
+            case cmd: LearnEvaluateCmd => cmd.copy(sizeForFeatureHashing = Some(featHashSize))
+            case _ =>
+              throw new IllegalStateException(
+                s"feature_hash_size invalid for command: ${c.cmd.getClass}")
+          })
+        }
+
       opt[Int]("n_cv_folds")
         .optional()
         .abbr("cv")
@@ -244,7 +210,7 @@ object RelationExtractionLearningMain {
     parser.parse(args, RelConfig(cmd = null)) match {
 
       case Some(config) =>
-        validate(config)
+        RelConfig.validate(config, parser)
 
         implicit val _ = new Random()
         import scala.concurrent.ExecutionContext.Implicits.global
@@ -272,85 +238,30 @@ object RelationExtractionLearningMain {
         System.exit(1)
     }
 
-  /** Validates a configuration: exits with status code 1 if invalid. */
-  def validate(config: RelConfig): Unit = {
-
-    if (config == null) {
-      println("Configuration cannot be null")
-      System.exit(1)
-    }
-
-    config.cmd match {
-      case lr: LearningCmd =>
-        if (lr.modelOut == null) {
-          println(
-            "ERROR: Command is \"learning\" and " +
-              "no model output path is specified.\n")
-          parser.showUsage
-          System.exit(1)
-
-        } else if (lr.modelOut.exists()) {
-          println("ERROR: model_output already exists!")
-          System.exit(1)
-        }
-
-      case ev: EvaluationCmd =>
-        if (ev.modelIn == null) {
-          println("ERROR: evaluation command needs input model")
-          parser.showUsage
-          System.exit(1)
-
-        } else if (!ev.modelIn.exists()) {
-          println("ERROR: model input doesn't exist")
-          System.exit(1)
-        }
-
-      case le: LearnEvaluateCmd =>
-        ()
-
-      case ex: ExtractionCmd =>
-        if (ex.modelIn == null) {
-          println("ERROR: extraction command needs input model")
-          parser.showUsage
-          System.exit(1)
-
-        } else if (!ex.modelIn.exists()) {
-          println("ERROR: model input doesn't exist")
-          System.exit(1)
-        }
-
-      case unk =>
-        if (unk == null)
-          parser.showUsage
-        else
-          print(s"ERROR: unknown command type: ${config.cmd}")
-        System.exit(1)
-
-    }
-  }
-
   /** The application logic. Assumes configuration is valid. */
   def process_command(cmd: Command, featurizer: TextFeatuerizer[Candidate]#Fn, verbose: Boolean)(
       implicit rand: Random,
       ec: ExecutionContext): Unit =
     cmd match {
 
-      case LearningCmd(labeledInput, reader, doCG, modelOut, cost, eps) =>
+      case LearningCmd(labeledInput, reader, doCG, modelOut, cost, eps, sizeForFeatureHashing) =>
         val labeledData = createLabeledData(labeledInput, reader, doCG, verbose = verbose)
         val rlearners = createRelationLearnerFuncs(createRelations(labeledData, verbose = verbose),
                                                    featurizer,
                                                    cost = cost,
                                                    eps = eps,
+                                                   sizeForFeatureHashing = sizeForFeatureHashing,
                                                    verbose = verbose)
         val estimators = trainEstimator(rlearners, labeledData, verbose = verbose)
         saveEstimators(modelOut, estimators)
 
-      case LearnEvaluateCmd(labeledInput, reader, doCG, modelOut, maybeNFolds, cost, eps) =>
+      case LearnEvaluateCmd(labeledInput, reader, doCG, modelOut, maybeNFolds, cost, eps, fHash) =>
         val labeledData = createLabeledData(labeledInput, reader, doCG = doCG, verbose = verbose)
         val rlearners = createRelationLearnerFuncs(createRelations(labeledData, verbose = verbose),
                                                    featurizer,
                                                    cost = cost,
                                                    eps = eps,
+                                                   sizeForFeatureHashing = fHash,
                                                    verbose = verbose)
 
         val nFolds = maybeNFolds.getOrElse(4)
@@ -487,6 +398,7 @@ object RelationExtractionLearningMain {
                                  lossFunc: Option[SolverType] = None,
                                  cost: Option[Double] = None,
                                  eps: Option[Double] = None,
+                                 sizeForFeatureHashing: Option[Int] = None,
                                  verbose: Boolean = true): MultiLearner = {
     // a single binary relation learner constructor:
     // when called, makes a new model that is able to learn a from +/- instances for a single
@@ -496,10 +408,14 @@ object RelationExtractionLearningMain {
     val usingLoss = lossFunc.getOrElse(SolverType.L1R_L2LOSS_SVC)
     if (verbose) {
       println(
-        s"Training a linear SVM with " +
+        s"Training linear SVM binary classifiers with " +
           s"cost: $usingCost , " +
           s"epsilon: $usingEps, " +
           s"loss function: $usingLoss")
+      sizeForFeatureHashing.foreach { fsSize =>
+        println(s"Also using feature hashing with a maximum dimension of: $fsSize")
+      }
+      println("")
     }
     val sourceRelationLearner = RelationLearner(
       LiblinearConfig(
@@ -508,12 +424,15 @@ object RelationExtractionLearningMain {
         eps = usingEps,
         showDebug = false
       ),
-      featurizer
+      featurizer,
+      sizeForFeatureHashing
     )
 
     val rlearners: MultiLearner =
       relations
-        .filter { _ != noRelation }
+        .filter {
+          _ != noRelation
+        }
         .map(r => (r, sourceRelationLearner))
         .toMap
 
