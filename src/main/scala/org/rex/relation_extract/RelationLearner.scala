@@ -19,7 +19,8 @@ object RelationLearner extends Learning[Candidate, String] {
 
   def apply(conf: LiblinearConfig,
             tfeat: CandidateFeatuerizer.Fn,
-            sizeForFeatureHashing: Option[Int] = None): Learner =
+            sizeForFeatureHashing: Option[Int] = None,
+            verbose: Boolean = true): Learner =
     (examples: Traversable[(Instance, Label)]) => {
 
       val nakFmtExamples =
@@ -49,6 +50,11 @@ object RelationLearner extends Learning[Candidate, String] {
               val indexer = new ExampleIndexer
               val trainingExamples = nakFmtExamples.map { _.map { tfeat } }.map { indexer.apply }
               val (lmap, fmap) = indexer.getMaps
+
+              if(verbose) {
+                println(s"After featurization, there are ${fmap.size} unique features")
+              }
+
               Classifier(
                 trainModel(conf, trainingExamples, fmap.size),
                 lmap,
