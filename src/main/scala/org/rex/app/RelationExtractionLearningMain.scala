@@ -277,20 +277,17 @@ object RelationExtractionLearningMain {
                                                    sizeForFeatureHashing = fHash,
                                                    verbose = verbose)
 
-        val nFolds = maybeNFolds.getOrElse(4)
-        val dataTrainTest =
-          if (nFolds == 1) {
-            if (verbose) {
-              println(s"Performing train-test with 75% train")
-            }
-            trainTestSplit(labeledData, 0.75)
-
-          } else {
-            if (verbose) {
-              println(s"Performing $nFolds-fold cross validation")
-            }
-            mkCrossValid(labeledData, nFolds)
+        val (dataTrainTest, nFolds) = maybeNFolds.fold {
+          if (verbose) {
+            println(s"Performing train-test with 75% train")
           }
+          (trainTestSplit(labeledData, 0.75), 1)
+        } { nf =>
+          if (verbose) {
+            println(s"Performing $nf-fold cross validation")
+          }
+          (mkCrossValid(labeledData, nf), nf)
+        }
 
         dataTrainTest.toSeq.zipWithIndex
           .foreach {
