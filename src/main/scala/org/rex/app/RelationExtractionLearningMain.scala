@@ -190,6 +190,20 @@ object RelationExtractionLearningMain {
           })
         }
 
+      opt[Int]("feature_hash_size")
+        .optional()
+        .valueName("<int>")
+        .text("If provided, the size of the hashed feature space.")
+        .action { (featHashSize, c) =>
+          c.copy(cmd = c.cmd match {
+            case cmd: LearningCmd => cmd.copy(sizeForFeatureHashing = Some(featHashSize))
+            case cmd: LearnEvaluateCmd => cmd.copy(sizeForFeatureHashing = Some(featHashSize))
+            case _ =>
+              throw new IllegalStateException(
+                s"feature_hash_size invalid for command: ${c.cmd.getClass}")
+          })
+        }
+
       opt[Int]("n_cv_folds")
         .optional()
         .abbr("cv")
@@ -388,7 +402,8 @@ object RelationExtractionLearningMain {
       case (rs, (_, rel)) => rs + rel
     }
     if (verbose) {
-      println(s"""There are ${relations.size} relations:\n\t${relations.mkString("\n\t")}""")
+      val rels = relations.filter { _ != noRelation }
+      println(s"""There are ${rels.size} relations:\n\t${rels.mkString("\n\t")}""")
     }
     relations
   }
