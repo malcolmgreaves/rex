@@ -38,8 +38,7 @@ object KryoSerializationWrapper {
   * Also note that this class is both abstract and sealed. The only valid place
   * to create such a wrapper is the companion object's apply method.
   */
-sealed abstract class KryoSerializationWrapper[T: ClassTag]
-    extends Serializable {
+sealed abstract class KryoSerializationWrapper[T: ClassTag] extends Serializable {
   // initialValue
   // MUST BE TRANSIENT SO THAT IT IS NOT SERIALIZED
 

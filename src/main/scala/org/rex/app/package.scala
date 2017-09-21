@@ -2,16 +2,18 @@ package org.rex
 
 import java.util.Random
 
-import org.rex.app.Connl04Format._
+import org.rex.io.Reader
+import org.rex.io.UiucRelationFmt._
+import org.rex.relation_extract._
+import org.rex.text._
 
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Future, Await, ExecutionContext}
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.language.existentials
 
 package object app {
 
-  def mkStdCandGen(
-      labeledSentences: Reader[A forSome { type A }, LabeledSentence]#Readable)
+  def mkStdCandGen(labeledSentences: Reader[A forSome { type A }, LabeledSentence]#Readable)
     : SentenceCandGen = {
 
     val pconf = {
@@ -42,38 +44,37 @@ package object app {
 
   def mkTrainData(
       candgen: SentenceCandGen,
-      labeledSentences: Reader[A forSome { type A }, LabeledSentence]#Readable,
-      noRelationPresent: RelationLearner.Label): RelationLearner.TrainingData =
+      labeledSentences: Reader[A forSome { type A }, LabeledSentence]#Readable
+  ): RelationLearner.TrainingData =
     labeledSentences.flatMap {
       case (sentence, relz) =>
         val labeled =
           relz.map { r =>
-            (CandidateSentence(sentence, r.arg1, r.arg2), r.relation)
+            (CandidateSentence(sentence, r.arg1TokenIndex, r.arg2TokenIndex), r.relation)
           }
 
-        val anyIndexPairs = relz.map(r => (r.arg1, r.arg2)).toSet
+        val anyIndexPairs = relz.map(r => (r.arg1TokenIndex, r.arg2TokenIndex)).toSet
 
         val unlabeled =
           candgen(Document("", Seq(sentence)))
-            .flatMap(candidate => {
-              if (!anyIndexPairs.contains(
-                    (candidate.queryIndex, candidate.answerIndex)))
-                Some((candidate, noRelationPresent))
+            .flatMap { candidate =>
+              if (!anyIndexPairs.contains((candidate.queryIndex, candidate.answerIndex)))
+                Some((candidate, noRelation))
               else
                 None
-            })
+            }
 
         labeled ++ unlabeled
     }.toIterable
 
   def mkPositiveTrainData(
-      labeledSentences: Reader[A forSome { type A }, LabeledSentence]#Readable)
-    : RelationLearner.TrainingData =
+      labeledSentences: Reader[A forSome { type A }, LabeledSentence]#Readable
+  ): RelationLearner.TrainingData =
     labeledSentences
       .flatMap {
         case (sentence, relz) =>
           relz.map { r =>
-            (CandidateSentence(sentence, r.arg1, r.arg2), r.relation)
+            (CandidateSentence(sentence, r.arg1TokenIndex, r.arg2TokenIndex), r.relation)
           }
       }
 
@@ -89,45 +90,45 @@ package object app {
     )
 
     (0 until nFolds)
-      .map(
-        fold =>
-          (
-            partitions
-              .filter { case (index, _) => index != fold }
-              .map(_._2)
-              .toTraversable
-              .flatten,
-            partitions(fold)
-        ))
-      .toTraversable
+      .map { fold =>
+        (
+          partitions
+            .filter { case (index, _) => index != fold }
+            .values
+            .flatten,
+          partitions(fold)
+        )
+      }
   }
 
-  def shuffleAssign(labeledData: RelationLearner.TrainingData,
-                    randAssign: Random => () => Int)(implicit rand: Random) = {
+  def shuffleAssign(labeledData: RelationLearner.TrainingData, randAssign: Random => () => Int)(
+      implicit rand: Random) = {
 
     val rAssign = randAssign(rand)
 
     labeledData
-      .map(x => (x, rAssign()))
+      .map { x =>
+        (x, rAssign())
+      }
       .toList
-      .groupBy(_._2)
+      .groupBy { _._2 }
       .map {
-        case (fold, dataPart) => (fold, dataPart.map(_._1).toTraversable)
+        case (fold, dataPart) => (fold, dataPart.map { _._1 })
       }
   }
 
-  def trainTestSplit(labeledData: RelationLearner.TrainingData,
-                     proportionTrain: Double)(
+  def trainTestSplit(labeledData: RelationLearner.TrainingData, proportionTrain: Double)(
       implicit rand: Random): Traversable[(Train, Test)] = {
 
     val partitioned = shuffleAssign(
       labeledData,
       (r: Random) =>
         () =>
-          if (r.nextDouble() < proportionTrain)
+          if (r.nextDouble() < proportionTrain) {
             0
-          else
-        1
+          } else {
+            1
+      }
     )
 
     Seq((partitioned(0), partitioned(1)))
@@ -136,29 +137,28 @@ package object app {
   val noRelation: RelationLearner.Label =
     "no_relation"
 
-  val negrel: RelationLearner.Label =
-    "negative"
-
   type MultiLearner = Map[RelationLearner.Label, RelationLearner.Learner]
 
   type MultiEstimator = Map[RelationLearner.Label, RelationLearner.Estimator]
 
-  def trainLearners(rlearners: MultiLearner,
-                    train: RelationLearner.TrainingData)(
+  def trainLearners(rlearners: MultiLearner, train: RelationLearner.TrainingData)(
       implicit ec: ExecutionContext): MultiEstimator =
     Await
       .result(
         Future.sequence(
           rlearners.toSeq
             .map {
-              case (r, rl) =>
+              case (thisLearnersRelation, rl) =>
                 Future {
                   (
-                    r,
+                    thisLearnersRelation,
                     rl(
                       train.map {
-                        case (inst, lab) =>
-                          if (lab == r) (inst, r) else (inst, negrel)
+                        case (inst, label) =>
+                          if (label == thisLearnersRelation)
+                            (inst, thisLearnersRelation)
+                          else
+                            (inst, noRelation)
                       }
                     )._2
                   )
