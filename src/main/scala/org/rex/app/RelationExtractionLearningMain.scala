@@ -316,7 +316,8 @@ object RelationExtractionLearningMain {
                   labelCount(train)
                     .map {
                       case (label, count) =>
-                        s"$count instances of $label (${formatDecimalPoint(count.toDouble / train.size)}%)"
+                        s"$count instances of $label " +
+                          s"(${formatDecimalPoint((count.toDouble / train.size) * 100.0)}%)"
                     }
                     .mkString("\n")
 
