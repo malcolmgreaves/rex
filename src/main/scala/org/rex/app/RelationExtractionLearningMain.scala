@@ -474,10 +474,9 @@ object RelationExtractionLearningMain {
     }
 
     if (verbose) {
-      println(
-        s"A total of ${labeledData.size} candidates, of which " +
-          s"${formatDecimalPoint((labeledData.count(_._2 != noRelation) / labeledData.size.toDouble) * 100.0)} % " +
-          s"are labeled.")
+      println(s"A total of ${labeledData.size} candidates, of which " +
+        s"${formatDecimalPoint((labeledData.count(_._2 != noRelation) / labeledData.size.toDouble) * 100.0)} % " +
+        s"are labeled.")
     }
 
     labeledData

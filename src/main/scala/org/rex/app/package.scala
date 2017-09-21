@@ -134,9 +134,6 @@ package object app {
   val noRelation: RelationLearner.Label =
     "no_relation"
 
-  val negrel: RelationLearner.Label =
-    "negative"
-
   type MultiLearner = Map[RelationLearner.Label, RelationLearner.Learner]
 
   type MultiEstimator = Map[RelationLearner.Label, RelationLearner.Estimator]
@@ -148,14 +145,17 @@ package object app {
         Future.sequence(
           rlearners.toSeq
             .map {
-              case (r, rl) =>
+              case (thisLearnersRelation, rl) =>
                 Future {
                   (
-                    r,
+                    thisLearnersRelation,
                     rl(
                       train.map {
-                        case (inst, lab) =>
-                          if (lab == r) (inst, r) else (inst, negrel)
+                        case (inst, label) =>
+                          if (label == thisLearnersRelation)
+                            (inst, thisLearnersRelation)
+                          else
+                            (inst, noRelation)
                       }
                     )._2
                   )
