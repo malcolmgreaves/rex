@@ -69,6 +69,15 @@ object RelConfig {
         }
       }
 
+    def proportionCheck(propOpt: Option[Double], name: String) =
+      propOpt.foreach { proportion =>
+        if (proportion < 0.0 || proportion > 1.0) {
+          println(s"ERROR: $name must be in [0,1], it is instead: $proportion")
+          error()
+        }
+
+      }
+
     config.cmd match {
       case lr: LearningCmd =>
         if (lr.modelOut == null) {
@@ -86,6 +95,7 @@ object RelConfig {
         costCheck(lr.cost)
         epsilonCheck(lr.eps)
         featureHashSizeCheck(lr.sizeForFeatureHashing)
+        proportionCheck(lr.sampleNeg, "Negative candidate sampling acceptance")
 
       case ev: EvaluationCmd =>
         modelInCheck(ev.modelIn, "evaluation")
@@ -96,6 +106,7 @@ object RelConfig {
         epsilonCheck(le.eps)
         featureHashSizeCheck(le.sizeForFeatureHashing)
         nFoldsCheck(le.maybeNFolds)
+        proportionCheck(le.sampleNeg, "Negative candidate sampling acceptance")
 
       case ex: ExtractionCmd =>
         modelInCheck(ex.modelIn, "extraction")
@@ -119,7 +130,8 @@ case class LearningCmd(labeledInput: File,
                        modelOut: File,
                        cost: Option[Double],
                        eps: Option[Double],
-                       sizeForFeatureHashing: Option[Int])
+                       sizeForFeatureHashing: Option[Int],
+                       sampleNeg: Option[Double])
     extends Command
 
 case class EvaluationCmd(labeledInput: File,
@@ -136,7 +148,8 @@ case class LearnEvaluateCmd(labeledInput: File,
                             maybeNFolds: Option[Int],
                             cost: Option[Double],
                             eps: Option[Double],
-                            sizeForFeatureHashing: Option[Int])
+                            sizeForFeatureHashing: Option[Int],
+                            sampleNeg: Option[Double])
     extends Command
 
 case class ExtractionCmd(rawInput: File,

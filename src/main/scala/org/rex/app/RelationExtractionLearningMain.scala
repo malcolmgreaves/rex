@@ -36,7 +36,8 @@ object RelationExtractionLearningMain {
                               modelOut = null,
                               cost = None,
                               eps = None,
-                              sizeForFeatureHashing = None))
+                              sizeForFeatureHashing = None,
+                              sampleNeg = None))
         }
         .text("\tApp will learn a relation extraction model. \n" +
           "\tOne of three possible commands.")
@@ -66,7 +67,8 @@ object RelationExtractionLearningMain {
                                    maybeNFolds = None,
                                    cost = None,
                                    eps = None,
-                                   sizeForFeatureHashing = None))
+                                   sizeForFeatureHashing = None,
+                                   sampleNeg = None))
         }
 
       cmd("extraction")
@@ -190,17 +192,16 @@ object RelationExtractionLearningMain {
           })
         }
 
-      opt[Int]("feature_hash_size")
+      opt[Double]("sample_neg")
         .optional()
-        .valueName("<int>")
-        .text("If provided, the size of the hashed feature space.")
-        .action { (featHashSize, c) =>
+        .valueName("<float>")
+        .text("If provided, will sample this proportion of the non-positive relation candidates.")
+        .action { (sampleNeg, c) =>
           c.copy(cmd = c.cmd match {
-            case cmd: LearningCmd => cmd.copy(sizeForFeatureHashing = Some(featHashSize))
-            case cmd: LearnEvaluateCmd => cmd.copy(sizeForFeatureHashing = Some(featHashSize))
+            case cmd: LearningCmd => cmd.copy(sampleNeg = Some(sampleNeg))
+            case cmd: LearnEvaluateCmd => cmd.copy(sampleNeg = Some(sampleNeg))
             case _ =>
-              throw new IllegalStateException(
-                s"feature_hash_size invalid for command: ${c.cmd.getClass}")
+              throw new IllegalStateException(s"sample_neg invalid for command: ${c.cmd.getClass}")
           })
         }
 
@@ -258,19 +259,29 @@ object RelationExtractionLearningMain {
       ec: ExecutionContext): Unit =
     cmd match {
 
-      case LearningCmd(labeledInput, reader, doCG, modelOut, cost, eps, sizeForFeatureHashing) =>
-        val labeledData = createLabeledData(labeledInput, reader, doCG, verbose = verbose)
+      case LearningCmd(labeledInput, reader, doCG, modelOut, cost, eps, fHash, sampleNeg) =>
+        val labeledData =
+          createLabeledData(labeledInput, reader, doCG, sampleNeg, verbose = verbose)
         val rlearners = createRelationLearnerFuncs(createRelations(labeledData, verbose = verbose),
                                                    featurizer,
                                                    cost = cost,
                                                    eps = eps,
-                                                   sizeForFeatureHashing = sizeForFeatureHashing,
+                                                   sizeForFeatureHashing = fHash,
                                                    verbose = verbose)
         val estimators = trainEstimator(rlearners, labeledData, verbose = verbose)
         saveEstimators(modelOut, estimators)
 
-      case LearnEvaluateCmd(labeledInput, reader, doCG, modelOut, maybeNFolds, cost, eps, fHash) =>
-        val labeledData = createLabeledData(labeledInput, reader, doCG = doCG, verbose = verbose)
+      case LearnEvaluateCmd(labeledInput,
+                            reader,
+                            doCG,
+                            modelOut,
+                            maybeNFolds,
+                            cost,
+                            eps,
+                            fHash,
+                            sampleNeg) =>
+        val labeledData =
+          createLabeledData(labeledInput, reader, doCG = doCG, sampleNeg, verbose = verbose)
         val rlearners = createRelationLearnerFuncs(createRelations(labeledData, verbose = verbose),
                                                    featurizer,
                                                    cost = cost,
@@ -367,7 +378,8 @@ object RelationExtractionLearningMain {
   def createLabeledData(labeledInput: File,
                         reader: Reader[File, LabeledSentence]#Fn,
                         doCG: Boolean,
-                        verbose: Boolean = true): TrainingData = {
+                        sampleNeg: Option[Double],
+                        verbose: Boolean = true)(implicit rand: Random): TrainingData = {
 
     val labeledSentences = reader(labeledInput)
     if (verbose) {
@@ -381,11 +393,27 @@ object RelationExtractionLearningMain {
       println(s"Making training data with sentence-based candidate generation? $doCG")
     }
 
-    val labeledData =
-      if (doCG)
-        mkTrainData(candgen, labeledSentences)
-      else
-        mkPositiveTrainData(labeledSentences)
+    val labeledData = {
+      val all =
+        if (doCG)
+          mkTrainData(candgen, labeledSentences)
+        else
+          mkPositiveTrainData(labeledSentences)
+
+      sampleNeg.fold(all) { propOfNegToAccept =>
+        if (verbose)
+          println(
+            s"Sampling negative, no-relation candidates at " +
+              s"${formatDecimalPoint(propOfNegToAccept * 100.0)} %")
+
+        all.filter {
+          case (_, label) =>
+            // accept if the label is NOT "no_relation"
+            // or accept if the label is "no_relation" and it passes our random filter
+            label != noRelation || rand.nextDouble() <= propOfNegToAccept
+        }
+      }
+    }
 
     if (verbose) {
       println(s"A total of ${labeledData.size} candidates, of which " +

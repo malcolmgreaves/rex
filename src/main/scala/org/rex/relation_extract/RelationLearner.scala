@@ -51,7 +51,7 @@ object RelationLearner extends Learning[Candidate, String] {
               val trainingExamples = nakFmtExamples.map { _.map { tfeat } }.map { indexer.apply }
               val (lmap, fmap) = indexer.getMaps
 
-              if(verbose) {
+              if (verbose) {
                 println(s"After featurization, there are ${fmap.size} unique features")
               }
 
