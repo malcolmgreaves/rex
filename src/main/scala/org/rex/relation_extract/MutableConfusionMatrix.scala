@@ -1,4 +1,4 @@
-package org.rex.app
+package org.rex.relation_extract
 
 class MutableConfusionMatrix() extends Mutable {
 
