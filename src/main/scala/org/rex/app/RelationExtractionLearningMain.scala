@@ -458,20 +458,9 @@ object RelationExtractionLearningMain {
 
     val labeledData =
       if (doCG)
-        mkTrainData(candgen, labeledSentences, noRelation)
+        mkTrainData(candgen, labeledSentences)
       else
         mkPositiveTrainData(labeledSentences)
-
-    val nInvalidExamples = labeledData.foldLeft(0) {
-      case (nEmpty, (instance, label)) =>
-        if (instance.innerFromSentence.tokens.isEmpty)
-          nEmpty + 1
-        else
-          nEmpty
-    }
-    if (nInvalidExamples != 0) {
-      println(s"ERROR:: found $nInvalidExamples examples that were empty!!")
-    }
 
     if (verbose) {
       println(s"A total of ${labeledData.size} candidates, of which " +
@@ -524,6 +513,7 @@ object RelationExtractionLearningMain {
 
     val rlearners: MultiLearner =
       relations
+        .filter { _ != noRelation }
         .map(r => (r, sourceRelationLearner))
         .toMap
 

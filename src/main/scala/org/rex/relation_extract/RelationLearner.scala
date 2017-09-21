@@ -27,36 +27,35 @@ object RelationLearner extends Learning[Candidate, String] {
 
       // Featurize and index the examples.
 
-      val __nakClassifier =
-        sizeForFeatureHashing match {
-
-          case Some(featureSpaceSize) =>
-            val indexer = new HashedExampleIndexer(featureSpaceSize)
-            val primeNumberOfFeatures = indexer.highestFeatureIndex
-            val trainingExamples =
-              nakFmtExamples.map(_.map(tfeat)).map(indexer)
-            val (lmap, fmap) = indexer.getMaps
-            Classifier(
-              trainModel(conf, trainingExamples, primeNumberOfFeatures + 1),
-              lmap,
-              fmap,
-              tfeat
-            )
-
-          case None =>
-            val indexer = new ExampleIndexer
-            val trainingExamples =
-              nakFmtExamples.map(_.map(tfeat)).map(indexer)
-            val (lmap, fmap) = indexer.getMaps
-            Classifier(
-              trainModel(conf, trainingExamples, fmap.size),
-              lmap,
-              fmap,
-              tfeat
-            )
-        }
-
       val nakClassifier = new LiblinearClassifier with FeaturizedClassifier[String, Candidate] {
+
+        private val __nakClassifier =
+          sizeForFeatureHashing match {
+
+            case Some(featureSpaceSize) =>
+              val indexer = new HashedExampleIndexer(featureSpaceSize)
+              val primeNumberOfFeatures = indexer.highestFeatureIndex
+              val trainingExamples =
+                nakFmtExamples.map { _.map { tfeat } }.map { indexer.apply }
+              val (lmap, fmap) = indexer.getMaps
+              Classifier(
+                trainModel(conf, trainingExamples, primeNumberOfFeatures + 1),
+                lmap,
+                fmap,
+                tfeat
+              )
+
+            case None =>
+              val indexer = new ExampleIndexer
+              val trainingExamples = nakFmtExamples.map { _.map { tfeat } }.map { indexer.apply }
+              val (lmap, fmap) = indexer.getMaps
+              Classifier(
+                trainModel(conf, trainingExamples, fmap.size),
+                lmap,
+                fmap,
+                tfeat
+              )
+          }
 
         override def fmap: FeatureMap = __nakClassifier.fmap
         override val lmap: Map[String, Int] = __nakClassifier.lmap
@@ -80,11 +79,14 @@ object RelationLearner extends Learning[Candidate, String] {
 
       }
 
-      val label2index = nakClassifier.lmap
-      val index2label = label2index.toList.sortBy { _._2 }.map { _._1 }
+      val label2index: Map[Label, Int] = nakClassifier.lmap
+      val index2label: Seq[Label] = label2index.toList
+        .sortBy { case (_, index) => index }
+        .map { case (label, _) => label }
       if (index2label.size < 2) {
         throw new IllegalStateException(
-          s"Must have >= 2 labels present in training, not ${index2label.size}")
+          s"Must have >= 2 labels present in training, not ${index2label.size}: " +
+            s"""${index2label.mkString(",")}""")
       }
 
       val estimator =

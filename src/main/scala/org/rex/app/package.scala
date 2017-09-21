@@ -42,9 +42,10 @@ package object app {
     }
   }
 
-  def mkTrainData(candgen: SentenceCandGen,
-                  labeledSentences: Reader[A forSome { type A }, LabeledSentence]#Readable,
-                  noRelationPresent: RelationLearner.Label): RelationLearner.TrainingData =
+  def mkTrainData(
+      candgen: SentenceCandGen,
+      labeledSentences: Reader[A forSome { type A }, LabeledSentence]#Readable
+  ): RelationLearner.TrainingData =
     labeledSentences.flatMap {
       case (sentence, relz) =>
         val labeled =
@@ -56,18 +57,19 @@ package object app {
 
         val unlabeled =
           candgen(Document("", Seq(sentence)))
-            .flatMap(candidate => {
+            .flatMap { candidate =>
               if (!anyIndexPairs.contains((candidate.queryIndex, candidate.answerIndex)))
-                Some((candidate, noRelationPresent))
+                Some((candidate, noRelation))
               else
                 None
-            })
+            }
 
         labeled ++ unlabeled
     }.toIterable
 
-  def mkPositiveTrainData(labeledSentences: Reader[A forSome { type A }, LabeledSentence]#Readable)
-    : RelationLearner.TrainingData =
+  def mkPositiveTrainData(
+      labeledSentences: Reader[A forSome { type A }, LabeledSentence]#Readable
+  ): RelationLearner.TrainingData =
     labeledSentences
       .flatMap {
         case (sentence, relz) =>
@@ -88,17 +90,15 @@ package object app {
     )
 
     (0 until nFolds)
-      .map(
-        fold =>
-          (
-            partitions
-              .filter { case (index, _) => index != fold }
-              .map(_._2)
-              .toTraversable
-              .flatten,
-            partitions(fold)
-        ))
-      .toTraversable
+      .map { fold =>
+        (
+          partitions
+            .filter { case (index, _) => index != fold }
+            .values
+            .flatten,
+          partitions(fold)
+        )
+      }
   }
 
   def shuffleAssign(labeledData: RelationLearner.TrainingData, randAssign: Random => () => Int)(
@@ -107,11 +107,13 @@ package object app {
     val rAssign = randAssign(rand)
 
     labeledData
-      .map(x => (x, rAssign()))
+      .map { x =>
+        (x, rAssign())
+      }
       .toList
-      .groupBy(_._2)
+      .groupBy { _._2 }
       .map {
-        case (fold, dataPart) => (fold, dataPart.map(_._1).toTraversable)
+        case (fold, dataPart) => (fold, dataPart.map { _._1 })
       }
   }
 
@@ -122,10 +124,11 @@ package object app {
       labeledData,
       (r: Random) =>
         () =>
-          if (r.nextDouble() < proportionTrain)
+          if (r.nextDouble() < proportionTrain) {
             0
-          else
-        1
+          } else {
+            1
+      }
     )
 
     Seq((partitioned(0), partitioned(1)))
