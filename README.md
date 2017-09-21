@@ -32,6 +32,22 @@ These files are large and are stored using [`git-lfs`](https://git-lfs.github.co
 instructions and ensure that you've set up this `git` plugin (i.e. have performed `git lfs install` once).
 
 
+## Example
+To evaluate relation extraction performance on the UIUC relation dataset using 3 fold cross-validation,
+first build the executable scripts with `sbt pack` then execute:
+```bash
+./target/pack/bin/relation-extraction-learning-main \
+learn_eval \ # the command for the script
+-li data/uiuc_cog_comp_group-entity_and_relation_recognition_corpora/all.corp \
+--input_format uiuc \ # format reader for this data
+-cg true \ # perform candidate generation
+--cost 1 \ # cost parameter for SVM
+--epsilon 0.003 \ # stop when weight updates are less then this value
+--n_cv_folds 3 # number of folds for cross-validation
+```
+Invoking this program with the `--help` flag, or with no arguments, will output a detailed help mesage to stdout.
+
+
 ## License
 Everything within this repository is copyright (2015-) by Malcolm Greaves.
 

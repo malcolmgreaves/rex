@@ -23,7 +23,7 @@ object ReaderMap {
     val outputClz = implicitly[ClassTag[T]].runtimeClass
 
     s.trim.toLowerCase match {
-      case "conll" =>
+      case "uiuc" =>
         if (inputClz.equals(classOf[File]) && outputClz.equals(
               classOf[UiucRelationFmt.LabeledSentence]))
           Some(UiucRelationFmt.read_file.asInstanceOf[Reader[I, T]#Fn])

@@ -99,7 +99,7 @@ object RelationExtractionLearningMain {
       opt[String]("input_format")
         .optional()
         .valueName("<special>")
-        .text("Format of labeled input (e.g. conll)")
+        .text("Format of labeled input (e.g. uiuc)")
         .action { (readerStrInput, c) =>
           ReaderMap[File, LabeledSentence](readerStrInput) match {
             case Some(r) =>
