@@ -6,11 +6,11 @@ import java.util.concurrent.TimeUnit
 
 import nak.liblinear.{LiblinearConfig, SolverType}
 import org.rex.io.UiucRelationFmt._
-import scopt.OptionParser
-import org.rex.relation_extract.RelationLearner.{TrainingData, Label}
 import org.rex.io.{Reader, ReaderMap}
+import org.rex.relation_extract.RelationLearner.{Label, TrainingData}
 import org.rex.relation_extract._
 import org.rex.text.{SentenceViewFilter, WordFilter, WordView}
+import scopt.OptionParser
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.Duration
@@ -259,18 +259,6 @@ object RelationExtractionLearningMain {
       ec: ExecutionContext): Unit =
     cmd match {
 
-      case LearningCmd(labeledInput, reader, doCG, modelOut, cost, eps, fHash, sampleNeg) =>
-        val labeledData =
-          createLabeledData(labeledInput, reader, doCG, sampleNeg, verbose = verbose)
-        val rlearners = createRelationLearnerFuncs(createRelations(labeledData, verbose = verbose),
-                                                   featurizer,
-                                                   cost = cost,
-                                                   eps = eps,
-                                                   sizeForFeatureHashing = fHash,
-                                                   verbose = verbose)
-        val estimators = trainEstimator(rlearners, labeledData, verbose = verbose)
-        saveEstimators(modelOut, estimators)
-
       case LearnEvaluateCmd(labeledInput,
                             reader,
                             doCG,
@@ -326,30 +314,64 @@ object RelationExtractionLearningMain {
 
               val estimators = trainEstimator(rlearners, labeledData = train, verbose = verbose)
 
-              val numberCorrectPredictions =
+              val cm =
                 test
-                  .foldLeft(0) {
-                    case (nCorrect, (instance, label)) =>
+                  .foldLeft(new MutableConfusionMatrix()) {
+                    case (mutConfMat, (instance, label)) =>
                       val estimatesPerRelation = estimators.map {
                         case (r, estimator) =>
                           (r, estimator(instance).result.head)
                       }
                       val predicted =
                         Learning.argmax(estimatesPerRelation)(Learning.TupleVal2[String])._1
-                      if (predicted == label)
-                        nCorrect + 1
-                      else
-                        nCorrect
+
+                      if (label == noRelation && predicted == noRelation) {
+                        // true negative
+                        mutConfMat.increment(tn = 1L)
+
+                      } else if (label == noRelation && predicted != noRelation) {
+                        // false negative
+                        mutConfMat.increment(fn = 1L)
+
+                      } else if (label != noRelation && predicted == label) {
+                        // true positive
+                        mutConfMat.increment(tp = 1L)
+
+                      } else if (label != noRelation && predicted != label) {
+                        // false positive
+                        mutConfMat.increment(fp = 1L)
+
+                      } else {
+                        throw new IllegalStateException(
+                          s"Unexpected prediction. Label: $label Prediction: $predicted")
+                      }
                   }
 
               val end_fold = System.currentTimeMillis()
-              println(s"#$fold/$nFolds : Completed in " +
-                s"${Duration(end_fold - start_fold, TimeUnit.MILLISECONDS).toMinutes} minutes " +
-                s"(${end_fold - start_fold} ms)" +
-                "\n" +
-                s"#$fold/$nFolds correct $numberCorrectPredictions out of ${test.size} : " +
-                s"accuracy: ${formatDecimalPoint((numberCorrectPredictions.toDouble / test.size) * 100.0)} %")
+              println(
+                s"#$fold/$nFolds : consisting of ${test.size} examples was completed in " +
+                  s"${Duration(end_fold - start_fold, TimeUnit.MILLISECONDS).toMinutes} minutes " +
+                  s"(${end_fold - start_fold} ms)\n" +
+                  s"${cm.truePositives() + cm.falsePositives()} out of ${test.size} correct\n" +
+                  s"accuracy:  ${formatDecimalPoint(cm.accuracy() * 100.0)} %\n" +
+                  s"precision: ${formatDecimalPoint(cm.precision() * 100.0)} %\n" +
+                  s"recall:    ${formatDecimalPoint(cm.recall() * 100.0)} %\n" +
+                  s"F1:        ${formatDecimalPoint(cm.f1() * 100.0)} %\n" +
+                  s"Confusion Matrix: $cm\n" +
+                  s"\n")
           }
+
+      case LearningCmd(labeledInput, reader, doCG, modelOut, cost, eps, fHash, sampleNeg) =>
+        val labeledData =
+          createLabeledData(labeledInput, reader, doCG, sampleNeg, verbose = verbose)
+        val rlearners = createRelationLearnerFuncs(createRelations(labeledData, verbose = verbose),
+                                                   featurizer,
+                                                   cost = cost,
+                                                   eps = eps,
+                                                   sizeForFeatureHashing = fHash,
+                                                   verbose = verbose)
+        val estimators = trainEstimator(rlearners, labeledData, verbose = verbose)
+        saveEstimators(modelOut, estimators)
 
       case _: EvaluationCmd =>
         throw new IllegalStateException("Evaluation unimplemented !!!")
@@ -431,7 +453,9 @@ object RelationExtractionLearningMain {
       case (rs, (_, rel)) => rs + rel
     }
     if (verbose) {
-      val rels = relations.filter { _ != noRelation }
+      val rels = relations.filter {
+        _ != noRelation
+      }
       println(s"""There are ${rels.size} relations:\n\t${rels.mkString("\n\t")}""")
     }
     relations
