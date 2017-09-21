@@ -69,8 +69,11 @@ class MutableConfusionMatrix() extends Mutable {
   def falseNegatives(): Long =
     fn
 
+  def total(): Long =
+    tp + fp + tn + fn
+
   def accuracy(): Double = {
-    val denominator = tp + fp + tn + fp
+    val denominator = total()
     if (denominator == 0L)
       0.0
     else

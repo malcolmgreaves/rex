@@ -352,7 +352,7 @@ object RelationExtractionLearningMain {
                 s"#$fold/$nFolds : consisting of ${test.size} examples was completed in " +
                   s"${Duration(end_fold - start_fold, TimeUnit.MILLISECONDS).toMinutes} minutes " +
                   s"(${end_fold - start_fold} ms)\n" +
-                  s"${cm.truePositives() + cm.falsePositives()} out of ${test.size} correct\n" +
+                  s"${cm.truePositives() + cm.trueNegatives()} out of ${cm.total()} correct\n" +
                   s"accuracy:  ${formatDecimalPoint(cm.accuracy() * 100.0)} %\n" +
                   s"precision: ${formatDecimalPoint(cm.precision() * 100.0)} %\n" +
                   s"recall:    ${formatDecimalPoint(cm.recall() * 100.0)} %\n" +
