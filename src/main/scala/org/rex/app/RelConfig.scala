@@ -157,3 +157,19 @@ case class ExtractionCmd(rawInput: File,
                          modelIn: File,
                          extractOut: Option[File])
     extends Command
+
+case class DistSupExperimentCmd(
+    processedTextDir: File,
+    relations: File,
+    distant_label_reader: DistSupExperimentCmd.RelationKb => Reader[File, LabeledSentence]#Fn,
+    doCandGen: Boolean = true,
+    maybeNFolds: Option[Int],
+    cost: Option[Double],
+    eps: Option[Double]) // extends Command
+
+object DistSupExperimentCmd {
+  type ArgumentPair = (String, String)
+  type Positive = Seq[ArgumentPair]
+  type Negative = Seq[ArgumentPair]
+  type RelationKb = Map[RelationLearner.Label, (Positive, Negative)]
+}
