@@ -1,6 +1,6 @@
 organization := "io.malcolmgreaves"
 name         := "rex"
-version      := "0.0.1"
+version      := "0.0.2"
 
 scalaVersion := "2.11.8"
 val jvm = "1.8"
