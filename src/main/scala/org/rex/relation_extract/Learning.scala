@@ -45,6 +45,11 @@ object Learning {
     def valueOf(a: A): Double
   }
 
+  object Val {
+    def apply[T: Val]: Val[T] =
+      implicitly[Val[T]]
+  }
+
   trait TupleVal1[X] extends Val[(Double, X)] {
     override def valueOf(a: (Double, X)): Double =
       a._1
@@ -69,10 +74,9 @@ object Learning {
     else if (xs.size == 1)
       xs.head
     else {
-      val ev = implicitly[Val[B]]
       xs.foldLeft(xs.head) {
         case (max, next) =>
-          if (ev.valueOf(next) > ev.valueOf(max))
+          if (Val[B].valueOf(next) > Val[B].valueOf(max))
             next
           else
             max
