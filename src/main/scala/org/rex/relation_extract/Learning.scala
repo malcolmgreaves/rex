@@ -23,14 +23,14 @@ trait Learning[A, B] {
 object Learning {
 
   private val emptyEstimation =
-    new IllegalStateException("Unexpected state: Estimator evalauted to empty Map.")
+    new IllegalStateException("Unexpected state: Estimator evaluated to empty Map.")
 
   private val empty =
     new IllegalStateException("Cannot call argmax on an empty sequence.")
 
   def classifierFromEstimator[A, B](e: Learning[A, B]#Estimator): Learning[A, B]#Classifier =
     (instance: A) => {
-      // classificaiton is the item with the maximum probability
+      // classification is the item with the maximum probability
       val dist = e(instance)
 
       if (dist.labels isEmpty)
